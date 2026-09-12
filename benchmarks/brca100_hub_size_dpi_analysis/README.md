@@ -109,10 +109,25 @@ is removed.
 The pilot changes both the evaluated source population and the surrounding
 hub/annotation panel. A separate ten-seed SIG audit therefore held the
 evaluated source population fixed at the same 1,335 genes while expanding the
-available reconstructed/annotated panel.
+available reconstructed/annotated panel to 1,335, 5,340, and 10,680 hubs.
 
-All 26,700 matched source-row comparisons had identical pre-DPI edge counts.
-The native $K_{\mathrm{DPI}}=1$ rule nevertheless produced:
+A **source row** contains the candidate edges from one source gene to its
+targets. At every panel size, the audit counts only edges from the original
+1,335 source genes; their targets still span the same expression-gene universe.
+This is not a subnetwork restricted to 1,335 genes at both endpoints. Added
+source rows remain available to the DPI algorithm, but their own edge counts
+are excluded from both the numerator and denominator of the reported fraction.
+
+For each matched seed $s$ and available panel size $H$, calculate
+
+$$
+r_{s,H}=\frac{\text{edges pruned from the fixed 1,335 source rows}}
+{\text{pre-DPI edges in those same 1,335 source rows}}.
+$$
+
+This is a ratio of summed edge counts, not a median of per-gene pruning
+fractions. The table then takes the median of these per-seed ratios over seeds
+1 through 10, using the native $K_{\mathrm{DPI}}=1$ rule:
 
 | Available SIG panel | Fixed evaluated sources | Median pruning fraction over 10 seeds |
 |---:|---:|---:|
@@ -130,18 +145,63 @@ pilot's per-seed pre-DPI counts, pruned counts, and fractions. The numerical
 difference is therefore caused only by summarizing 10 rather than 100 seeds,
 not by a different denominator or DPI calculation.
 
-The median full-minus-small increase was 0.1692. Because the samples and
-evaluated source genes were matched, and every matched source row retained the
-same pre-DPI edge count, this increase cannot be explained merely by adding new
-source rows to the denominator. Under the deterministic nested-panel design,
-it is evidence that the surrounding source/annotation opportunity set changes
-DPI pruning for the fixed source population. The audit did not hash pre-DPI
-edge identities or MI values across panels, so it does not claim
-byte-identical candidate-edge sets.
+### What the 26,700 comparisons check
 
-The audit still changes source-row availability and annotation eligibility
-together. It proves panel-context sensitivity but does not apportion the effect
-between those two channels.
+For each source gene and seed, the audit compares that row's pre-DPI edge count
+in each larger panel with its count in the smallest panel:
+
+$$
+1{,}335\ \text{sources}\times 10\ \text{seeds}\times
+2\ \text{larger-versus-small comparisons}=26{,}700.
+$$
+
+All comparisons had identical counts, with zero mismatches. Therefore the
+total evaluated pre-DPI edge count also stayed fixed across panel sizes within
+each seed. Counts can differ between seeds; these are matched count checks,
+not 26,700 independent experiments.
+
+For example, the recorded **seed 1** results are:
+
+| Available SIG panel | Evaluated source rows | Pre-DPI edges in those rows | Pruned edges in those rows | Pruning fraction |
+|---:|---:|---:|---:|---:|
+| 1,335 | 1,335 | 55,894 | 12,302 | 22.01% |
+| 5,340 | 1,335 | 55,894 | 18,222 | 32.60% |
+| 10,680 | 1,335 | 55,894 | 21,583 | 38.61% |
+
+The denominator is unchanged, but more edges from the original source rows
+are pruned as the surrounding panel expands.
+
+### What the 0.1692 increase means
+
+First calculate the paired full-minus-small difference within each seed:
+
+$$
+\Delta_s=r_{s,10680}-r_{s,1335}.
+$$
+
+Then take the median of those ten differences: 0.169159, rounded to 0.1692,
+or **16.92 percentage points**. This is not a 16.92% relative increase and is
+not calculated by subtracting the two separately reported arm medians. The
+full-panel pruning fraction exceeded the small-panel fraction in all ten seeds.
+
+With an all-source summary, a larger panel could change the aggregate pruning
+fraction simply by adding source genes with different pruning rates, even if
+pruning in the original rows were unchanged. This fixed-source audit excludes
+that change in the measured source population as the sole explanation:
+the original rows themselves have higher aggregate pruning, with the same
+pre-DPI edge count within each matched seed. This supports **panel-context
+sensitivity in the fixed source population** under this nested-panel design.
+
+The audit checked pre-DPI edge **counts**, not target identities or MI values
+across panels. Equal counts do not establish identical candidate-edge sets.
+Source-row availability and annotation eligibility also change together, so
+the audit does not apportion their effects or establish whether the additional
+removed edges are biologically correct or incorrect.
+
+The example and paired summary are recorded in
+[seed-level metrics](../brca100_kdpi_witness_screen/results_2026-08-26/seed_level_metrics.tsv)
+and
+[paired hub-size effects](../brca100_kdpi_witness_screen/results_2026-08-26/paired_hub_size_effects.tsv).
 
 ## Relationship to consensus recurrence
 
