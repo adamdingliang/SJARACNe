@@ -4,18 +4,20 @@
 // Modifications by S.V. Rice, 2017; this version assumes adaptive_partitioning
 //------------------------------------------------------------------------------------
 
+#include <cerrno>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
 #include <sstream>
+#include "apmi_null_model.h"
 #include "matrix.h"
 #include "parseargs.h"
 
 //------------------------------------------------------------------------------------
 
-const int NUM_OPTIONS = 21;
+const int NUM_OPTIONS = 22;
 
 const char *option[NUM_OPTIONS] =
 {
@@ -36,6 +38,8 @@ const char *option[NUM_OPTIONS] =
 "                   default: determined by program",
 "-l <file>          File containing a list of probes annotated as transcription\n"
 "                   factors in the input dataset, default: NONE [***]",
+"-M <file>          Estimator-matched AP-MI GPD-tail null model. The model must\n"
+"                   exactly match the selected observation count and -N limit",
 "-N <npar_limit>    Maximum allowed value of npar, default: 20",
 "-S <Seed>	    Initial seed for random number generator, default: 1",
 "-n <level>         Array measurement noise level, default: 0",
@@ -96,6 +100,23 @@ void writeUsage(const char *progname)
 
 //------------------------------------------------------------------------------------
 
+double parseFiniteNumericOption(const char *optionName, const char *argument)
+{
+   const std::string text = argument == NULL ? "" : argument;
+   if (text.empty())
+      throw std::string("Option '") + optionName + "' requires a finite numeric value.";
+
+   errno = 0;
+   char *end = NULL;
+   const double value = std::strtod(text.c_str(), &end);
+   if (errno == ERANGE || end == text.c_str() || *end != '\0' || !std::isfinite(value))
+      throw std::string("Option '") + optionName + "' requires a finite numeric value, not '" +
+            text + "'.";
+   return value;
+}
+
+//------------------------------------------------------------------------------------
+
 Parameter parseParameter(int argc, char *argv[])
 {
    Parameter p; // initializes parameters to default values
@@ -121,6 +142,10 @@ Parameter parseParameter(int argc, char *argv[])
       case 'j': p.adjfile    = ARGF(); break;            // adjacency matrix file
       case 'k': p.sigma      = std::atof(ARGF()); break; // gaussian kernel width
       case 'l': p.annotfile  = ARGF(); break;            // TF annotation file
+      case 'M': p.nullModelFile = ARGF();                 // AP-MI null model
+                if (p.nullModelFile == "")
+                   throw std::string("Option '-M' requires a model file.");
+                break;
       case 'N': p.nparLimit  = std::atoi(ARGF()); break; // max npar value
       case 'S': p.seed       = std::atoi(ARGF()); break; // seed
       case 'n': p.correction = std::atof(ARGF()); break; // correction for noise
@@ -131,7 +156,9 @@ Parameter parseParameter(int argc, char *argv[])
                 if (p.subnetfile == "")
                    throw std::string("Option '-s' requires a subnetwork file.");
                 break;
-      case 't': p.threshold  = std::atof(ARGF()); break; // mi threshold
+      case 't': p.threshold  = parseFiniteNumericOption("-t", ARGF()); // mi threshold
+                p.thresholdSpecified = true;
+                break;
       case 'u': p.subsampleSpec = ARGF();                // unique subsample
                 if (p.subsampleSpec == "")
                    throw std::string("Option '-u' requires an exact count or "
@@ -152,7 +179,7 @@ Parameter parseParameter(int argc, char *argv[])
 
 //------------------------------------------------------------------------------------
 
-void findThreshold(int n, Parameter& p)
+void findLegacyThreshold(int n, Parameter& p)
 {
    std::string filename = p.home_dir + "config_threshold.txt";
 
@@ -176,6 +203,70 @@ void findThreshold(int n, Parameter& p)
    p.threshold = (alpha - std::log(p.pvalue)) / (-beta - gamma * n);
 
    infile.close();
+}
+
+//------------------------------------------------------------------------------------
+
+void findEstimatorMatchedThreshold(int n, Parameter& p)
+{
+   const ApmiNullModel model = ApmiNullModel::load(p.nullModelFile);
+
+   if (model.m != n)
+   {
+      std::ostringstream message;
+      message << "AP-MI null model was calibrated for m=" << model.m
+              << ", but this run uses exactly m=" << n
+              << " observations. Exact-m models are not interpolated.";
+      throw message.str();
+   }
+   if (model.nparLimit != p.nparLimit)
+   {
+      std::ostringstream message;
+      message << "AP-MI null model was calibrated with npar_limit="
+              << model.nparLimit << ", but this run uses -N " << p.nparLimit
+              << ". The AP-MI estimator settings must match exactly.";
+      throw message.str();
+   }
+
+   p.threshold = model.cutoff(p.pvalue);
+   p.thresholdMethod = "estimator-matched AP-MI permutation-null GPD tail";
+   p.nullModelFormat = model.format;
+   p.nullModelKernelSchema = model.kernelSchema;
+   p.nullModelEstimator = model.estimator;
+   p.nullModelTailModel = model.tailModel;
+   p.nullModelCalibratorSchema = model.calibratorSchema;
+   p.nullModelCalibratorSha256 = model.calibratorSha256;
+   p.nullModelGeneratorSha256 = model.generatorSha256;
+   p.nullModelFitValuesSha256 = model.fitValuesSha256;
+   p.nullModelValidationValuesSha256 = model.validationValuesSha256;
+   p.nullModelM = model.m;
+   p.nullModelNparLimit = model.nparLimit;
+   p.nullModelSupportedPMin = model.supportedPMin;
+   p.nullModelSupportedPMax = model.supportedPMax;
+   p.nullModelHasValidatedPMin = model.hasValidatedPMin;
+   p.nullModelValidatedPMin = model.validatedPMin;
+   p.nullModelValidatedPMax = model.validatedPMax;
+   p.nullModelTailExtrapolated =
+      !model.hasValidatedPMin || p.pvalue < model.validatedPMin ||
+      p.pvalue > model.validatedPMax;
+
+   if (model.hasValidatedPMin && p.pvalue < model.validatedPMin)
+      std::cout << "[THRESHOLD] WARNING: requested p=" << p.pvalue
+                << " is below the model's held-out validated_p_min="
+                << model.validatedPMin
+                << "; this cutoff is a fitted-tail extrapolation."
+                << std::endl;
+   else if (model.hasValidatedPMin && p.pvalue > model.validatedPMax)
+      std::cout << "[THRESHOLD] WARNING: requested p=" << p.pvalue
+                << " is above the model's held-out validated_p_max="
+                << model.validatedPMax
+                << "; this cutoff lies outside the held-out validated range."
+                << std::endl;
+   else if (!model.hasValidatedPMin)
+      std::cout << "[THRESHOLD] WARNING: this AP-MI null model records no "
+                   "held-out validated p range; the requested cutoff is a "
+                   "fitted-tail extrapolation."
+                << std::endl;
 }
 
 //------------------------------------------------------------------------------------
@@ -252,13 +343,35 @@ void runStandard(int argc, char *argv[])
              << " (" << data.Get_Num_Active_Markers() << " active)"
              << ", Array No: " << nsample << std::endl;
 
-   if (p.threshold == 0.0 && p.pvalue != 1.0)
+   if (p.thresholdSpecified)
    {
-      findThreshold(nsample, p);
+      p.thresholdMethod = "explicit -t";
+      if (!p.nullModelFile.empty())
+         std::cout << "[THRESHOLD] '-M' is ignored because an explicit '-t' "
+                      "threshold was supplied."
+                   << std::endl;
+   }
+   else if (p.pvalue != 1.0)
+   {
+      if (!p.nullModelFile.empty())
+         findEstimatorMatchedThreshold(nsample, p);
+      else
+      {
+         std::cout << "[THRESHOLD] WARNING: no estimator-matched model was "
+                      "supplied with '-M'; using the legacy affine threshold "
+                      "calibration for backward compatibility."
+                   << std::endl;
+         findLegacyThreshold(nsample, p);
+         p.thresholdMethod = "legacy affine calibration";
+      }
 
       std::cout << "MI threshold determined for p=" << p.pvalue << ": " << p.threshold
                 << std::endl;
    }
+   else if (!p.nullModelFile.empty())
+      std::cout << "[THRESHOLD] '-M' was supplied but p=1 preserves all MI values; "
+                   "the model is not loaded."
+                << std::endl;
 
    std::vector<int> ids;
 
