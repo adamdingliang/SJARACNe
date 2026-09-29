@@ -8,7 +8,10 @@ its source files and threshold configuration match this commit. The input
 archive and three file checksums are pinned in `benchmark.py`; the generated
 `.exp` SHA256 was
 `b329115cc9355d1d949748eaa31270e94651e0f42df6974c0a380b70011ba692`.
-The local dataset and native network files are **not** in this PR.
+The three source inputs, prepared `.exp`, TF hub list, and input provenance
+are bundled under `data/Network1`. The 60 native `.adj` files, full challenge
+archive, and local run logs are not in this PR; the runner regenerates the
+network files.
 
 All arms use 1,643 genes, 195 supplied TF hubs, 805 available expression
 profiles, `Npar=40`, seeds 1–3, and nominal `p=1e-7`. Legacy uses 805 draws

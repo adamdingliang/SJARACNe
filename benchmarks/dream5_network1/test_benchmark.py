@@ -1,13 +1,28 @@
-"""Small scorer tests; no challenge data or native binary required."""
+"""Scorer tests and bundled-input integrity check; no native binary required."""
 
+import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from benchmark import adjacency, gold_labels, ranking_metrics, score
+from benchmark import adjacency, digest, gold_labels, load_inputs, ranking_metrics, score
 
 
 class BenchmarkTests(unittest.TestCase):
+    def test_bundled_network1_inputs(self):
+        root = Path(__file__).resolve().parent / "data" / "Network1"
+        inputs = load_inputs(data_root=root)
+        provenance = json.loads((root / "provenance.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            digest((root / "dream5_net1.exp").read_bytes()),
+            provenance["prepared_expression_sha256"],
+        )
+        self.assertEqual(
+            (root / "all195_tfs.txt").read_text(encoding="utf-8").splitlines(),
+            inputs["tfs"].splitlines(),
+        )
+        self.assertEqual(len(gold_labels(inputs["gold"])), 278392)
+
     def test_ties_and_average_precision(self):
         auc, ap = ranking_metrics([0.9, 0.8, 0.8, 0], [1, 0, 1, 0])
         self.assertAlmostEqual(auc, 0.875)

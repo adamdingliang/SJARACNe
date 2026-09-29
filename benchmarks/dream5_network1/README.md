@@ -8,32 +8,36 @@ not test PR #71's estimator-matched null, consensus recurrence, biological
 validity, or downstream NetBID activity. It is an external benchmark, **not**
 a unit-test fixture or a new default-parameter recommendation.
 
-The [DREAM5 archive](https://zenodo.org/records/17854236) is not committed.
-Download `1_Challenge_Data_Supplement.zip` from that record (or use an already
-extracted `Network1` directory). The script validates the published archive
-MD5 and three input-file SHA256 digests and reads exact ZIP members without
-extracting arbitrary archive paths. Keep data and generated networks out of
-Git; `_work/` here is ignored. The archive's license is listed as CC BY-ND 4.0
-at Zenodo; consult its terms before redistribution.
+The complete [DREAM5 archive](https://zenodo.org/records/17854236) is not
+committed. The three unmodified Network 1 source files needed for this
+benchmark, the value-preserving transposed `.exp`, TF hub list, and input
+provenance are included under [`data/Network1`](data/Network1).
+See [data provenance and reuse terms](DATA_LICENSE.md). Generated `.adj`
+networks are not committed; the runner regenerates them.
+The script verifies the three source SHA256 digests, or the published archive
+MD5 as well if `--archive` is supplied. It reads exact ZIP members without
+extracting arbitrary archive paths. Generated reruns go in ignored `_work/`.
 
 From the repository root, on a Linux environment with Python 3 and a built
 PR #70 `sjaracne.exe` (for example `make -C SJARACNe`):
 
 ```sh
 python3 benchmarks/dream5_network1/benchmark.py prepare \
-  --archive /path/to/1_Challenge_Data_Supplement.zip \
+  --data-root benchmarks/dream5_network1/data/Network1 \
   --out benchmarks/dream5_network1/_work
 python3 benchmarks/dream5_network1/benchmark.py run \
   --out benchmarks/dream5_network1/_work \
-  --binary SJARACNe/bin/sjaracne.exe --config SJARACNe/config
+  --binary SJARACNe/bin/sjaracne.exe --config SJARACNe/config \
+  --fixed-mi 0.03759353615996272
 python3 benchmarks/dream5_network1/benchmark.py score \
-  --archive /path/to/1_Challenge_Data_Supplement.zip \
+  --data-root benchmarks/dream5_network1/data/Network1 \
   --out benchmarks/dream5_network1/_work
 python3 -m unittest discover -s benchmarks/dream5_network1 -p 'test_*.py'
 ```
 
-`--data-root /path/to/Network1` can replace `--archive` for `prepare` and
-`score`. Defaults are three seeds (`1 2 3`), fractions (`64 80 90`),
+`--archive /path/to/1_Challenge_Data_Supplement.zip` can replace the bundled
+`--data-root` for an independent input check. Defaults are three seeds
+(`1 2 3`), fractions (`64 80 90`),
 `Npar=40`, nominal `p=1e-7`, DPI tolerance zero for final networks, and all
 195 supplied TF hubs. `--seeds` and `--fractions` can make a smaller smoke run.
 The runner also makes a nominal-p pre-DPI network for a DPI-pruning count.
@@ -43,7 +47,8 @@ was the 80% arm's affine cutoff in the initial pilot and is **not** a
 gold-optimized or PR #71-calibrated threshold.
 Choose a new output directory for a rerun; existing adjacencies are never
 overwritten. `provenance.json`, `run_manifest.json`, logs, native adjacencies,
-and `metrics.json` are written below `--out`.
+and `metrics.json` are written below `--out`. The optional local `reference/`
+directory is also ignored; it is not part of the PR.
 
 The expression table is transposed to SJARACNe's gene-by-sample `.exp`
 format, preserving all 1,643 genes and 805 observations. The script does not
@@ -69,5 +74,6 @@ were sampled and how many were sampled. Do not tune a cutoff against this gold
 file and then describe performance on the same file as independent validation.
 
 The initial three-seed, four-arm exploratory results and these limitations are
-documented in the PR. They are evidence about this simulated network, not a
-claim that DREAM5 Network 1 is biological ground truth for human cancers.
+documented in [RESULTS.md](RESULTS.md). They are evidence about this simulated
+network, not a claim that DREAM5 Network 1 is biological ground truth for
+human cancers.
