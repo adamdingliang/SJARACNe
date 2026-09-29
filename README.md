@@ -139,6 +139,9 @@ or omit both to analyze all observations. Legacy workflow names such as
 The 80% default is a pragmatic starting point, not a universal optimum. For an
 important dataset, compare a small sensitivity range (for example, 64%, 80%, and
 90%) and recalibrate any sample-size-dependent MI threshold for each choice.
+An opt-in [DREAM5 Network 1 sampling benchmark](benchmarks/dream5_network1/README.md)
+documents a simulated-network comparison; it is not a biological validation
+or a new default-fraction recommendation.
 
 
 ## Examples to create a transcription factor network

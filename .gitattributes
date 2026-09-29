@@ -1,0 +1,2 @@
+# Preserve checksummed DREAM5 source and prepared inputs byte-for-byte.
+benchmarks/dream5_network1/data/** -text -diff

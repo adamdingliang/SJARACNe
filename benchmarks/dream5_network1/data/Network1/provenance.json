@@ -1,0 +1,14 @@
+{
+  "source_sha256": {
+    "expression": "fb39ea0bfbede740e28aef21df768dd14c1cb5063d6ed8a384aec1e2fc417663",
+    "tfs": "ce9ab43c396fbdb0a02091127b895b71689295bff8bc167f25a1b55d92b77478",
+    "gold": "2b5b808846e553e229723cb50f0be324f0250e722965665978aeda6c7fc12703"
+  },
+  "prepared_expression_sha256": "b329115cc9355d1d949748eaa31270e94651e0f42df6974c0a380b70011ba692",
+  "profiles": 805,
+  "genes": 1643,
+  "tfs": 195,
+  "labeled_pairs": 278392,
+  "gold_positives": 4012,
+  "design": "all supplied TFs, all genes and profiles; gold used only for scoring"
+}
