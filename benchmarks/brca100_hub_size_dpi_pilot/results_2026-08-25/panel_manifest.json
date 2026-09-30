@@ -1,0 +1,124 @@
+{
+  "drivers": {
+    "sig": {
+      "full_count": 10680,
+      "mi_cutoff": 0.1644671599536221,
+      "p_value": 0.0005,
+      "panels": [
+        {
+          "arm": "sig_h01335",
+          "bytes": 17355,
+          "fraction": 0.125,
+          "hub_count": 1335,
+          "nested_selection_prefix_sha256": "81f8141ab6057f704c7478e8df3a556845a1f17af094fdedbcf432919868009b",
+          "path": "sig/h01335/BRCA100_SIG.txt",
+          "sha256": "1e082c351e5b57dcff968dbde4b52ebb7385b3cc1f6bb79cd3981ad6bba6b92c",
+          "variance_quintile_counts": [
+            267,
+            267,
+            267,
+            267,
+            267
+          ]
+        },
+        {
+          "arm": "sig_h05340",
+          "bytes": 69420,
+          "fraction": 0.5,
+          "hub_count": 5340,
+          "nested_selection_prefix_sha256": "6cfc5ffdcd6c9f55c1569edbb84e0dd5fb97d55bddc9b22d86a59450b07e5ffe",
+          "path": "sig/h05340/BRCA100_SIG.txt",
+          "sha256": "530bba715d8a5bb3216d9b4cccccbf34a253bd4678b2fa88595899d1e34a6f93",
+          "variance_quintile_counts": [
+            1068,
+            1068,
+            1068,
+            1068,
+            1068
+          ]
+        },
+        {
+          "arm": "sig_h10680",
+          "bytes": 138840,
+          "fraction": 1.0,
+          "hub_count": 10680,
+          "nested_selection_prefix_sha256": "68fa838b729878d40e90dbc28c02601c5dfef53393d8c9d590904a7de793e0d0",
+          "path": "sig/h10680/BRCA100_SIG.txt",
+          "sha256": "16ca27df655f16684f880a4ad719c4e2ae3f8dc0d7e6b9eccdd24cd97c40797c",
+          "variance_quintile_counts": [
+            2136,
+            2136,
+            2136,
+            2136,
+            2136
+          ]
+        }
+      ],
+      "selection_order_sha256": "68fa838b729878d40e90dbc28c02601c5dfef53393d8c9d590904a7de793e0d0",
+      "source_filename": "BRCA100_SIG.txt",
+      "source_sha256": "16ca27df655f16684f880a4ad719c4e2ae3f8dc0d7e6b9eccdd24cd97c40797c"
+    },
+    "tf": {
+      "full_count": 2608,
+      "mi_cutoff": 0.14732247558240297,
+      "p_value": 0.001,
+      "panels": [
+        {
+          "arm": "tf_h00326",
+          "bytes": 4238,
+          "fraction": 0.125,
+          "hub_count": 326,
+          "nested_selection_prefix_sha256": "d110b40cb83be5ca3254c05ba5fac73ddc909f3b2c0763c241394e8772dc9ace",
+          "path": "tf/h00326/BRCA100_TF.txt",
+          "sha256": "b2b7f0dca65dc15247f564e9e04f871079f1a1cc80589409916b049f76b5e464",
+          "variance_quintile_counts": [
+            66,
+            65,
+            65,
+            65,
+            65
+          ]
+        },
+        {
+          "arm": "tf_h01304",
+          "bytes": 16952,
+          "fraction": 0.5,
+          "hub_count": 1304,
+          "nested_selection_prefix_sha256": "9d7777dd89d0a4742253bf8b0881a9e8245478a37410830973240d2c32283fcd",
+          "path": "tf/h01304/BRCA100_TF.txt",
+          "sha256": "7d7bbdedd8c6fe52d9806bf6056f04bd596402022b5f0a89aa9bb2168b3d2304",
+          "variance_quintile_counts": [
+            261,
+            261,
+            261,
+            261,
+            260
+          ]
+        },
+        {
+          "arm": "tf_h02608",
+          "bytes": 33904,
+          "fraction": 1.0,
+          "hub_count": 2608,
+          "nested_selection_prefix_sha256": "f081544b277a38cccfdb9a109457bb1eb3f2854ce21da1f5e6bd8607f11ad5c2",
+          "path": "tf/h02608/BRCA100_TF.txt",
+          "sha256": "9b1219a489b99432175e4c4ad46add7b06f25aae388ee8dd3261fa91e4c43ffd",
+          "variance_quintile_counts": [
+            522,
+            522,
+            521,
+            522,
+            521
+          ]
+        }
+      ],
+      "selection_order_sha256": "f081544b277a38cccfdb9a109457bb1eb3f2854ce21da1f5e6bd8607f11ad5c2",
+      "source_filename": "BRCA100_TF.txt",
+      "source_sha256": "9b1219a489b99432175e4c4ad46add7b06f25aae388ee8dd3261fa91e4c43ffd"
+    }
+  },
+  "expression_sha256": "ad8a334f5f8cdf46a1000d3ee259b35258a18b3da2e314bb3a0cf7a421d98bc8",
+  "panel_seed": "brca100-hub-size-dpi-pilot-panel-v1",
+  "schema": "sjaracne-brca100-hub-size-dpi-panel-v1",
+  "selection": "rank population variance over 100 BRCA100 samples into five quintiles; SHA-256 order within quintile; round-robin quintile interleaving; serialize selected IDs in original input order"
+}

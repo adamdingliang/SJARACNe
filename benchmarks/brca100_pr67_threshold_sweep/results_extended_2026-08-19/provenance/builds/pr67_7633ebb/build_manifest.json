@@ -1,0 +1,12 @@
+{
+  "binary": "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/builds/pr67_7633ebb/bin/sjaracne.exe",
+  "binary_sha256": "61180915be61455887ac261499455ac933cf976b292cab1a8180d759acc3ac2d",
+  "built_at_utc": "2026-08-18T16:27:14.796222+00:00",
+  "commit": "7633ebb4a0d966dbda15a4e32d0efa492fb71aeb",
+  "compiler": "g++ (conda-forge gcc 15.3.0-1) 15.3.0",
+  "config_directory": "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/builds/pr67_7633ebb/source/SJARACNe/config",
+  "config_sha256": "dca25c4041800933e6d439fe8730d4e78039839f956932968401540bdf454dca",
+  "null_model": "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/builds/pr67_7633ebb/source/SJARACNe/config/apmi_null/apmi_null_m00080_npar040.model",
+  "null_model_sha256": "e3a8522682a8ea239821aaa10b12db72d00e07bfdcad43599d8e76a06be80944",
+  "stage": "pr67_7633ebb"
+}

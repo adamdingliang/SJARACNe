@@ -1,0 +1,1075 @@
+{
+  "analysis_manifest_sha256": "9e90ee5c7edcd9aa991373ad871e59e11d5c1a12db0faa98f47e4d0b381b0400",
+  "checksum_policy": "SHA256SUMS covers every package file except itself",
+  "copied_files": [
+    {
+      "bytes": 6634,
+      "package_path": "analysis/adjacent_overlap.tsv",
+      "role": "analysis-output",
+      "sha256": "f255bb4a6a49b2419e8563ac3199c7fb1b067bc84d6264298700f32621adc304",
+      "source_work_root_relative": "results/analysis/adjacent_overlap.tsv"
+    },
+    {
+      "bytes": 50194,
+      "package_path": "analysis/analysis_manifest.json",
+      "role": "analysis-manifest",
+      "sha256": "9e90ee5c7edcd9aa991373ad871e59e11d5c1a12db0faa98f47e4d0b381b0400",
+      "source_work_root_relative": "results/analysis/analysis_manifest.json"
+    },
+    {
+      "bytes": 6570,
+      "package_path": "analysis/anchor_overlap.tsv",
+      "role": "analysis-output",
+      "sha256": "12e4f8690bb51b3d94c20882bdff7f4afaaae764a5918220db754641fb479a7f",
+      "source_work_root_relative": "results/analysis/anchor_overlap.tsv"
+    },
+    {
+      "bytes": 27922,
+      "package_path": "analysis/arm_provenance.tsv",
+      "role": "analysis-output",
+      "sha256": "b9d14d725ca17f45eecde929ec596fed0de4ed6fabbeede7f6ec1088269a77e2",
+      "source_work_root_relative": "results/analysis/arm_provenance.tsv"
+    },
+    {
+      "bytes": 39103,
+      "package_path": "analysis/network_summary.tsv",
+      "role": "analysis-output",
+      "sha256": "a0d40497a7c53ae505fe11827f42d81d80abe8245799195bd3ffcc5350f1271e",
+      "source_work_root_relative": "results/analysis/network_summary.tsv"
+    },
+    {
+      "bytes": 11754,
+      "package_path": "analysis/operating_point_screen.tsv",
+      "role": "analysis-output",
+      "sha256": "c001d1e43a9179a4ca5e3b49dc501c3a690796f5fcc1cb21161330cf1a03aaf6",
+      "source_work_root_relative": "results/analysis/operating_point_screen.tsv"
+    },
+    {
+      "bytes": 561780,
+      "package_path": "analysis/plots/core_metrics_vs_log10_p.png",
+      "role": "analysis-output",
+      "sha256": "e25aa5504a02f8301ce5de7ee7b634dd8ef5a4a1e6f727e7a51a22d6ddce7a9b",
+      "source_work_root_relative": "results/analysis/plots/core_metrics_vs_log10_p.png"
+    },
+    {
+      "bytes": 370509,
+      "package_path": "analysis/plots/core_metrics_vs_log10_p.svg",
+      "role": "analysis-output",
+      "sha256": "b5231875135bb4dbe14f5d3ff1ae6fd3850cf973fcd311dafe9a04a1cc229207",
+      "source_work_root_relative": "results/analysis/plots/core_metrics_vs_log10_p.svg"
+    },
+    {
+      "bytes": 185656,
+      "package_path": "analysis/plots/coverage_vs_nominal_null_burden.png",
+      "role": "analysis-output",
+      "sha256": "6772f03e97b5d0ddb7225104d10a5ce06cfb47e0ea2020716ebdd16824fed181",
+      "source_work_root_relative": "results/analysis/plots/coverage_vs_nominal_null_burden.png"
+    },
+    {
+      "bytes": 104584,
+      "package_path": "analysis/plots/coverage_vs_nominal_null_burden.svg",
+      "role": "analysis-output",
+      "sha256": "dc20470a7c7dafa773c5c1f5d11eaad96e44a26be424aa41fb94e84c7d4d88c8",
+      "source_work_root_relative": "results/analysis/plots/coverage_vs_nominal_null_burden.svg"
+    },
+    {
+      "bytes": 156226,
+      "package_path": "analysis/plots/edge_overlap_vs_log10_p.png",
+      "role": "analysis-output",
+      "sha256": "65839251d848b872dd465bc47bc2bc28e7b51795c3f9311a0d37c8957f667d31",
+      "source_work_root_relative": "results/analysis/plots/edge_overlap_vs_log10_p.png"
+    },
+    {
+      "bytes": 70720,
+      "package_path": "analysis/plots/edge_overlap_vs_log10_p.svg",
+      "role": "analysis-output",
+      "sha256": "1a1042927cbb71bf2ac7ce9689628eb620a783eda798562614f6cae36b7a0c2c",
+      "source_work_root_relative": "results/analysis/plots/edge_overlap_vs_log10_p.svg"
+    },
+    {
+      "bytes": 4148,
+      "package_path": "analysis/point_manifest_summary.tsv",
+      "role": "analysis-output",
+      "sha256": "6b5378c6574098f836b5de95d7634888ba37f94718e5e07786ce7e6fb12d28b9",
+      "source_work_root_relative": "results/analysis/point_manifest_summary.tsv"
+    },
+    {
+      "bytes": 6353,
+      "package_path": "analysis/pr66_context_overlap.tsv",
+      "role": "analysis-output",
+      "sha256": "0b497efd326a3a3b814b96079ead3e5c67bc386e3c0d0197e460b13ef008aa58",
+      "source_work_root_relative": "results/analysis/pr66_context_overlap.tsv"
+    },
+    {
+      "bytes": 5966,
+      "package_path": "analysis/pr66_context_summary.tsv",
+      "role": "analysis-output",
+      "sha256": "c0024caaf7fa0d93dedb04f7bf5a5387e647bf083489f684c6c0af07d66db739",
+      "source_work_root_relative": "results/analysis/pr66_context_summary.tsv"
+    },
+    {
+      "bytes": 5123,
+      "package_path": "analysis/seed_manifest_summary.tsv",
+      "role": "analysis-output",
+      "sha256": "3b09f1ee9d302315da972de733728d18be82cb385491b5e90b3d38909769f84e",
+      "source_work_root_relative": "results/analysis/seed_manifest_summary.tsv"
+    },
+    {
+      "bytes": 1237,
+      "package_path": "analysis/selection.json",
+      "role": "analysis-output",
+      "sha256": "d590de21a342ae8c86ee7ce8390400c03e44bd8fbc7b8a17e10031536b56deab",
+      "source_work_root_relative": "results/analysis/selection.json"
+    },
+    {
+      "bytes": 19977,
+      "package_path": "provenance/aggregates/netbid2_qc_html_manifest.json",
+      "role": "netbid2-html-aggregate-manifest",
+      "sha256": "26abc299f15b58f6e6ae113a1d4e645c45e0c72216835c9c5dab6617c1b1c45f",
+      "source_work_root_relative": "results/netbid2_qc_html_manifest.json"
+    },
+    {
+      "bytes": 73395,
+      "package_path": "provenance/aggregates/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-aggregate-manifest",
+      "sha256": "66e4f3ec960172b02e3256284a976347325812c97d4e5ed1aff95520830bb737",
+      "source_work_root_relative": "results/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 259708,
+      "package_path": "provenance/aggregates/support_summary_manifest.json",
+      "role": "support-aggregate-manifest",
+      "sha256": "2b667a19d42bc73cd90b2efbe6011a85f775a0d8670318a3cf830e9dc8ae0be6",
+      "source_work_root_relative": "results/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1317,
+      "package_path": "provenance/arms/p1e-03/sig/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "beca248e6e62f50cd87c441989395c2f35be0dfdcae8c3950f8a40eb9cf345c6",
+      "source_work_root_relative": "results/p1e-03/sig/consensus_manifest.json"
+    },
+    {
+      "bytes": 2562,
+      "package_path": "provenance/arms/p1e-03/sig/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "a7a59082ca4447330415c4d549468321e4aa2a83debb3bd906ec8a9f1e6dc440",
+      "source_work_root_relative": "results/p1e-03/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9394,
+      "package_path": "provenance/arms/p1e-03/sig/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "1e7d8fc98e0d4185d79cb28e8fe34f3d76adcadcbf7520c8a5e22eaaefbd1444",
+      "source_work_root_relative": "results/p1e-03/sig/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1312,
+      "package_path": "provenance/arms/p1e-03/tf/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "59e7bc6e2a7d0556ca9ec6b25e777ceb0f4ffc016fdc89f5b86550ec8d9981ce",
+      "source_work_root_relative": "results/p1e-03/tf/consensus_manifest.json"
+    },
+    {
+      "bytes": 2554,
+      "package_path": "provenance/arms/p1e-03/tf/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "4b493249a53b385cb91b98a182698d4b3e400353a31a6afd9645ee71333e9759",
+      "source_work_root_relative": "results/p1e-03/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9388,
+      "package_path": "provenance/arms/p1e-03/tf/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "04debb8ee89be0bd30631ba9dfd166748a99749abf1c3da078024b023d93d8ba",
+      "source_work_root_relative": "results/p1e-03/tf/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1315,
+      "package_path": "provenance/arms/p1e-04/sig/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "957eedb0baf4f52b6c7f90ed8c2b2e96f98dd61e1d9ce1e8508409ab4381beb7",
+      "source_work_root_relative": "results/p1e-04/sig/consensus_manifest.json"
+    },
+    {
+      "bytes": 2563,
+      "package_path": "provenance/arms/p1e-04/sig/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "3d784ff916d405a580efbd18432b1ee1aec66136fecf77ece76b6087d64008dd",
+      "source_work_root_relative": "results/p1e-04/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9395,
+      "package_path": "provenance/arms/p1e-04/sig/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "2690b5554b4b5a19b566b640c173077f9689266b1c6f52949fa95813e0265233",
+      "source_work_root_relative": "results/p1e-04/sig/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1308,
+      "package_path": "provenance/arms/p1e-04/tf/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "a86824ad675d58603c9b76e5a6f13cebc048c4b9b2e2cef5858bbf0988f9405c",
+      "source_work_root_relative": "results/p1e-04/tf/consensus_manifest.json"
+    },
+    {
+      "bytes": 2555,
+      "package_path": "provenance/arms/p1e-04/tf/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "9d8540d2e2d7ce5bdb1f6159f6b89f62721ea085a832436a8ef937ae434aa6b2",
+      "source_work_root_relative": "results/p1e-04/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9388,
+      "package_path": "provenance/arms/p1e-04/tf/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "6eaa3f2b883eb8e69fb8288fb554a7b7fa47e86e08f76188cf06f8557c1b2a3c",
+      "source_work_root_relative": "results/p1e-04/tf/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1310,
+      "package_path": "provenance/arms/p1e-05/sig/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "a3bb4d90f640a656b9fe377ea024755b131e4b305accb5b1ba01bc0fb32c7194",
+      "source_work_root_relative": "results/p1e-05/sig/consensus_manifest.json"
+    },
+    {
+      "bytes": 2561,
+      "package_path": "provenance/arms/p1e-05/sig/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "88d222689f7327c538bf2dc154c4d3f248c4c9092a484476689c1a63397a0fbc",
+      "source_work_root_relative": "results/p1e-05/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9393,
+      "package_path": "provenance/arms/p1e-05/sig/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "3ee43c738aa7408f9a29aae88505c68c96f4683d7816b11d49b07193f5c45bef",
+      "source_work_root_relative": "results/p1e-05/sig/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1306,
+      "package_path": "provenance/arms/p1e-05/tf/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "752fd5f82812e26c482e06b8cbf219dc5061343a8ce89cc3b1c76bb87b584cf2",
+      "source_work_root_relative": "results/p1e-05/tf/consensus_manifest.json"
+    },
+    {
+      "bytes": 2553,
+      "package_path": "provenance/arms/p1e-05/tf/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "72722c2a1c849258f464eb170dc4e7eb5343fa397763d404ed727ed8bce46054",
+      "source_work_root_relative": "results/p1e-05/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9387,
+      "package_path": "provenance/arms/p1e-05/tf/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "d8e72b85aa64ddd0087411d50028e70558176d1f37c090030b9ef2ef76a53932",
+      "source_work_root_relative": "results/p1e-05/tf/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1310,
+      "package_path": "provenance/arms/p1e-06/sig/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "0aed12a396c7834d5df638191ec41c2e024cc0c4e820b98052b4a0bfd51de47a",
+      "source_work_root_relative": "results/p1e-06/sig/consensus_manifest.json"
+    },
+    {
+      "bytes": 2561,
+      "package_path": "provenance/arms/p1e-06/sig/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "263f3ed11cebc7bd9588c30e372055356a794b0fa954f8e267c761bfe4a1d27b",
+      "source_work_root_relative": "results/p1e-06/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9393,
+      "package_path": "provenance/arms/p1e-06/sig/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "f31be622d2f34436f8d6067571df2cda21f6e9001297169a9e8f22f50086adb0",
+      "source_work_root_relative": "results/p1e-06/sig/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1304,
+      "package_path": "provenance/arms/p1e-06/tf/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "2a2522dae6e33eab44da02fcce853025b1da49aed01823e6e64147ccaf4d7505",
+      "source_work_root_relative": "results/p1e-06/tf/consensus_manifest.json"
+    },
+    {
+      "bytes": 2553,
+      "package_path": "provenance/arms/p1e-06/tf/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "735f2a45be1d689af0f7573b9fafe44b580316e910d9d38337f0193907ced2c8",
+      "source_work_root_relative": "results/p1e-06/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9386,
+      "package_path": "provenance/arms/p1e-06/tf/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "4175a495f83da86a2cf4ddcde5462043183b32ec66246c44d1d0415f4e734ebc",
+      "source_work_root_relative": "results/p1e-06/tf/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1309,
+      "package_path": "provenance/arms/p1e-07/sig/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "43a2adaea032723dc7a223b3dcd78fed21a79d7672cc81ee895a0e1614df8d7c",
+      "source_work_root_relative": "results/p1e-07/sig/consensus_manifest.json"
+    },
+    {
+      "bytes": 2561,
+      "package_path": "provenance/arms/p1e-07/sig/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "059cadcf03509efc2af63c79f01c009cc9385f3976b7deb1b5ceb9348fc50f33",
+      "source_work_root_relative": "results/p1e-07/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9393,
+      "package_path": "provenance/arms/p1e-07/sig/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "4eb2de8c0d38324195b11f4a46ffb6da47d758d3f34b2b77a70f6610f634044b",
+      "source_work_root_relative": "results/p1e-07/sig/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1302,
+      "package_path": "provenance/arms/p1e-07/tf/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "d8411649329e593a113f0156b14221e2ab614a602e656ab6d2aed71d39c65042",
+      "source_work_root_relative": "results/p1e-07/tf/consensus_manifest.json"
+    },
+    {
+      "bytes": 2553,
+      "package_path": "provenance/arms/p1e-07/tf/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "8238d2ca4340602a5e63fd3de27a9f532cffc626892fb8dc17ebc04b0657e524",
+      "source_work_root_relative": "results/p1e-07/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9386,
+      "package_path": "provenance/arms/p1e-07/tf/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "df7656b9f5802ef6a53e7d8e8c6fdb78ee8ae1c5c30adbbd3f0eda5132640963",
+      "source_work_root_relative": "results/p1e-07/tf/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1317,
+      "package_path": "provenance/arms/p2e-04/sig/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "5d84176e82c4bffd258ada5130869594702d37b653b09df29fdffe7f80bbf717",
+      "source_work_root_relative": "results/p2e-04/sig/consensus_manifest.json"
+    },
+    {
+      "bytes": 2872,
+      "package_path": "provenance/arms/p2e-04/sig/netbid2_qc_html_manifest.json",
+      "role": "netbid2-html-manifest",
+      "sha256": "f02133c8f1848c10b1c38a0f5cc1cd4c5311120e73147395ca70b7757ce2e6ea",
+      "source_work_root_relative": "results/p2e-04/sig/netbid2_qc_html_manifest.json"
+    },
+    {
+      "bytes": 2563,
+      "package_path": "provenance/arms/p2e-04/sig/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "bfe5bed03dc72703e579426f9641e2bb95cde1c16e9d57decbd045b56e016b3d",
+      "source_work_root_relative": "results/p2e-04/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9395,
+      "package_path": "provenance/arms/p2e-04/sig/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "37cd499f16bf0a730dacf8423143797b0c08a8000e98c32a05340867ca9d7c28",
+      "source_work_root_relative": "results/p2e-04/sig/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1308,
+      "package_path": "provenance/arms/p2e-04/tf/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "bb2f1fdad7fd6fcb5ab9637d42b7acf178ec36a06f88156dfc8980ec1fb56edb",
+      "source_work_root_relative": "results/p2e-04/tf/consensus_manifest.json"
+    },
+    {
+      "bytes": 2862,
+      "package_path": "provenance/arms/p2e-04/tf/netbid2_qc_html_manifest.json",
+      "role": "netbid2-html-manifest",
+      "sha256": "ab6ec6b29c0fe0c8cee0e7cb3b58c425e4852e8659c61c35fdde9f39e109dc16",
+      "source_work_root_relative": "results/p2e-04/tf/netbid2_qc_html_manifest.json"
+    },
+    {
+      "bytes": 2555,
+      "package_path": "provenance/arms/p2e-04/tf/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "6db53af17664b82b09ee784df515a7d85a6e80e17896518ad90db86d63e668f3",
+      "source_work_root_relative": "results/p2e-04/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9388,
+      "package_path": "provenance/arms/p2e-04/tf/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "298106188f63f796630f952b3c1a1f020f0c1af48578cf8a4f26f32b042dcb75",
+      "source_work_root_relative": "results/p2e-04/tf/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1310,
+      "package_path": "provenance/arms/p2e-05/sig/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "a1f6e4ea61569ffb34e8f7c1b8a773fff4a10af1455ae61381b0a586f529ea7d",
+      "source_work_root_relative": "results/p2e-05/sig/consensus_manifest.json"
+    },
+    {
+      "bytes": 2558,
+      "package_path": "provenance/arms/p2e-05/sig/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "6efcd87e2b596b448558cbc04fd6de3276b9e8fd75fd9e4c5d7ded5619cc8d8a",
+      "source_work_root_relative": "results/p2e-05/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9393,
+      "package_path": "provenance/arms/p2e-05/sig/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "a3155f0ee91eca612dd78ea09eaa6879bf4bf09cd946dc4b503cf3bf3e416406",
+      "source_work_root_relative": "results/p2e-05/sig/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1307,
+      "package_path": "provenance/arms/p2e-05/tf/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "5c8e92e0922c6e42bbcfd9ea99cb8c2729a687e47e7074ee760b9d6ae65f522d",
+      "source_work_root_relative": "results/p2e-05/tf/consensus_manifest.json"
+    },
+    {
+      "bytes": 2550,
+      "package_path": "provenance/arms/p2e-05/tf/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "0dd4ee330675093ac13f8dd413e352978d45aae652362a50d971ad0de5bd2f2f",
+      "source_work_root_relative": "results/p2e-05/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9387,
+      "package_path": "provenance/arms/p2e-05/tf/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "340b047497a707158314d909640b7765aab84398125b459dfb8e869d90cc4679",
+      "source_work_root_relative": "results/p2e-05/tf/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1317,
+      "package_path": "provenance/arms/p3e-04/sig/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "18a207ebdcc40579c2a4ca0d00fe5d5dcb0fc7598fe7f6eafd6901d9a8069e68",
+      "source_work_root_relative": "results/p3e-04/sig/consensus_manifest.json"
+    },
+    {
+      "bytes": 2871,
+      "package_path": "provenance/arms/p3e-04/sig/netbid2_qc_html_manifest.json",
+      "role": "netbid2-html-manifest",
+      "sha256": "b62d26531d43af38e5d49d31edc9213187761c238800db076c2337060260eb18",
+      "source_work_root_relative": "results/p3e-04/sig/netbid2_qc_html_manifest.json"
+    },
+    {
+      "bytes": 2562,
+      "package_path": "provenance/arms/p3e-04/sig/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "06f6c5efb71c3470d1e7aa779c0a1fd334644b30e244c90d66060a28ac3f2454",
+      "source_work_root_relative": "results/p3e-04/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9395,
+      "package_path": "provenance/arms/p3e-04/sig/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "5eaf74941694ef2b4c4f0da1560a6862bbd6ea745181e0a3fec44a4ea74fd714",
+      "source_work_root_relative": "results/p3e-04/sig/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1310,
+      "package_path": "provenance/arms/p3e-04/tf/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "028967f6c62b7bc2375d183fba81008bff97f14685c64e648ccc03c5e54820c4",
+      "source_work_root_relative": "results/p3e-04/tf/consensus_manifest.json"
+    },
+    {
+      "bytes": 2861,
+      "package_path": "provenance/arms/p3e-04/tf/netbid2_qc_html_manifest.json",
+      "role": "netbid2-html-manifest",
+      "sha256": "b11d98b6e19eb618f62664d92c29cf3fc31a2c9491c59e9cea4f3e5895760b78",
+      "source_work_root_relative": "results/p3e-04/tf/netbid2_qc_html_manifest.json"
+    },
+    {
+      "bytes": 2554,
+      "package_path": "provenance/arms/p3e-04/tf/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "2fb810473713579a99e2aaccc54efa332248f60cbbd016a8b752c0f3f3c21dba",
+      "source_work_root_relative": "results/p3e-04/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9388,
+      "package_path": "provenance/arms/p3e-04/tf/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "dd2ef10818ee743e076a9fb2f3c32bee6a8e1624c37024b154fa728e5552b789",
+      "source_work_root_relative": "results/p3e-04/tf/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1317,
+      "package_path": "provenance/arms/p4e-04/sig/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "5772261ed22200e28b0468bd5f6051986c424fb2b2ca1eb031be8e177d5d386e",
+      "source_work_root_relative": "results/p4e-04/sig/consensus_manifest.json"
+    },
+    {
+      "bytes": 2562,
+      "package_path": "provenance/arms/p4e-04/sig/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "b2df151b6b459e33d1b213a8fdb57154e96893e830e110ad27fc6f6697520fac",
+      "source_work_root_relative": "results/p4e-04/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9395,
+      "package_path": "provenance/arms/p4e-04/sig/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "7921afac31902e4f43e89a4488319a8fc65b4bae030b7ed3d81b38856ebd5420",
+      "source_work_root_relative": "results/p4e-04/sig/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1311,
+      "package_path": "provenance/arms/p4e-04/tf/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "1f5a978982ea9d56697aade98d5030141ff13330b89dd40516fa7b5de84d009f",
+      "source_work_root_relative": "results/p4e-04/tf/consensus_manifest.json"
+    },
+    {
+      "bytes": 2554,
+      "package_path": "provenance/arms/p4e-04/tf/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "53eaa824b31104edc55a8ab9f4ef227baee90b5580ba1dd347a46a78713aa64c",
+      "source_work_root_relative": "results/p4e-04/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9389,
+      "package_path": "provenance/arms/p4e-04/tf/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "37cf55b91ecedf2cab1e864b3c2bec2b8a837f57f29bfad9df0a0ac496bfaa00",
+      "source_work_root_relative": "results/p4e-04/tf/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1316,
+      "package_path": "provenance/arms/p5e-04/sig/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "b0bdacdeb06c58de4c6244cebd74a6cd9a37c0d7f8da9abd0f1e1506dc97bdaf",
+      "source_work_root_relative": "results/p5e-04/sig/consensus_manifest.json"
+    },
+    {
+      "bytes": 2562,
+      "package_path": "provenance/arms/p5e-04/sig/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "06fb2d39092e0c7b7cc4b8d6e147902ae7372c747c073054829aa0fba7ddfe59",
+      "source_work_root_relative": "results/p5e-04/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9395,
+      "package_path": "provenance/arms/p5e-04/sig/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "5515e8750053fd5e68a2a1071ea6ddf591d98eb3a3d16537159f0f36f2959717",
+      "source_work_root_relative": "results/p5e-04/sig/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1312,
+      "package_path": "provenance/arms/p5e-04/tf/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "80492e6ae4be772543a51a33e163c79f8c320e054915996ab56da14aa3b32a68",
+      "source_work_root_relative": "results/p5e-04/tf/consensus_manifest.json"
+    },
+    {
+      "bytes": 2554,
+      "package_path": "provenance/arms/p5e-04/tf/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "72ce3e2fd5e02c2980463e8c56d57692aa2fd4b97a5365a3ff940cdbc80b2cc6",
+      "source_work_root_relative": "results/p5e-04/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9389,
+      "package_path": "provenance/arms/p5e-04/tf/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "e08ad63471afc39011573ccd20b2274c89f8521b81eefd21fcca48f1cc46a00c",
+      "source_work_root_relative": "results/p5e-04/tf/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1313,
+      "package_path": "provenance/arms/p5e-05/sig/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "aaf82e3a83fd2bfe4f909280ef4f7d0d79f451372d56b5ad020fe2367e368225",
+      "source_work_root_relative": "results/p5e-05/sig/consensus_manifest.json"
+    },
+    {
+      "bytes": 2562,
+      "package_path": "provenance/arms/p5e-05/sig/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "ae8e662651f30af9a32e1e8f32d108903edf883e4afad0d68d583da967a25f9d",
+      "source_work_root_relative": "results/p5e-05/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9393,
+      "package_path": "provenance/arms/p5e-05/sig/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "4e010d33538310c22b5065ad943ad5bb71e7af1c72326b48747b56afb1854a31",
+      "source_work_root_relative": "results/p5e-05/sig/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1307,
+      "package_path": "provenance/arms/p5e-05/tf/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "7d1bc90e76b68e55de4a49504435ec0a915b66aa0a99fd843279334fc027a990",
+      "source_work_root_relative": "results/p5e-05/tf/consensus_manifest.json"
+    },
+    {
+      "bytes": 2554,
+      "package_path": "provenance/arms/p5e-05/tf/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "cef3a931e8b6869014ad3a3e3d9b88942eb52eb7978a35c7cc985f0af0952d93",
+      "source_work_root_relative": "results/p5e-05/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9387,
+      "package_path": "provenance/arms/p5e-05/tf/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "ddca607bb77bebd8c90a823a9713a78cae5b5de75059a4020d2619c4eec14b53",
+      "source_work_root_relative": "results/p5e-05/tf/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1322,
+      "package_path": "provenance/arms/p7p5e-04/sig/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "03ec99a41b95b7ea81df7bae151d8b52ac6a93f857bf60a708dfe5282908fe18",
+      "source_work_root_relative": "results/p7p5e-04/sig/consensus_manifest.json"
+    },
+    {
+      "bytes": 2572,
+      "package_path": "provenance/arms/p7p5e-04/sig/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "c06925852ef56b4ac3003c6a9345d6eb27a1102c1829de4b264546eac20f89b8",
+      "source_work_root_relative": "results/p7p5e-04/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9408,
+      "package_path": "provenance/arms/p7p5e-04/sig/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "1cf8c0f1ff9828d26dd9fef7b3b8286ad14cabe80847753435fc4aaa5ec3c80f",
+      "source_work_root_relative": "results/p7p5e-04/sig/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1318,
+      "package_path": "provenance/arms/p7p5e-04/tf/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "2acc466185790f5d38c47e6cc34faed917fa7d463dabc70dfdfabf1e4f93539d",
+      "source_work_root_relative": "results/p7p5e-04/tf/consensus_manifest.json"
+    },
+    {
+      "bytes": 2564,
+      "package_path": "provenance/arms/p7p5e-04/tf/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "a1a2d9b368876b57c0786d30740a321af2da58cb0e8024eb875138da5a6f3d55",
+      "source_work_root_relative": "results/p7p5e-04/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9402,
+      "package_path": "provenance/arms/p7p5e-04/tf/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "ab11a25f76e1a5a008e90d744c52ee6305fd94a700023b21a7c6e34027d994c7",
+      "source_work_root_relative": "results/p7p5e-04/tf/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1356,
+      "package_path": "provenance/arms/p_pr66_cutoff_match/sig/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "11a99083e16a0575f6c295f0074b8f6d40b5799d1c849ccaccef873f1d8b89ef",
+      "source_work_root_relative": "results/p_pr66_cutoff_match/sig/consensus_manifest.json"
+    },
+    {
+      "bytes": 2937,
+      "package_path": "provenance/arms/p_pr66_cutoff_match/sig/netbid2_qc_html_manifest.json",
+      "role": "netbid2-html-manifest",
+      "sha256": "7de610faa0cec1ef2dcd493f875fece3270c4738e42a46fc031905299d6e9b5b",
+      "source_work_root_relative": "results/p_pr66_cutoff_match/sig/netbid2_qc_html_manifest.json"
+    },
+    {
+      "bytes": 2628,
+      "package_path": "provenance/arms/p_pr66_cutoff_match/sig/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "bc982ff5ee7c201b85f2adb5e6bdb7cf1579c9999e7c6142c7f28c5b63928816",
+      "source_work_root_relative": "results/p_pr66_cutoff_match/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9487,
+      "package_path": "provenance/arms/p_pr66_cutoff_match/sig/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "a436644d78132f28c977bbc10424a05b401b7508d7d4a862c1a8171a8a43cd50",
+      "source_work_root_relative": "results/p_pr66_cutoff_match/sig/support_summary_manifest.json"
+    },
+    {
+      "bytes": 1349,
+      "package_path": "provenance/arms/p_pr66_cutoff_match/tf/consensus_manifest.json",
+      "role": "consensus-manifest",
+      "sha256": "9cb96995ad8d55bff512c519eee3543e8fdccfa82da0606ae7a061b5df9fea1c",
+      "source_work_root_relative": "results/p_pr66_cutoff_match/tf/consensus_manifest.json"
+    },
+    {
+      "bytes": 2927,
+      "package_path": "provenance/arms/p_pr66_cutoff_match/tf/netbid2_qc_html_manifest.json",
+      "role": "netbid2-html-manifest",
+      "sha256": "53212c2c5cd0fc9835b76ead7f5d43b92f746a6e2338d0888c60121acd16ecb8",
+      "source_work_root_relative": "results/p_pr66_cutoff_match/tf/netbid2_qc_html_manifest.json"
+    },
+    {
+      "bytes": 2620,
+      "package_path": "provenance/arms/p_pr66_cutoff_match/tf/netbid2_qc_manifest.json",
+      "role": "netbid2-summary-manifest",
+      "sha256": "74c5f8d78733e45df47a07e2c8b66661d4ccad985c45a59d0b232b5c26926533",
+      "source_work_root_relative": "results/p_pr66_cutoff_match/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 9480,
+      "package_path": "provenance/arms/p_pr66_cutoff_match/tf/support_summary_manifest.json",
+      "role": "support-manifest",
+      "sha256": "3b1acb7086fdf7c01dc4cc6338cb92135a4a5e696afca986a9e75a5aba05c25c",
+      "source_work_root_relative": "results/p_pr66_cutoff_match/tf/support_summary_manifest.json"
+    },
+    {
+      "bytes": 890,
+      "package_path": "provenance/builds/pr67_7633ebb/build_manifest.json",
+      "role": "build-manifest",
+      "sha256": "9bc6163bc4170a24c1e6e6343570cadc7b3f037b5be7b7e0516a6d3aaae8599a",
+      "source_work_root_relative": "builds/pr67_7633ebb/build_manifest.json"
+    },
+    {
+      "bytes": 5480,
+      "package_path": "provenance/invocations.json",
+      "role": "invocation-history",
+      "sha256": "c5ac45933c229291201bbc4b15fc119d32f2cc875b90288da211fbf5935cbdd9",
+      "source_work_root_relative": "invocations.json"
+    },
+    {
+      "bytes": 2563,
+      "package_path": "provenance/netbid2_manifest_history/arms/p1e-04/sig/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "0d74cb3e1720b7568d15f4c2af61edf10a617a1b1b59f39f4425a9962e5716d9",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-04/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2555,
+      "package_path": "provenance/netbid2_manifest_history/arms/p1e-04/tf/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "7ff6aa90364d058fcf1b5ad48a487aff58f86cefb4f2311a60dc7eff25bbaa9d",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-04/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2561,
+      "package_path": "provenance/netbid2_manifest_history/arms/p1e-05/sig/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "b8d5da3c7ed3094547c14ea7c279b4cac38c4ebaf9b1c3259a7ce6c6cf906ce0",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-05/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2553,
+      "package_path": "provenance/netbid2_manifest_history/arms/p1e-05/tf/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "40d0bfb622e01a49697ba1739acf665f22855370072f8f29e3f890d43374ac24",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-05/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2561,
+      "package_path": "provenance/netbid2_manifest_history/arms/p1e-06/sig/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "14d59e8a421c009d037f293e352e99169bf7ca631a8238b3a46244933925d6d6",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-06/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2553,
+      "package_path": "provenance/netbid2_manifest_history/arms/p1e-06/tf/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "d37f6ea2487a19edd2ce4c56e8a74322457511ba30dffe32fab84178c32f019d",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-06/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2561,
+      "package_path": "provenance/netbid2_manifest_history/arms/p1e-07/sig/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "79d9b60ec2ef28892c2ca23882090a30cd0628d4cdfc20506670012bc5d3e010",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-07/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2553,
+      "package_path": "provenance/netbid2_manifest_history/arms/p1e-07/tf/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "51ac300bc7d0d78ed859233c76c7f02fa2f8a7e88681ded7216b14fb09069c2c",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-07/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2872,
+      "package_path": "provenance/netbid2_manifest_history/arms/p2e-04/sig/html_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "58b562a818a8ecb27f0d08adbe741a12772dec83972d1fc5865c05d8d83e3772",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p2e-04/sig/netbid2_qc_html_manifest.json"
+    },
+    {
+      "bytes": 2563,
+      "package_path": "provenance/netbid2_manifest_history/arms/p2e-04/sig/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "94e5b293511e58ef23ef18e9745749b568ad6b7a0016e44c11eeb1eb5a70e277",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p2e-04/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2862,
+      "package_path": "provenance/netbid2_manifest_history/arms/p2e-04/tf/html_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "687b9d9b5b2e9e459c489d143325c28acc7b9b9c9e1b36b1f605c581bdb748d9",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p2e-04/tf/netbid2_qc_html_manifest.json"
+    },
+    {
+      "bytes": 2555,
+      "package_path": "provenance/netbid2_manifest_history/arms/p2e-04/tf/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "91605527045afbf59a88b7ea88988efbeaf9e7c9f52f921f273fc7e4c586665b",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p2e-04/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2558,
+      "package_path": "provenance/netbid2_manifest_history/arms/p2e-05/sig/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "9cd064f9663c95302a48ae5f2539207278cc95244a9b3c03eee29e7ad653490b",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p2e-05/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2550,
+      "package_path": "provenance/netbid2_manifest_history/arms/p2e-05/tf/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "dc36d4aff8cb1506de11a54723e1ac01c32dac5d152b1c0a1439344b527452e3",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p2e-05/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2871,
+      "package_path": "provenance/netbid2_manifest_history/arms/p3e-04/sig/html_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "f198b3b0e22a0daded109ee842cb242a8d69f42ba85d9b480ce183760eb00dad",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p3e-04/sig/netbid2_qc_html_manifest.json"
+    },
+    {
+      "bytes": 2562,
+      "package_path": "provenance/netbid2_manifest_history/arms/p3e-04/sig/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "d4cab8a3244f3e2fd8ae707ce021cdeb2955c63b36b3ba53da5c880d0701b705",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p3e-04/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2861,
+      "package_path": "provenance/netbid2_manifest_history/arms/p3e-04/tf/html_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "064fc4fd4a8115d0c73ba0fb48229691409a07e0f7bfed023f0015e9fbc3a9f5",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p3e-04/tf/netbid2_qc_html_manifest.json"
+    },
+    {
+      "bytes": 2554,
+      "package_path": "provenance/netbid2_manifest_history/arms/p3e-04/tf/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "a62b7fc916876cf8a3082a84c08e3ae6318fe3fd9f93fe992b308ba37dc83316",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p3e-04/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2562,
+      "package_path": "provenance/netbid2_manifest_history/arms/p5e-05/sig/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "0b08062bc972eccee102a5c6357ff5c5e8bd83d0ddb8c5aba63926fbf9a8d4a2",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p5e-05/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2554,
+      "package_path": "provenance/netbid2_manifest_history/arms/p5e-05/tf/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "e6b60c6efb42e4cbbd87314239888c21b44d1682f4fada5e7141266c5190e7a5",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p5e-05/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2937,
+      "package_path": "provenance/netbid2_manifest_history/arms/p_pr66_cutoff_match/sig/html_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "39c45f9e0e1bcd5031a440b5888e45170b8b5976133aa5ee6549e7459066a300",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p_pr66_cutoff_match/sig/netbid2_qc_html_manifest.json"
+    },
+    {
+      "bytes": 2628,
+      "package_path": "provenance/netbid2_manifest_history/arms/p_pr66_cutoff_match/sig/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "2784db6c9552ca1426f625db8105fd7f0d2a87952d8c2f02ed6e610211903258",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p_pr66_cutoff_match/sig/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 2927,
+      "package_path": "provenance/netbid2_manifest_history/arms/p_pr66_cutoff_match/tf/html_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "a71a066f7708faa173cd97f065020c5ab456684ae159db1d4e399c157d9d729c",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p_pr66_cutoff_match/tf/netbid2_qc_html_manifest.json"
+    },
+    {
+      "bytes": 2620,
+      "package_path": "provenance/netbid2_manifest_history/arms/p_pr66_cutoff_match/tf/summary_manifest.json",
+      "role": "archived-netbid2-manifest",
+      "sha256": "06f178d80cb9feb1574193dc82245752da93b355f7658eb915f6758507b38dfa",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p_pr66_cutoff_match/tf/netbid2_qc_manifest.json"
+    },
+    {
+      "bytes": 19868,
+      "package_path": "provenance/netbid2_manifest_history/migration.json",
+      "role": "netbid2-manifest-migration",
+      "sha256": "f954344190bea087eb0d9fdee44c26a9fa4f99aa8d631a7f6f9b977ff6d44223",
+      "source_work_root_relative": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/migration.json"
+    },
+    {
+      "bytes": 2461,
+      "package_path": "provenance/points/p1e-03/point_manifest.json",
+      "role": "point-manifest",
+      "sha256": "23f9393c5287dc2e49cff6afcf3fb6d5081a1b4811f09ff8011e02441bc81ff3",
+      "source_work_root_relative": "results/p1e-03/point_manifest.json"
+    },
+    {
+      "bytes": 2454,
+      "package_path": "provenance/points/p1e-04/point_manifest.json",
+      "role": "point-manifest",
+      "sha256": "21c95b3b0a579b0bba03781404bf79f92bf7ce0b9b732e7094e826d1fdb6364c",
+      "source_work_root_relative": "results/p1e-04/point_manifest.json"
+    },
+    {
+      "bytes": 2466,
+      "package_path": "provenance/points/p1e-05/point_manifest.json",
+      "role": "point-manifest",
+      "sha256": "ae17cf0d1e305c21161a3f70f30b7b89286901648b93a61bcac1ed43c33769ad",
+      "source_work_root_relative": "results/p1e-05/point_manifest.json"
+    },
+    {
+      "bytes": 2466,
+      "package_path": "provenance/points/p1e-06/point_manifest.json",
+      "role": "point-manifest",
+      "sha256": "b277897e5c4122581d2c208862aee826a03875d2df50f8f3633db9cf7223e5ab",
+      "source_work_root_relative": "results/p1e-06/point_manifest.json"
+    },
+    {
+      "bytes": 2465,
+      "package_path": "provenance/points/p1e-07/point_manifest.json",
+      "role": "point-manifest",
+      "sha256": "0a185aa1f8b0bc7c39dd4283160470abdf36056b06fa51d5ab742d1af57b6bee",
+      "source_work_root_relative": "results/p1e-07/point_manifest.json"
+    },
+    {
+      "bytes": 2454,
+      "package_path": "provenance/points/p2e-04/point_manifest.json",
+      "role": "point-manifest",
+      "sha256": "21d5e80c0681156158da43281062a603bc3e924d71861598c64edd1149b2cf05",
+      "source_work_root_relative": "results/p2e-04/point_manifest.json"
+    },
+    {
+      "bytes": 2460,
+      "package_path": "provenance/points/p2e-05/point_manifest.json",
+      "role": "point-manifest",
+      "sha256": "c9cb92695842d34d08ff87b770255fc7723d1add5683f09f6869e564240e2faa",
+      "source_work_root_relative": "results/p2e-05/point_manifest.json"
+    },
+    {
+      "bytes": 2453,
+      "package_path": "provenance/points/p3e-04/point_manifest.json",
+      "role": "point-manifest",
+      "sha256": "45506c18f3a8ac82a4f28e684b5fc247c54c1989392cb2c76054cf486bbcd052",
+      "source_work_root_relative": "results/p3e-04/point_manifest.json"
+    },
+    {
+      "bytes": 2462,
+      "package_path": "provenance/points/p4e-04/point_manifest.json",
+      "role": "point-manifest",
+      "sha256": "19e3a38b8a7bb6af282b4a44527b4fa4253fa0e293a774b84098de4e510ffd92",
+      "source_work_root_relative": "results/p4e-04/point_manifest.json"
+    },
+    {
+      "bytes": 2462,
+      "package_path": "provenance/points/p5e-04/point_manifest.json",
+      "role": "point-manifest",
+      "sha256": "e916e65c17d93633d8257f556edeb732e4c59ff56bc1d78ccc688ceb615d4982",
+      "source_work_root_relative": "results/p5e-04/point_manifest.json"
+    },
+    {
+      "bytes": 2452,
+      "package_path": "provenance/points/p5e-05/point_manifest.json",
+      "role": "point-manifest",
+      "sha256": "712ca80ead82170a3de84cf24270b94a0fb2f572ceba9c4b18105bd2d80b958d",
+      "source_work_root_relative": "results/p5e-05/point_manifest.json"
+    },
+    {
+      "bytes": 2471,
+      "package_path": "provenance/points/p7p5e-04/point_manifest.json",
+      "role": "point-manifest",
+      "sha256": "155ee856a8ac9c0740c3c11fbab1cc776fb750458666a24da72a3f448ece9bcb",
+      "source_work_root_relative": "results/p7p5e-04/point_manifest.json"
+    },
+    {
+      "bytes": 2514,
+      "package_path": "provenance/points/p_pr66_cutoff_match/point_manifest.json",
+      "role": "point-manifest",
+      "sha256": "8f390d7b798a75bd65c1c3216597dcf4be1f64621e79d5eed1c049632c624e9d",
+      "source_work_root_relative": "results/p_pr66_cutoff_match/point_manifest.json"
+    },
+    {
+      "bytes": 928794,
+      "package_path": "provenance/run_manifest.tsv",
+      "role": "completed-run-manifest",
+      "sha256": "89d825d1d18697e1c7b5b68ad41dc72481b0f8f610efd13d87a6618582bde0d9",
+      "source_work_root_relative": "results/run_manifest.tsv"
+    },
+    {
+      "bytes": 7758,
+      "package_path": "provenance/sweep_design.json",
+      "role": "sweep-design",
+      "sha256": "2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5",
+      "source_work_root_relative": "sweep_design.json"
+    },
+    {
+      "bytes": 6102,
+      "package_path": "provenance/sweep_design_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb.sweep_design.json",
+      "role": "archived-sweep-design",
+      "sha256": "9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb",
+      "source_work_root_relative": "sweep_design_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb.sweep_design.json"
+    },
+    {
+      "bytes": 2967,
+      "package_path": "provenance/sweep_design_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5.migration.json",
+      "role": "sweep-design-migration",
+      "sha256": "d461eafe48a4cfd2595c754fd328777dca9a65876f57d9fc087751bfa8967532",
+      "source_work_root_relative": "sweep_design_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5.migration.json"
+    },
+    {
+      "bytes": 95979,
+      "package_path": "validation/anchor_seed_equivalence.tsv",
+      "role": "anchor-validation-table",
+      "sha256": "bc009a0a4aeb1b106b87bed1c613ea8e83c444f69ee1e2af174ede1ef9ce33d5",
+      "source_work_root_relative": "results/validation/anchor_seed_equivalence.tsv"
+    },
+    {
+      "bytes": 2108,
+      "package_path": "validation/anchor_seed_equivalence_manifest.json",
+      "role": "anchor-validation-manifest",
+      "sha256": "9d8e452eee9e191e1c3de8d3fde096a7797e674df2fd690d0938b37b8528cfd9",
+      "source_work_root_relative": "results/validation/anchor_seed_equivalence_manifest.json"
+    }
+  ],
+  "fingerprint": "8bd2ce8358158325a060e4845905598aa848db514cce85556bf3208fe7fdf7ac",
+  "generated_files": {
+    ".gitattributes": {
+      "bytes": 20,
+      "sha256": "e97602ab9cac70102245345c5ab0fc9830df8b17f1072b188265a662a3a547ae"
+    },
+    "omitted_artifacts.json": {
+      "bytes": 3572417,
+      "sha256": "b1c92606a7d27683c2f7abab176dc3e83f4679ad8f4ef9459b08148bff7fa616"
+    }
+  },
+  "large_artifacts_copied": false,
+  "omitted_file_count": 13464,
+  "omitted_file_set_count": 53,
+  "optional_html_provenance_included": true,
+  "packager_sha256": "e5abe3958700d1a7345d3137ebc57d72c5f106b4a912c7d82e62c2ea49aa9a0b",
+  "schema": "sjaracne-brca100-pr67-threshold-sweep-compact-package-v1",
+  "source_work_root": "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818",
+  "sweep_design_sha256": "2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5"
+}

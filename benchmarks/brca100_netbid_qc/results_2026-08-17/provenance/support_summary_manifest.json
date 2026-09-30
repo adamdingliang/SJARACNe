@@ -1,0 +1,122 @@
+[
+  {
+    "binary_sha256": "83c88f4224aa7a7782e8a6810bfb2590d09aa19ed3f4417fb4bb51f1cfadf29b",
+    "command": [
+      "/usr/bin/time",
+      "-f",
+      "elapsed_s=%e\nuser_s=%U\nsystem_s=%S\nmax_rss_kib=%M",
+      "-o",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/tf/logs/support_summary.time.txt",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/tools/summarize_consensus_support",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/tf/consensus/consensus_network_ncol_.txt",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/tf/adjacency",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/tf/consensus/consensus_support.tsv"
+    ],
+    "driver": "tf",
+    "fingerprint": "c9e6bb1f5b886c7c093c8649984b367a150254bf5f99f481b454ec2b9a77cc7f",
+    "output": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/tf/consensus/consensus_support.tsv",
+    "output_sha256": "46a6d681116414cd93cb28f2c62e8481a5efefd8657f8edd31432ea693183768",
+    "retained_edges": 800099,
+    "stage": "baseline_12113fb"
+  },
+  {
+    "binary_sha256": "83c88f4224aa7a7782e8a6810bfb2590d09aa19ed3f4417fb4bb51f1cfadf29b",
+    "command": [
+      "/usr/bin/time",
+      "-f",
+      "elapsed_s=%e\nuser_s=%U\nsystem_s=%S\nmax_rss_kib=%M",
+      "-o",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/sig/logs/support_summary.time.txt",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/tools/summarize_consensus_support",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/sig/consensus/consensus_network_ncol_.txt",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/sig/adjacency",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/sig/consensus/consensus_support.tsv"
+    ],
+    "driver": "sig",
+    "fingerprint": "a35b088efeb2329c5834f0be1ccbffddfe76e77cc3d0a5787a21e20f6993d26d",
+    "output": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/sig/consensus/consensus_support.tsv",
+    "output_sha256": "4df883a777dbb2d80dcce24e236217893a4f90480e209b48165a5563905c325c",
+    "retained_edges": 851887,
+    "stage": "baseline_12113fb"
+  },
+  {
+    "binary_sha256": "83c88f4224aa7a7782e8a6810bfb2590d09aa19ed3f4417fb4bb51f1cfadf29b",
+    "command": [
+      "/usr/bin/time",
+      "-f",
+      "elapsed_s=%e\nuser_s=%U\nsystem_s=%S\nmax_rss_kib=%M",
+      "-o",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr66_5809183/tf/logs/support_summary.time.txt",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/tools/summarize_consensus_support",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr66_5809183/tf/consensus/consensus_network_ncol_.txt",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr66_5809183/tf/adjacency",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr66_5809183/tf/consensus/consensus_support.tsv"
+    ],
+    "driver": "tf",
+    "fingerprint": "95817d8bb41b84d184c051f65ca4a80c2d70b0091c10b89d0f79ea715b646252",
+    "output": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr66_5809183/tf/consensus/consensus_support.tsv",
+    "output_sha256": "33568745d9705e1efb1b95cdbc2ec6fa0aaf33299bebf4282d9bc3693beb8bbb",
+    "retained_edges": 92944,
+    "stage": "pr66_5809183"
+  },
+  {
+    "binary_sha256": "83c88f4224aa7a7782e8a6810bfb2590d09aa19ed3f4417fb4bb51f1cfadf29b",
+    "command": [
+      "/usr/bin/time",
+      "-f",
+      "elapsed_s=%e\nuser_s=%U\nsystem_s=%S\nmax_rss_kib=%M",
+      "-o",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr66_5809183/sig/logs/support_summary.time.txt",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/tools/summarize_consensus_support",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr66_5809183/sig/consensus/consensus_network_ncol_.txt",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr66_5809183/sig/adjacency",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr66_5809183/sig/consensus/consensus_support.tsv"
+    ],
+    "driver": "sig",
+    "fingerprint": "e23440fc68333d2dd03352690995844b0a65f95e3ad5fce98ce7cd220e44a907",
+    "output": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr66_5809183/sig/consensus/consensus_support.tsv",
+    "output_sha256": "7f0ff448c23b0fe45b146dec4b8b9bab88eda2e73cf3a63950b044c236926b7e",
+    "retained_edges": 281490,
+    "stage": "pr66_5809183"
+  },
+  {
+    "binary_sha256": "83c88f4224aa7a7782e8a6810bfb2590d09aa19ed3f4417fb4bb51f1cfadf29b",
+    "command": [
+      "/usr/bin/time",
+      "-f",
+      "elapsed_s=%e\nuser_s=%U\nsystem_s=%S\nmax_rss_kib=%M",
+      "-o",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/tf/logs/support_summary.time.txt",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/tools/summarize_consensus_support",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/tf/consensus/consensus_network_ncol_.txt",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/tf/adjacency",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/tf/consensus/consensus_support.tsv"
+    ],
+    "driver": "tf",
+    "fingerprint": "7165e4304ab2bb5d6d5ad909edd7f5acb0034ed4e2bcc0f6df40c2a3cbe9361c",
+    "output": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/tf/consensus/consensus_support.tsv",
+    "output_sha256": "7789319f8325c6242f147ce1d9581c34529c73ce9e9c442aff0414f1c89dc220",
+    "retained_edges": 4672,
+    "stage": "pr67_7633ebb"
+  },
+  {
+    "binary_sha256": "83c88f4224aa7a7782e8a6810bfb2590d09aa19ed3f4417fb4bb51f1cfadf29b",
+    "command": [
+      "/usr/bin/time",
+      "-f",
+      "elapsed_s=%e\nuser_s=%U\nsystem_s=%S\nmax_rss_kib=%M",
+      "-o",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/sig/logs/support_summary.time.txt",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/tools/summarize_consensus_support",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/sig/consensus/consensus_network_ncol_.txt",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/sig/adjacency",
+      "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/sig/consensus/consensus_support.tsv"
+    ],
+    "driver": "sig",
+    "fingerprint": "43ab04b8de5f69fca4f91cb5556afdd7b50b1438a084c5f7720bbc4479aac7f3",
+    "output": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/sig/consensus/consensus_support.tsv",
+    "output_sha256": "0e48e408eda35728424d5a89f71fdbd78674668409f6352fb48ef1204c0102c4",
+    "retained_edges": 13183,
+    "stage": "pr67_7633ebb"
+  }
+]

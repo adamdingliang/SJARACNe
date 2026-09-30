@@ -1,0 +1,394 @@
+{
+  "baseline_import": {
+    "baseline_root": "/home/adam/sjaracne-benchmarks/brca100-hub-size-dpi-pilot-20260825",
+    "binary": {
+      "bytes": 3622400,
+      "path": "/home/adam/sjaracne-benchmarks/brca100-hub-size-dpi-pilot-20260825/builds/worktree_3be6f0c75cf9/bin/sjaracne.exe",
+      "sha256": "836c8edbfc75b517cefdde6426755f9e3b71021df09b06c6f3b9c262057cd47e"
+    },
+    "build_manifest": {
+      "bytes": 9620,
+      "path": "/home/adam/sjaracne-benchmarks/brca100-hub-size-dpi-pilot-20260825/builds/worktree_3be6f0c75cf9/build_manifest.json",
+      "sha256": "d86e237563ebeb5ba209bb50fa7b2fb2f20b0226eecda82c2e92ba0d91888a5a"
+    },
+    "config_directory": "/home/adam/sjaracne-benchmarks/brca100-hub-size-dpi-pilot-20260825/builds/worktree_3be6f0c75cf9/source/SJARACNe/config",
+    "config_sha256": "dca25c4041800933e6d439fe8730d4e78039839f956932968401540bdf454dca",
+    "expression": {
+      "bytes": 49824227,
+      "path": "/home/adam/sjaracne-benchmarks/brca100-hub-size-dpi-pilot-20260825/inputs/BRCA100.exp",
+      "sha256": "ad8a334f5f8cdf46a1000d3ee259b35258a18b3da2e314bb3a0cf7a421d98bc8"
+    },
+    "null_model": {
+      "bytes": 1498,
+      "path": "/home/adam/sjaracne-benchmarks/brca100-hub-size-dpi-pilot-20260825/builds/worktree_3be6f0c75cf9/source/SJARACNe/config/apmi_null/apmi_null_m00080_npar040.model",
+      "sha256": "e3a8522682a8ea239821aaa10b12db72d00e07bfdcad43599d8e76a06be80944"
+    },
+    "panel_manifest": {
+      "bytes": 4271,
+      "path": "/home/adam/sjaracne-benchmarks/brca100-hub-size-dpi-pilot-20260825/panels/panel_manifest.json",
+      "sha256": "d8b5c8ff67afde2ec13d654b2e802e1466f280eea5ea973554b375ebd2d464c2"
+    },
+    "panels": {
+      "10680": {
+        "bytes": 138840,
+        "path": "/home/adam/sjaracne-benchmarks/brca100-hub-size-dpi-pilot-20260825/panels/sig/h10680/BRCA100_SIG.txt",
+        "sha256": "16ca27df655f16684f880a4ad719c4e2ae3f8dc0d7e6b9eccdd24cd97c40797c"
+      },
+      "1335": {
+        "bytes": 17355,
+        "path": "/home/adam/sjaracne-benchmarks/brca100-hub-size-dpi-pilot-20260825/panels/sig/h01335/BRCA100_SIG.txt",
+        "sha256": "1e082c351e5b57dcff968dbde4b52ebb7385b3cc1f6bb79cd3981ad6bba6b92c"
+      },
+      "5340": {
+        "bytes": 69420,
+        "path": "/home/adam/sjaracne-benchmarks/brca100-hub-size-dpi-pilot-20260825/panels/sig/h05340/BRCA100_SIG.txt",
+        "sha256": "530bba715d8a5bb3216d9b4cccccbf34a253bd4678b2fa88595899d1e34a6f93"
+      }
+    },
+    "pilot_design": {
+      "bytes": 28654,
+      "path": "/home/adam/sjaracne-benchmarks/brca100-hub-size-dpi-pilot-20260825/pilot_design.json",
+      "sha256": "86a806db07d164f05c1fe7982f22b31c0928fd2c1b0f1d0c08adb8b1c175f887"
+    },
+    "source_commit": "32fe12c168ef80291e487dbf4045f430b9c5d90a",
+    "source_tree_fingerprint": "3be6f0c75cf905f983d789410542adda388d07bc0231b4439371e0dd3f22169d"
+  },
+  "baseline_policy": "read-only; candidate K_DPI=1 adjacency data, DPI accounting, and sample schedule must exactly reproduce it",
+  "candidate": {
+    "base_commit": "32fe12c168ef80291e487dbf4045f430b9c5d90a",
+    "binary": "/home/adam/sjaracne-benchmarks/brca100-kdpi-witness-screen-20260826/builds/worktree_0af71bd617b5/bin/sjaracne.exe",
+    "binary_sha256": "32bdcc55bc834bcea37dd44c94068445279963dde4331e7f34ec4bcbb1d4b621",
+    "build_manifest": "/home/adam/sjaracne-benchmarks/brca100-kdpi-witness-screen-20260826/builds/worktree_0af71bd617b5/build_manifest.json",
+    "build_stage": "worktree_0af71bd617b5",
+    "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "config_directory": "/home/adam/sjaracne-benchmarks/brca100-kdpi-witness-screen-20260826/builds/worktree_0af71bd617b5/source/SJARACNe/config",
+    "config_sha256": "dca25c4041800933e6d439fe8730d4e78039839f956932968401540bdf454dca",
+    "null_model": "/home/adam/sjaracne-benchmarks/brca100-kdpi-witness-screen-20260826/builds/worktree_0af71bd617b5/source/SJARACNe/config/apmi_null/apmi_null_m00080_npar040.model",
+    "null_model_sha256": "e3a8522682a8ea239821aaa10b12db72d00e07bfdcad43599d8e76a06be80944",
+    "source_mode": "frozen-worktree-snapshot",
+    "source_provenance": {
+      "base_commit": "32fe12c168ef80291e487dbf4045f430b9c5d90a",
+      "dirty": true,
+      "git_status": [
+        " M SJARACNe/src/main.cpp",
+        " M SJARACNe/src/matrix.cpp",
+        " M SJARACNe/src/matrix.h",
+        " M SJARACNe/src/param.cpp",
+        " M SJARACNe/src/param.h"
+      ],
+      "git_status_sha256": "7cd9c77fe6464863f1487811cd77a12b607c984f1056a0fa6689d82ff2aae229",
+      "has_dpi_stats_marker": true,
+      "overlay_files": [
+        {
+          "bytes": 22735,
+          "exists": true,
+          "path": "SJARACNe/src/main.cpp",
+          "sha256": "17db8637acd84fec5699bff1181a2c7375a5898eaa6e901a5c880d0834a6cba9"
+        },
+        {
+          "bytes": 72428,
+          "exists": true,
+          "path": "SJARACNe/src/matrix.cpp",
+          "sha256": "eaa25cd2b5256f9e67436ff880a90a529406503d5ed37df16ad53ae9bf9e18c4"
+        },
+        {
+          "bytes": 9518,
+          "exists": true,
+          "path": "SJARACNe/src/matrix.h",
+          "sha256": "e23026d701fadb967e20d67617480d6da4e089efdc3fa61a6fe3849835946246"
+        },
+        {
+          "bytes": 15165,
+          "exists": true,
+          "path": "SJARACNe/src/param.cpp",
+          "sha256": "fa244d2da7fd8d3b0c8aca17b35475ce1b011bb65525659d84912bd081205707"
+        },
+        {
+          "bytes": 3911,
+          "exists": true,
+          "path": "SJARACNe/src/param.h",
+          "sha256": "41028450fbaaac006784d1e287350b0a27bb3fbc9ad1381b5c7655314b0b7052"
+        }
+      ],
+      "source_files": [
+        {
+          "bytes": 2395,
+          "exists": true,
+          "path": "SJARACNe/Makefile",
+          "sha256": "feb8a128384fa2a979991e3792c0a430d270bdf8d357c0411abf8f240ad8f875"
+        },
+        {
+          "bytes": 20,
+          "exists": true,
+          "path": "SJARACNe/__init__.py",
+          "sha256": "2e7cfd318ad777522930334f5b453180657a5e8ae6c87258073714e58810bed7"
+        },
+        {
+          "bytes": 6018,
+          "exists": true,
+          "path": "SJARACNe/bin/QC_input.py",
+          "sha256": "54bf617313f15aa289ba5f2707cc23ed2ead894f26d0689bf122bfd9052d4fa4"
+        },
+        {
+          "bytes": 72,
+          "exists": true,
+          "path": "SJARACNe/bin/__init__.py",
+          "sha256": "8e1d7711cf41942bca2ed07c9672be01a5ff6798fdd54a2cba68e699c6f54b7c"
+        },
+        {
+          "bytes": 2340,
+          "exists": true,
+          "path": "SJARACNe/bin/ch_line_ending.py",
+          "sha256": "e47d18187f83ba1db41309d299169234dfc3c54b794a44d7a9a21f9d76e80178"
+        },
+        {
+          "bytes": 12326,
+          "exists": true,
+          "path": "SJARACNe/bin/create_consensus_network.py",
+          "sha256": "eede0a73c4582deddd084f9495f5d362244f3a2bf8f1f3e28d3bea966a64d9b7"
+        },
+        {
+          "bytes": 28826,
+          "exists": true,
+          "path": "SJARACNe/calibrate_apmi_null.py",
+          "sha256": "58237dbc4421dd36e13927da0bcd3780ae5c8863b41e42fa6770d8a63eeba21a"
+        },
+        {
+          "bytes": 70915,
+          "exists": true,
+          "path": "SJARACNe/config/SIG_list.txt",
+          "sha256": "e08499e8cbad9f04f62bc780eaf39689e6af57a8915fc036f495dc493c82a9e7"
+        },
+        {
+          "bytes": 14569,
+          "exists": true,
+          "path": "SJARACNe/config/TF_list.txt",
+          "sha256": "c4f1a0a9b807e374ca63a0171ee5d7d357ab66d2e656cad0e025a7a9e669fde2"
+        },
+        {
+          "bytes": 1536,
+          "exists": true,
+          "path": "SJARACNe/config/apmi_null/apmi_null_m00080_npar040.model",
+          "sha256": "075205942b5d5868d3b5a9e7e0504ef37019671b0975b71429163b74c0b54b4e"
+        },
+        {
+          "bytes": 1538,
+          "exists": true,
+          "path": "SJARACNe/config/apmi_null/apmi_null_m00090_npar040.model",
+          "sha256": "9d6adac1aa2a611db74cc622c6b927c36b385735e235f6ced7cb4385c2b997ee"
+        },
+        {
+          "bytes": 781,
+          "exists": true,
+          "path": "SJARACNe/config/config_cwlexec.json",
+          "sha256": "c2312ab211f16a5b88d9a2fc20e1250a494a1cbaeb9657290b996ccfa11a1a58"
+        },
+        {
+          "bytes": 29,
+          "exists": true,
+          "path": "SJARACNe/config/config_kernel.txt",
+          "sha256": "4a7d155ac4a1fc5ed835af5b64b58323c3fe2a3ed76084d129b4f362199f0041"
+        },
+        {
+          "bytes": 32,
+          "exists": true,
+          "path": "SJARACNe/config/config_threshold.txt",
+          "sha256": "bc37e881c828d3098def89e1f5e465367e8ea900fef2fbb723fbb054aeb086cc"
+        },
+        {
+          "bytes": 799,
+          "exists": true,
+          "path": "SJARACNe/cwl/QC_input.cwl",
+          "sha256": "399a65cdf0f7a8ad8df21ae762fbbbb747012eade846bfd0797affc356a8b232"
+        },
+        {
+          "bytes": 818,
+          "exists": true,
+          "path": "SJARACNe/cwl/ch_line_ending.cwl",
+          "sha256": "7b4f5a957f40f98f2c2dd5750f4d81fd2f96e6129ca205a646163f1722816a3f"
+        },
+        {
+          "bytes": 384,
+          "exists": true,
+          "path": "SJARACNe/cwl/copy_files_to_dir.cwl",
+          "sha256": "e9a29e03c073bf437d0491ba4db6b2b84b16c286911f9dde6bd66a392e84b9c4"
+        },
+        {
+          "bytes": 917,
+          "exists": true,
+          "path": "SJARACNe/cwl/create_consensus_network.cwl",
+          "sha256": "9105de744f12228eb2c532f72070c8a2966410c16b2d041ffaa4cef3c23af92b"
+        },
+        {
+          "bytes": 544,
+          "exists": true,
+          "path": "SJARACNe/cwl/get_consensus_network.cwl",
+          "sha256": "962dc0561bc83fdbba22f835704525c486bda2baafd26c52f511a7053edd91b1"
+        },
+        {
+          "bytes": 714,
+          "exists": true,
+          "path": "SJARACNe/cwl/get_enhanced_consensus_network.cwl",
+          "sha256": "6864b199e90b698bb2b3a46c35a35a67c9cb83d562760379f85875ca5f5398a9"
+        },
+        {
+          "bytes": 400,
+          "exists": true,
+          "path": "SJARACNe/cwl/int_to_int_array.cwl",
+          "sha256": "a283cc20dd4951595431d376167a8a54f88c2416f7b68771a834f98e067c5b66"
+        },
+        {
+          "bytes": 518,
+          "exists": true,
+          "path": "SJARACNe/cwl/int_to_str_array.cwl",
+          "sha256": "b90faf8b990083d539fcbfe6714d8f840dd53890c9c917a0a6e339f52a392bd6"
+        },
+        {
+          "bytes": 2636,
+          "exists": true,
+          "path": "SJARACNe/cwl/sjaracne.cwl",
+          "sha256": "658e97575696454b49d28a06f2bf5833f4a3dd140b5cc0957738b1fde35c7acb"
+        },
+        {
+          "bytes": 3520,
+          "exists": true,
+          "path": "SJARACNe/cwl/sjaracne_workflow.cwl",
+          "sha256": "a5ffffd7676e4e9531eb3e6efb09bb7df609a329a4f1b69e3c89ae424a48f3c7"
+        },
+        {
+          "bytes": 7793,
+          "exists": true,
+          "path": "SJARACNe/sjaracne.py",
+          "sha256": "67df1268597eb26193eb50cd88e908370693a1c9befa5799332f49c87ba59907"
+        },
+        {
+          "bytes": 4458,
+          "exists": true,
+          "path": "SJARACNe/src/apmi.cpp",
+          "sha256": "ca5330559c1373546a5bf1df3c628dd105cdd5c7a008aa2ab15ff1a1b8903a98"
+        },
+        {
+          "bytes": 2399,
+          "exists": true,
+          "path": "SJARACNe/src/apmi.h",
+          "sha256": "a7b1924ac29234dbc3ece32f3c271e9e652e35f6ca027670d89e6db48e467be6"
+        },
+        {
+          "bytes": 17004,
+          "exists": true,
+          "path": "SJARACNe/src/apmi_null_model.cpp",
+          "sha256": "c5871008f06602246faa8090ea0b2b7f2e19b8a14942f24b5087dce6fa260f5f"
+        },
+        {
+          "bytes": 1624,
+          "exists": true,
+          "path": "SJARACNe/src/apmi_null_model.h",
+          "sha256": "896b4389589e5388ee21f72991a1aa81dcc17aad7bb3b4d4fe02193b9ea66f6c"
+        },
+        {
+          "bytes": 22735,
+          "exists": true,
+          "path": "SJARACNe/src/main.cpp",
+          "sha256": "17db8637acd84fec5699bff1181a2c7375a5898eaa6e901a5c880d0834a6cba9"
+        },
+        {
+          "bytes": 72428,
+          "exists": true,
+          "path": "SJARACNe/src/matrix.cpp",
+          "sha256": "eaa25cd2b5256f9e67436ff880a90a529406503d5ed37df16ad53ae9bf9e18c4"
+        },
+        {
+          "bytes": 9518,
+          "exists": true,
+          "path": "SJARACNe/src/matrix.h",
+          "sha256": "e23026d701fadb967e20d67617480d6da4e089efdc3fa61a6fe3849835946246"
+        },
+        {
+          "bytes": 15165,
+          "exists": true,
+          "path": "SJARACNe/src/param.cpp",
+          "sha256": "fa244d2da7fd8d3b0c8aca17b35475ce1b011bb65525659d84912bd081205707"
+        },
+        {
+          "bytes": 3911,
+          "exists": true,
+          "path": "SJARACNe/src/param.h",
+          "sha256": "41028450fbaaac006784d1e287350b0a27bb3fbc9ad1381b5c7655314b0b7052"
+        },
+        {
+          "bytes": 1142,
+          "exists": true,
+          "path": "SJARACNe/src/parseargs.h",
+          "sha256": "674dbc710e92657c6c5aa5da5d33e2b49ef1a887376856530dcf69a19b0991b3"
+        },
+        {
+          "bytes": 1812,
+          "exists": true,
+          "path": "SJARACNe/src/util.cpp",
+          "sha256": "48a98a72731a1af11e22c884f2a05ef84db3d261a2f124eb89fc99cfc28e109e"
+        },
+        {
+          "bytes": 771,
+          "exists": true,
+          "path": "SJARACNe/src/util.h",
+          "sha256": "bc9b5c2569b361a459b23312b2dfa8243996bc307d8ac4f9714450271df749b5"
+        }
+      ],
+      "source_tree_fingerprint": "0af71bd617b5c1d7025a648c6c9b7afcc2b50a281cd8a9028e319d773427ba6b",
+      "tracked_diff_bytes": 22597,
+      "tracked_diff_sha256": "4eda19fd25fde4b80bf0b1b2d35ef8a7d25b28db43fb7776389bc06a1071f1f5"
+    },
+    "source_tree_fingerprint": "0af71bd617b5c1d7025a648c6c9b7afcc2b50a281cd8a9028e319d773427ba6b"
+  },
+  "execution": {
+    "candidate_adjacency_k_dpi": 1,
+    "consensus_k_edge": "not run",
+    "direct_runs": 30,
+    "one_run_per_panel_seed": true,
+    "sidecar_option": "-W"
+  },
+  "grid": {
+    "common_source_definition": "zero-based expression-row indices in H=1335 panel",
+    "dpi_epsilon": 0,
+    "driver": "sig",
+    "hub_counts": [
+      1335,
+      5340,
+      10680
+    ],
+    "k_dpi_values": [
+      1,
+      2,
+      3,
+      5,
+      10
+    ],
+    "mi_cutoff": 0.1644671599536221,
+    "npar": 40,
+    "p_token": "5e-4",
+    "p_value": 0.0005,
+    "sampling": "fixed 80% without replacement",
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "source_and_annotation_lists": "same frozen panel (-s=panel, -l=panel)"
+  },
+  "harness_sha256": {
+    "brca100_hub_size_dpi_pilot/pilot_common.py": "02918420d3465bae2dec55ee54f8151136f34d08344c50c2a7c0832688183581",
+    "brca100_hub_size_dpi_pilot/run_pilot.py": "e0e5fe79f0863c626cfad914aaa78265bd5697145f9a044b3a5b6dc33ca80a0b",
+    "brca100_kdpi_witness_screen/analyze_screen.py": "f2fb6e4a3914057db90aed146234f1ed14f6b595e3d71dbba6cb71b984735b50",
+    "brca100_kdpi_witness_screen/run_screen.py": "8ab42ecca630a5c9cde45d7a8227b77da0748dfa914e49e38caec0e7922d5b6b",
+    "brca100_kdpi_witness_screen/screen_common.py": "128f0564ad5c1b81e92a874d02eb65eb39ffd4ce4c1b8f9bb053ae49c038d02a"
+  },
+  "question": "Does requiring multiple qualifying DPI witnesses reduce SIG hub-list-size-dependent pruning without merely disabling most DPI removals?",
+  "schema": "sjaracne-brca100-kdpi-witness-screen-v1"
+}

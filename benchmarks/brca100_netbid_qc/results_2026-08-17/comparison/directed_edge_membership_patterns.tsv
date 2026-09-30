@@ -1,0 +1,15 @@
+driver_class	membership_pattern	in_baseline	in_pr66	in_pr67	directed_edges
+tf	baseline_only	1	0	0	723815
+tf	pr66_only	0	1	0	16643
+tf	pr67_only	0	0	1	0
+tf	baseline_pr66_only	1	1	0	71629
+tf	baseline_pr67_only	1	0	1	0
+tf	pr66_pr67_only	0	1	1	17
+tf	all_three	1	1	1	4655
+sig	baseline_only	1	0	0	689949
+sig	pr66_only	0	1	0	119076
+sig	pr67_only	0	0	1	0
+sig	baseline_pr66_only	1	1	0	149231
+sig	baseline_pr67_only	1	0	1	0
+sig	pr66_pr67_only	0	1	1	476
+sig	all_three	1	1	1	12707

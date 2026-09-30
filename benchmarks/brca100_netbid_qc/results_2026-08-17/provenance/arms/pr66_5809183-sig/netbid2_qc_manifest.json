@@ -1,0 +1,23 @@
+{
+  "command": [
+    "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/benchmarks/brca100_netbid_qc/netbid2-r",
+    "Rscript",
+    "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/benchmarks/brca100_netbid_qc/run_netbid_qc.R",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr66_5809183/sig/consensus/consensus_network_ncol_.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/inputs/BRCA100_SIG.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr66_5809183/sig/netbid2_qc.partial",
+    "SIG_"
+  ],
+  "consensus_sha256": "9b574d2433d8598363dcb679b80fa83c72f3a93041117c3fbd58bb29e3c6adb4",
+  "driver": "sig",
+  "driver_target_sizes_sha256": "2dbe67492537abfed1738a85d472dad8c82565b8da45fbc75a245dd55da31a18",
+  "fingerprint": "6852de00d3117ef56ae2a48c8690c51284dc4b26d50ba92836f46212e8c026a7",
+  "html": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr66_5809183/sig/netbid2_qc/SIG_netQC.html",
+  "html_bytes": 4992761,
+  "html_sha256": "06f9ddc05b2c708f97fc1d01ae545343524b1e58a64a070a1cf4881be32edf0a",
+  "network_summary_sha256": "a43e28193a55377283968ad2eed7e9ab88d551cc871de7eda13fc9b66f1e3125",
+  "stage": "pr66_5809183",
+  "stderr_bytes": 257,
+  "stderr_sha256": "acc45153326027d213dfd5bbd89d8718419dc85abfe17fefedbb40204f5ca6cb",
+  "stdout_sha256": "87fcc30878a80db8ade726b8ad137590fed56b7d9253ec26491e9f8b6aee0405"
+}

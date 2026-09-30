@@ -1,0 +1,100 @@
+{
+  "appended_points": [
+    {
+      "key": "p4e-04",
+      "label": "4e-4",
+      "mi_cutoff": 0.1698235701145821,
+      "mi_cutoff_header": "0.169824",
+      "p_header": "0.0004",
+      "p_token": "4e-4",
+      "p_value": 0.0004,
+      "role": "extended-validated-grid",
+      "tail_extrapolated": false,
+      "validated_p_max": 0.002,
+      "validated_p_min": 2e-05,
+      "validation_class": "independent-held-out-validated"
+    },
+    {
+      "key": "p5e-04",
+      "label": "5e-4",
+      "mi_cutoff": 0.1644671599536221,
+      "mi_cutoff_header": "0.164467",
+      "p_header": "0.0005",
+      "p_token": "5e-4",
+      "p_value": 0.0005,
+      "role": "extended-validated-grid",
+      "tail_extrapolated": false,
+      "validated_p_max": 0.002,
+      "validated_p_min": 2e-05,
+      "validation_class": "independent-held-out-validated"
+    },
+    {
+      "key": "p7p5e-04",
+      "label": "7.5e-4",
+      "mi_cutoff": 0.15453239732141733,
+      "mi_cutoff_header": "0.154532",
+      "p_header": "0.00075",
+      "p_token": "7.5e-4",
+      "p_value": 0.00075,
+      "role": "extended-validated-grid",
+      "tail_extrapolated": false,
+      "validated_p_max": 0.002,
+      "validated_p_min": 2e-05,
+      "validation_class": "independent-held-out-validated"
+    },
+    {
+      "key": "p1e-03",
+      "label": "1e-3",
+      "mi_cutoff": 0.14732247558240297,
+      "mi_cutoff_header": "0.147322",
+      "p_header": "0.001",
+      "p_token": "1e-3",
+      "p_value": 0.001,
+      "role": "extended-validated-grid",
+      "tail_extrapolated": false,
+      "validated_p_max": 0.002,
+      "validated_p_min": 2e-05,
+      "validation_class": "independent-held-out-validated"
+    }
+  ],
+  "fingerprint": "d1885e695109676e03c3eca7f3c1c7e27d96c5115155a97a44a994ca71091578",
+  "from": {
+    "archived_path": "sweep_design_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb.sweep_design.json",
+    "point_keys": [
+      "p1e-07",
+      "p1e-06",
+      "p1e-05",
+      "p2e-05",
+      "p5e-05",
+      "p1e-04",
+      "p2e-04",
+      "p3e-04",
+      "p_pr66_cutoff_match"
+    ],
+    "schema": "sjaracne-brca100-pr67-p-sweep-v1",
+    "sha256": "9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb"
+  },
+  "manifest_path": "sweep_design_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5.migration.json",
+  "operation": "append-only-point-extension",
+  "schema": "sjaracne-brca100-pr67-p-sweep-design-migration-v1",
+  "to": {
+    "active_path": "sweep_design.json",
+    "point_keys": [
+      "p1e-07",
+      "p1e-06",
+      "p1e-05",
+      "p2e-05",
+      "p5e-05",
+      "p1e-04",
+      "p2e-04",
+      "p3e-04",
+      "p_pr66_cutoff_match",
+      "p4e-04",
+      "p5e-04",
+      "p7p5e-04",
+      "p1e-03"
+    ],
+    "schema": "sjaracne-brca100-pr67-p-sweep-v2",
+    "sha256": "2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5"
+  }
+}

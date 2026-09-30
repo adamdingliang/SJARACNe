@@ -1,0 +1,82 @@
+{
+  "all_required_gates_pass": true,
+  "design_sha256": "86a806db07d164f05c1fe7982f22b31c0928fd2c1b0f1d0c08adb8b1c175f887",
+  "gates": [
+    {
+      "detail": "rows=600 expected=600; each arm must contain seeds 1..100 exactly once",
+      "name": "complete_matched_runs",
+      "status": "pass"
+    },
+    {
+      "detail": "invalid_records=0; mismatched_seeds=0; each seed must report the same 80 original indices in all six arms",
+      "name": "empirically_matched_sampling",
+      "status": "pass"
+    },
+    {
+      "detail": "all 600 runs must share the design commit, source snapshot, binary, and panel manifest",
+      "name": "frozen_source_and_binary",
+      "status": "pass"
+    },
+    {
+      "detail": "accounting_errors=0; fraction_errors=0",
+      "name": "exact_dpi_accounting",
+      "status": "pass"
+    },
+    {
+      "detail": "evaluated=200/200; full-size seed adjacency data must match the prior operating-point sweep",
+      "name": "full_size_anchor",
+      "status": "pass"
+    },
+    {
+      "detail": "six benchmark-only direct K>=6 outputs verified",
+      "name": "independent_k6_aggregation",
+      "status": "pass"
+    },
+    {
+      "detail": "expected={'tf': 416408, 'sig': 739958}; observed={'sig': 739958, 'tf': 416408}; must reproduce the independent prior direct-recurrence sweep",
+      "name": "full_size_k6_anchor",
+      "status": "pass"
+    }
+  ],
+  "limitations": [
+    "One deterministic hub panel confounds hub count with panel membership.",
+    "The workflow-faithful pilot changes -s and -l together; it does not isolate the DPI mechanism.",
+    "Topology and pruning fraction do not establish biological network accuracy.",
+    "The full BRCA100 target universe is fixed; results do not validate Xenium 5k.",
+    "K>=6 output is an independent benchmark calculation, not production consensus code."
+  ],
+  "run_manifest_sha256": "6115286aec5a1ea35035c6ce0ea56b5b7d58010d457b4c0430b8236e2a9b926c",
+  "schema": "sjaracne-brca100-hub-size-dpi-validation-v1",
+  "trend_screen": {
+    "sig": {
+      "full_minus_12p5": 0.19172420051789069,
+      "hub_counts": [
+        1335,
+        5340,
+        10680
+      ],
+      "interpretation": "descriptive one-panel screen only; no composition-robust or Xenium conclusion",
+      "median_pruned_fractions": [
+        0.22490308208613263,
+        0.34315003424276214,
+        0.4166272826040233
+      ],
+      "nondecreasing": true
+    },
+    "tf": {
+      "full_minus_12p5": 0.13408231103900614,
+      "hub_counts": [
+        326,
+        1304,
+        2608
+      ],
+      "interpretation": "descriptive one-panel screen only; no composition-robust or Xenium conclusion",
+      "median_pruned_fractions": [
+        0.10793290251728087,
+        0.19170673262353785,
+        0.24201521355628702
+      ],
+      "nondecreasing": true
+    }
+  }
+}

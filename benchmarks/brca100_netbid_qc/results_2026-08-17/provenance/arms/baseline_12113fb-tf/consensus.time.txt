@@ -1,0 +1,4 @@
+elapsed_s=1179.35
+user_s=1163.46
+system_s=11.81
+max_rss_kib=10315824

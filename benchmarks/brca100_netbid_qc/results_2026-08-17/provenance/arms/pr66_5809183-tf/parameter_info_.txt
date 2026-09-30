@@ -1,0 +1,12 @@
+>  Input file      /home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/inputs/BRCA100.exp
+>  MI threshold    0.172803
+>  MI P-value      1e-07
+>  DPI tolerance   0
+>  Subnetwork file /home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/inputs/BRCA100_TF.txt
+>  Sampling method fixed-size without replacement
+>  Sampling request 80%
+>  Eligible observations 100
+>  Sampled observations 80
+>  Bootstrap No: 100
+>  Source: sjaracne2
+>  Output network: /home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr66_5809183/tf/consensus.partial/consensus_network_3col_.txt

@@ -1,0 +1,248 @@
+{
+  "invocations": [
+    {
+      "drivers": [
+        "tf",
+        "sig"
+      ],
+      "finished_at_utc": "2026-08-18T16:27:14.800100+00:00",
+      "phase": "prepare",
+      "points": [
+        "p1e-07",
+        "p1e-06",
+        "p1e-05",
+        "p2e-05",
+        "p5e-05",
+        "p1e-04",
+        "p2e-04",
+        "p3e-04",
+        "p_pr66_cutoff_match"
+      ],
+      "seed_end": 100,
+      "seed_start": 1,
+      "started_at_utc": "2026-08-18T16:27:14.799996+00:00",
+      "status": "complete",
+      "workers": 12
+    },
+    {
+      "drivers": [
+        "tf"
+      ],
+      "finished_at_utc": "2026-08-18T16:28:26.228989+00:00",
+      "inference_jobs": 3,
+      "inference_new_jobs": 3,
+      "inference_resumed_jobs": 0,
+      "phase": "infer",
+      "points": [
+        "p1e-07",
+        "p2e-05",
+        "p_pr66_cutoff_match"
+      ],
+      "seed_end": 1,
+      "seed_start": 1,
+      "started_at_utc": "2026-08-18T16:27:36.050763+00:00",
+      "status": "complete",
+      "workers": 3
+    },
+    {
+      "drivers": [
+        "sig"
+      ],
+      "finished_at_utc": "2026-08-18T16:32:22.774460+00:00",
+      "inference_jobs": 2,
+      "inference_new_jobs": 2,
+      "inference_resumed_jobs": 0,
+      "phase": "infer",
+      "points": [
+        "p1e-07",
+        "p_pr66_cutoff_match"
+      ],
+      "seed_end": 1,
+      "seed_start": 1,
+      "started_at_utc": "2026-08-18T16:29:16.234455+00:00",
+      "status": "complete",
+      "workers": 2
+    },
+    {
+      "drivers": [
+        "tf"
+      ],
+      "finished_at_utc": "2026-08-18T16:34:30.809139+00:00",
+      "inference_jobs": 3,
+      "inference_new_jobs": 0,
+      "inference_resumed_jobs": 3,
+      "phase": "infer",
+      "points": [
+        "p1e-07",
+        "p2e-05",
+        "p_pr66_cutoff_match"
+      ],
+      "seed_end": 1,
+      "seed_start": 1,
+      "started_at_utc": "2026-08-18T16:34:30.576437+00:00",
+      "status": "complete",
+      "workers": 3
+    },
+    {
+      "drivers": [
+        "tf",
+        "sig"
+      ],
+      "finished_at_utc": "2026-08-19T00:40:44.236622+00:00",
+      "inference_jobs": 1800,
+      "inference_new_jobs": 1795,
+      "inference_resumed_jobs": 5,
+      "phase": "infer",
+      "points": [
+        "p1e-07",
+        "p1e-06",
+        "p1e-05",
+        "p2e-05",
+        "p5e-05",
+        "p1e-04",
+        "p2e-04",
+        "p3e-04",
+        "p_pr66_cutoff_match"
+      ],
+      "seed_end": 100,
+      "seed_start": 1,
+      "started_at_utc": "2026-08-18T16:38:02.772038+00:00",
+      "status": "complete",
+      "workers": 12
+    },
+    {
+      "drivers": [
+        "tf",
+        "sig"
+      ],
+      "finished_at_utc": "2026-08-19T01:19:37.966062+00:00",
+      "phase": "consensus",
+      "points": [
+        "p1e-07",
+        "p1e-06",
+        "p1e-05",
+        "p2e-05",
+        "p5e-05",
+        "p1e-04",
+        "p2e-04",
+        "p3e-04",
+        "p_pr66_cutoff_match"
+      ],
+      "seed_end": 100,
+      "seed_start": 1,
+      "started_at_utc": "2026-08-19T00:46:39.992597+00:00",
+      "status": "complete",
+      "workers": 1
+    },
+    {
+      "drivers": [
+        "tf",
+        "sig"
+      ],
+      "finished_at_utc": "2026-08-19T15:56:17.502126+00:00",
+      "phase": "prepare",
+      "points": [
+        "p1e-07",
+        "p1e-06",
+        "p1e-05",
+        "p2e-05",
+        "p5e-05",
+        "p1e-04",
+        "p2e-04",
+        "p3e-04",
+        "p_pr66_cutoff_match",
+        "p4e-04",
+        "p5e-04",
+        "p7p5e-04",
+        "p1e-03"
+      ],
+      "seed_end": 100,
+      "seed_start": 1,
+      "started_at_utc": "2026-08-19T15:56:17.501986+00:00",
+      "status": "complete",
+      "workers": 1
+    },
+    {
+      "drivers": [
+        "tf",
+        "sig"
+      ],
+      "finished_at_utc": "2026-08-19T16:00:38.247063+00:00",
+      "inference_jobs": 8,
+      "inference_new_jobs": 8,
+      "inference_resumed_jobs": 0,
+      "phase": "infer",
+      "points": [
+        "p4e-04",
+        "p5e-04",
+        "p7p5e-04",
+        "p1e-03"
+      ],
+      "seed_end": 1,
+      "seed_start": 1,
+      "started_at_utc": "2026-08-19T15:56:37.663519+00:00",
+      "status": "complete",
+      "workers": 4
+    },
+    {
+      "drivers": [
+        "tf",
+        "sig"
+      ],
+      "finished_at_utc": "2026-08-19T19:37:40.214590+00:00",
+      "inference_jobs": 2600,
+      "inference_new_jobs": 792,
+      "inference_resumed_jobs": 1808,
+      "phase": "infer",
+      "points": [
+        "p1e-07",
+        "p1e-06",
+        "p1e-05",
+        "p2e-05",
+        "p5e-05",
+        "p1e-04",
+        "p2e-04",
+        "p3e-04",
+        "p_pr66_cutoff_match",
+        "p4e-04",
+        "p5e-04",
+        "p7p5e-04",
+        "p1e-03"
+      ],
+      "seed_end": 100,
+      "seed_start": 1,
+      "started_at_utc": "2026-08-19T16:02:54.890699+00:00",
+      "status": "complete",
+      "workers": 12
+    },
+    {
+      "drivers": [
+        "tf",
+        "sig"
+      ],
+      "finished_at_utc": "2026-08-19T20:39:00.705681+00:00",
+      "phase": "consensus",
+      "points": [
+        "p1e-07",
+        "p1e-06",
+        "p1e-05",
+        "p2e-05",
+        "p5e-05",
+        "p1e-04",
+        "p2e-04",
+        "p3e-04",
+        "p_pr66_cutoff_match",
+        "p4e-04",
+        "p5e-04",
+        "p7p5e-04",
+        "p1e-03"
+      ],
+      "seed_end": 100,
+      "seed_start": 1,
+      "started_at_utc": "2026-08-19T19:44:16.565907+00:00",
+      "status": "complete",
+      "workers": 1
+    }
+  ],
+  "schema": "sjaracne-brca100-pr67-p-sweep-invocations-v1"
+}

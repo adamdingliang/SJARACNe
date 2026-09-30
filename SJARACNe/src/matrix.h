@@ -7,6 +7,7 @@
 #ifndef MATRIX_H__
 #define MATRIX_H__
 
+#include <cstdint>
 #include <iostream>
 #include <map>
 #include <unordered_map>
@@ -38,6 +39,18 @@ public:
 
 typedef std::vector<AdjacencyEdge> AdjacencyRow;
 typedef std::vector<AdjacencyRow> AdjacencyRows;
+
+//------------------------------------------------------------------------------------
+
+struct DpiEdgeStatistics
+{
+   DpiEdgeStatistics()
+      : preEdges(0), prunedEdges(0), postEdges(0) { }
+
+   std::uint64_t preEdges;
+   std::uint64_t prunedEdges;
+   std::uint64_t postEdges;
+};
 
 //------------------------------------------------------------------------------------
 
@@ -79,6 +92,10 @@ public:
    double getNodeMI(int geneId1, int geneId2);
    void reduceOneNode(int row_idx, double epsilon, Transfac& transfac);
    void reduce(double epsilon, const std::vector<int>& ids, Transfac& transfac);
+   DpiEdgeStatistics dpiEdgeStatistics(const std::vector<int>& ids) const;
+   void writeDpiWitnessDiagnostics(const Parameter& p,
+                                   const std::vector<int>& ids,
+                                   const Transfac& transfac) const;
 };
 
 //------------------------------------------------------------------------------------
