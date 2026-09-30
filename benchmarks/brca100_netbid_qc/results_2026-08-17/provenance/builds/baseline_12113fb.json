@@ -1,0 +1,10 @@
+{
+  "binary": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/builds/baseline_12113fb/bin/sjaracne.exe",
+  "binary_sha256": "aea2f5c6f7030cd19d5e2ca56ad663cbbbd1e920486f0dcfa60d893fcbd8759b",
+  "built_at_utc": "2026-08-17T21:19:38.368968+00:00",
+  "commit": "12113fbc80d753d945598ffc2c7d9e45787bc8e0",
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "config_directory": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/builds/baseline_12113fb/source/SJARACNe/config",
+  "config_sha256": "a162721431ada165b2be4f0877a2d7762c12c6553f29ba1f03710300e5075e3e",
+  "stage": "baseline_12113fb"
+}

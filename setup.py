@@ -33,7 +33,12 @@ setup(
     packages=find_packages(exclude=["contrib", "docs", "tests"]),
     include_package_data=True,
     # test_suite="tests",
-    entry_points={"console_scripts": ["sjaracne=SJARACNe.sjaracne:main"]},
+    entry_points={
+        "console_scripts": [
+            "sjaracne=SJARACNe.sjaracne:main",
+            "sjaracne-calibrate-apmi-null=SJARACNe.calibrate_apmi_null:main",
+        ]
+    },
     cmdclass={
         'build': Build,
     }

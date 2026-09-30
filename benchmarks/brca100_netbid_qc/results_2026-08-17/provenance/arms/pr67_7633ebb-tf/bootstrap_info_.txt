@@ -1,0 +1,4 @@
+Total edge tested: 42817
+Bonferroni corrected (0.05) alpha: 1.1677604689726043e-06
+mu: 7.813952402083285
+sigma: 2.683534106952372

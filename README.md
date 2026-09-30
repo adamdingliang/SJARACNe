@@ -143,6 +143,30 @@ An opt-in [DREAM5 Network 1 sampling benchmark](benchmarks/dream5_network1/READM
 documents a simulated-network comparison; it is not a biological validation
 or a new default-fraction recommendation.
 
+### Estimator-matched AP-MI significance models
+
+SJARACNe can optionally replace the inherited affine ARACNe p-value conversion
+with a null calibrated against its exact C++ adaptive-partitioning estimator.
+Pass an accepted model with `-M` / `--apmi-null-model`. Models are exact in the
+sample count `m` and AP depth `-N`; a mismatch is rejected rather than
+interpolated. For example, the packaged BRCA100-sized model uses `m=80` and
+`Npar=40`:
+
+```bash
+sjaracne local -e expression.exp -g hubs.txt -n 100 \
+  --subsample-size 80 -M SJARACNe/config/apmi_null/apmi_null_m00080_npar040.model \
+  -o results -tmp tmp
+```
+
+The workflow p-value default remains `1e-7`. At that depth, the cutoff comes
+from a fitted extreme tail and is beyond direct Monte Carlo validation; each
+network records this extrapolation and the full model provenance in its header.
+See [the calibration design, sweep results, and held-out BRCA100
+validation](benchmarks/apmi_null_calibration/README.md). Without a model,
+SJARACNe retains the historical affine calibration for backward compatibility
+and prints a warning. An explicit native `-t` cutoff still bypasses either
+p-value model.
+
 
 ## Examples to create a transcription factor network
 **Note:** for testing purpose, the number of resampled networks (legacy option ```-n```) is set to 2, the consensus p-value threshold
