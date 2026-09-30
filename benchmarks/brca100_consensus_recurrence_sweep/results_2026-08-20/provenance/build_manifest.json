@@ -1,0 +1,26 @@
+{
+  "binary": "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-sweep-20260820/bin/aggregate_recurrence",
+  "binary_sha256": "f92aef7b1c2315f7aa1b7a53cb844b98b8ec958af4c4b14e7e474a4565dd70fd",
+  "command": [
+    "g++",
+    "-O3",
+    "-std=c++11",
+    "-Wall",
+    "-Wextra",
+    "-pedantic",
+    "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/benchmarks/brca100_consensus_recurrence_sweep/aggregate_recurrence.cpp",
+    "-o",
+    "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-sweep-20260820/bin/aggregate_recurrence.partial"
+  ],
+  "compiler": "g++ (conda-forge gcc 15.3.0-1) 15.3.0",
+  "fingerprint": "2f91ad9a35590a99c9a4f9cff340dd3071a0568abe12a60754dc40b6f9a6e99b",
+  "flags": [
+    "-O3",
+    "-std=c++11",
+    "-Wall",
+    "-Wextra",
+    "-pedantic"
+  ],
+  "source": "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/benchmarks/brca100_consensus_recurrence_sweep/aggregate_recurrence.cpp",
+  "source_sha256": "12fd3a0f629920365691aedd191f1ee06171b37a9bbf7663f88b784063bec3f0"
+}

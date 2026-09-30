@@ -98,6 +98,29 @@ target, mutual information, Pearson and Spearman correlations coefficients, regr
 also outputs two meta information files: parameter_info_.txt and bootstrap_info_.txt, which store SJARACNe
 input parameters and resampling metadata, respectively. `bootstrap_info_.txt` is retained as a legacy filename.
 
+### Consensus edge recurrence
+
+By default, the consensus step retains an ordered edge when it appears in at
+least six distinct resampled networks (`-k 6`). The comparison is inclusive,
+so an edge with support exactly six is retained. Each run records the selected
+minimum recurrence, the number of input networks, and their ratio in
+`bootstrap_info_.txt` and `parameter_info_.txt`.
+
+Use `-k` / `--min-recurrence` to choose another positive integer. The requested
+value cannot exceed `-n` / `--bootstrap-num`; workflows with fewer than six
+networks must therefore set a feasible value explicitly, such as `-k 1` for a
+two-network smoke test. The historical normal-approximation consensus filter
+remains available through explicit `-pc` / `--p-value-consensus`, but it is
+deprecated and cannot be combined with `-k`.
+
+The default `K=6` is a density-favoring engineering setting for the standard
+100-network workflow, not a p-value, FDR guarantee, or universal biological
+optimum. See the [compact BRCA100 consensus-recurrence analysis](benchmarks/brca100_consensus_recurrence_sweep/)
+for its matched design, exact-tail comparison, topology evidence, provenance,
+and limitations. Record both `K` and the number of input networks when
+reporting a result, and reconsider the setting when the number of networks
+changes.
+
 ### Repeated subsampling of observations
 
 The standard CWL/Python workflow now builds each input network from a fixed-size
@@ -143,18 +166,44 @@ An opt-in [DREAM5 Network 1 sampling benchmark](benchmarks/dream5_network1/READM
 documents a simulated-network comparison; it is not a biological validation
 or a new default-fraction recommendation.
 
+### Estimator-matched AP-MI significance models
+
+SJARACNe can optionally replace the inherited affine ARACNe p-value conversion
+with a null calibrated against its exact C++ adaptive-partitioning estimator.
+Pass an accepted model with `-M` / `--apmi-null-model`. Models are exact in the
+sample count `m` and AP depth `-N`; a mismatch is rejected rather than
+interpolated. For example, the packaged BRCA100-sized model uses `m=80` and
+`Npar=40`:
+
+```bash
+sjaracne local -e expression.exp -g hubs.txt -n 100 \
+  --subsample-size 80 -M SJARACNe/config/apmi_null/apmi_null_m00080_npar040.model \
+  -o results -tmp tmp
+```
+
+The workflow p-value default remains `1e-7`. At that depth, the cutoff comes
+from a fitted extreme tail and is beyond direct Monte Carlo validation; each
+network records this extrapolation and the full model provenance in its header.
+See [the calibration design, sweep results, and held-out BRCA100
+validation](benchmarks/apmi_null_calibration/README.md). Without a model,
+SJARACNe retains the historical affine calibration for backward compatibility
+and prints a warning. An explicit native `-t` cutoff still bypasses either
+p-value model.
+
 
 ## Examples to create a transcription factor network
-**Note:** for testing purpose, the number of resampled networks (legacy option ```-n```) is set to 2, the consensus p-value threshold
-```-pc``` is set to 1.0 in the following examples. ```-n 100``` and ```-pc 1e-5``` are recommended for real 
-applications. Note that there is no / at the end of the -o option but there is a / at the end of the -tmp option.
-The default ```P-value``` for sjaracne is ```1e-7```. The minimum P-value accepted with the ```-pb argument is 1e-10```.
+**Note:** for testing purposes, the number of resampled networks (legacy option
+`-n`) is set to 2 and the recurrence requirement is explicitly set to `-k 1`.
+The default `K=6` requires at least six networks. These are smoke-test commands,
+not recommended production settings. Note that there is no `/` at the end of
+the `-o` option but there is a `/` at the end of the `-tmp` option. The default
+per-subsample p-value (`-pb`) remains `1e-7` for compatibility.
 
 ### Running on a single machine (Linux/OSX) 
-```sjaracne local -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt -n 2 -o ./results/SJARACNE_out.final -pc 1.0 -tmp ./results/tmp/```
+```sjaracne local -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt -n 2 -k 1 -o ./results/SJARACNE_out.final -tmp ./results/tmp/```
 
 ### Running on an IBM LSF cluster
-```sjaracne lsf -j ./SJARACNe/config/config_cwlexec.json -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt -n 2 -o ./results/SJARACNE_out.final -pc 1.0```
+```sjaracne lsf -j ./SJARACNe/config/config_cwlexec.json -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt -n 2 -k 1 -o ./results/SJARACNE_out.final```
 
 
 ## Reference

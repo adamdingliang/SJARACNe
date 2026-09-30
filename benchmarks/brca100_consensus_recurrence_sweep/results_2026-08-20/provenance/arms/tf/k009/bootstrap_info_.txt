@@ -1,0 +1,9 @@
+Total edge tested: 5666377
+Bootstrap No: 100
+mu: 2.3812017802557084
+sigma: 1.5246256897380963
+Minimum support count: 9
+Minimum support fraction: 0.089999999999999997
+Plug-in Poisson-binomial tail: 0.00066641622460442953
+Legacy normal-approximation tail: 7.0833623334133625e-06
+Warning: untruncated plug-in occupancy model; not FDR or biological truth

@@ -1,0 +1,85 @@
+{
+  "command": [
+    "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/benchmarks/brca100_netbid_qc/netbid2-r",
+    "Rscript",
+    "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-netbid2-html-20260820/runtime/run_netbid_qc.R",
+    "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-sweep-20260820/results/sig/k006/consensus_network_ncol_.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/inputs/BRCA100_SIG.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-netbid2-html-20260820/runs/sig/k006/netbid2_qc_html.partial",
+    "SIG_",
+    "true"
+  ],
+  "driver": "sig",
+  "fingerprint": "99d848b34a35f988009322e8f272b2f64aba232d8679c0a91fbe44b051485282",
+  "finished_at_utc": "2026-08-20T19:11:19.797405+00:00",
+  "input": {
+    "design_fingerprint": "8948b3d2be1a9e1a69591131b0475b1c5265475b16665caca34be4f72d0a6e8e",
+    "design_sha256": "1228de2bd5f2ae0e59bfaadefc43d8a9a080c68e6ae7313713f1bba762269216",
+    "driver_file": "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/inputs/BRCA100_SIG.txt",
+    "driver_sha256": "16ca27df655f16684f880a4ad719c4e2ae3f8dc0d7e6b9eccdd24cd97c40797c",
+    "environment": {
+      "NetBID2": "2.2.0",
+      "NetBID2_remote_sha": "5defa454d600b94f5dd6d1f9f4428f99759a6821",
+      "R": "R version 4.4.3 (2025-02-28)",
+      "igraph": "2.3.3"
+    },
+    "expected_candidate_drivers": 10680,
+    "expected_edges": 739958,
+    "generate_html": true,
+    "generator_sha256": "e7d79279ba5b2de93b52292eb867b917602cfa6afe9543654afa11322129e33c",
+    "network": "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-sweep-20260820/results/sig/k006/consensus_network_ncol_.txt",
+    "network_bytes": 55365716,
+    "network_manifest_sha256": "04c1dcaaef2d3a8bc36f42379eac89a597d604d258243e61810f3b129b50e40c",
+    "network_sha256": "47fef1d0d151e002c405fd68fcdeaca0eb838eaee9651c3eb0fc09cead88ce98",
+    "prefix": "SIG_",
+    "r_script_sha256": "f9485b923e278ce7883d359181819cd728402dff11fcd4172b7fd6c0c51149a4",
+    "summary_manifest_sha256": "91ad1de904ad8ed7dd3ed16c0ce89cfc3d810c1d294082207408924f38e70474",
+    "summary_outputs": {
+      "driver_target_sizes.tsv": "1e22aafb1c218e31f59cdd5c461625ac92180e8084481e2911a44432bb103af1",
+      "netbid_environment.tsv": "589fd14d9f877353eaf0b97e8dbc5a0b5e09bb4248ef6ee0114d709279facb9b",
+      "network_summary.tsv": "192274f640aeefa5020b99b95b12b5f6e4cbc3dde3bc35d753139ef0fb33c6d0"
+    },
+    "wrapper_sha256": "c706c7665fc2e589bf70030bb5dc0fc21935b93922b16fb256a5801752220095"
+  },
+  "input_fingerprint": "85a5a1fafc7cd43e499469248bbf90628f3bc7ca605d89320cabe28dc433c570",
+  "minimum_support": 6,
+  "output": "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-netbid2-html-20260820/runs/sig/k006/netbid2_qc_html",
+  "output_inventory": [
+    {
+      "bytes": 10150,
+      "path": "SIG_netQC.Rmd",
+      "sha256": "195a8f51e875c1bf8d0d0a50ee9a2c9e7cdd1938ada3664dc76cae2ed70d2d60"
+    },
+    {
+      "bytes": 5021723,
+      "path": "SIG_netQC.html",
+      "sha256": "d8bb181014ba2e1f9d33be6b58bfa8bd8bb4c3f3fc613ed0da97872ccf8761cf"
+    },
+    {
+      "bytes": 173179,
+      "path": "driver_target_sizes.tsv",
+      "sha256": "1e22aafb1c218e31f59cdd5c461625ac92180e8084481e2911a44432bb103af1"
+    },
+    {
+      "bytes": 136,
+      "path": "netbid_environment.tsv",
+      "sha256": "589fd14d9f877353eaf0b97e8dbc5a0b5e09bb4248ef6ee0114d709279facb9b"
+    },
+    {
+      "bytes": 556,
+      "path": "network_summary.tsv",
+      "sha256": "192274f640aeefa5020b99b95b12b5f6e4cbc3dde3bc35d753139ef0fb33c6d0"
+    }
+  ],
+  "schema": "sjaracne-brca100-consensus-recurrence-netbid2-html-v1",
+  "stderr": {
+    "bytes": 269,
+    "path": "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-netbid2-html-20260820/runs/sig/k006/logs/netbid2_qc_html.stderr.log",
+    "sha256": "e84803fea0a6b2424e07b0361ee3ca3dc14d8d8316e14ce64992cc9abc3223d5"
+  },
+  "stdout": {
+    "bytes": 1813,
+    "path": "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-netbid2-html-20260820/runs/sig/k006/logs/netbid2_qc_html.stdout.log",
+    "sha256": "e1ea635642574d1bbdd5e41ab98643be34b6e9150a2cb0966f93413613a6d8d5"
+  }
+}

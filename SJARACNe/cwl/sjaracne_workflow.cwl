@@ -14,14 +14,19 @@ inputs:
   probe_file:
     type: File
     label: file with a list of symbols annotated as transcription factors (hub genes) for constructing subnetworks
+  min_recurrence:
+    type: int?
+    label: Minimum number of distinct resampled networks containing an edge; defaults to 6 when both cutoff inputs are null
   p_value_consensus:
-    type: float
-    default: 1e-5
-    label: P-value threshold in building consensus network
+    type: float?
+    label: Deprecated legacy normal-approximation P-value threshold in building consensus network
   p_value_bootstrap:
     type: float
     default: 1e-7
     label: P-value threshold in building individual resampled networks
+  apmi_null_model:
+    type: File?
+    label: Optional exact-m and exact-depth estimator-matched AP-MI null-tail model
   depth:
     type: int
     default: 40
@@ -45,6 +50,12 @@ outputs:
   out_dir:
     type: File
     outputSource: consensus/out_dir
+  bootstrap_info:
+    type: File
+    outputSource: consensus/bootstrap_info
+  parameter_info:
+    type: File
+    outputSource: consensus/parameter_info
 
 steps:
   # Step 0: validate input file
@@ -92,6 +103,7 @@ steps:
       probe_file_tf: ch_ending_probe/out_file
       probe_file_subnetwork: ch_ending_probe/out_file
       p_value: p_value_bootstrap
+      apmi_null_model: apmi_null_model
       aracne_config_dir: aracne_config_dir
       npar_limit: depth
       subsample_spec: subsample_spec
@@ -114,7 +126,8 @@ steps:
     run: create_consensus_network.cwl
     in:
       adjmat_dir: copy_to_dir/out_dir
+      min_recurrence: min_recurrence
       p_thresh_arg: p_value_consensus
       exp_mat: ch_ending_exp/out_file
       output_dir: final_out_dir_name
-    out: [out_dir]
+    out: [out_dir, bootstrap_info, parameter_info]

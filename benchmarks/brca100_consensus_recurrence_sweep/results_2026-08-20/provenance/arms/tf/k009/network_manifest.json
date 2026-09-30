@@ -1,0 +1,18 @@
+{
+  "aggregate_manifest_sha256": "55cf9887bbcbb1be507a8213563dc5a29be3d9f97f2de9f4501c3f2e09d696c5",
+  "bootstrap_info_sha256": "a81c2c2303e0e3666734c67de0263225c1738281523e9626a09d3c6c537d79fb",
+  "driver": "tf",
+  "edges": 224608,
+  "legacy_normal_tail": 7.0833623334133625e-06,
+  "minimum_support": 9,
+  "ncol_sha256": "04e5363da1cad3a8715c883249986dd3729c464eb483e6993d650717332ca9aa",
+  "parameter_info_sha256": "6fa10f7f5f64728460301f8aa453b4eb3a35b029fbc0b18959b67326fb5c47b8",
+  "per_subsample_p": 0.001,
+  "plugin_null_edge_burden_proxy": 3776.1655675253737,
+  "plugin_poisson_binomial_tail": 0.0006664162246044295,
+  "schema": "sjaracne-brca100-consensus-recurrence-network-v1",
+  "source_point": "p1e-03",
+  "support_fraction": 0.09,
+  "support_sha256": "b55bf97d5f3e566cf489a5129f9b6ca1733d21225261ddde17d59c4d0aea4378",
+  "three_col_sha256": "4416e4085a0ea5ee1f38c22a159c823f69862f4248de0bca3764172137578c3f"
+}

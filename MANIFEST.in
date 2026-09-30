@@ -1,5 +1,7 @@
 include SJARACNe/bin/*
 include SJARACNe/config/*.txt
+recursive-include SJARACNe/config/apmi_null *.model
 include SJARACNe/cwl/*
 include SJARACNe/src/*
 include SJARACNe/Makefile
+include tools/apmi_null_generator.cpp

@@ -1,0 +1,32 @@
+{
+  "design_sha256": "1228de2bd5f2ae0e59bfaadefc43d8a9a080c68e6ae7313713f1bba762269216",
+  "driver_target_coverage_sha256": "a9dd03f60ef689284ff16ff187d30a391e40091b55ccb582962342eb90b964cc",
+  "drivers": [
+    "tf",
+    "sig"
+  ],
+  "fingerprint": "0bc125c8ae24c0e47885750b28747b5524844b88c37c0d74f411cc8b7c6b103c",
+  "minimum_supports": [
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+  ],
+  "network_summary_sha256": "e1cd61b77d993623764c8a4cddfafdc5621192873d3b6ef7052e3597eff8c9ef",
+  "plot_png_sha256": "55997f0fe2d141363ab38b20cdef66000c3355eeafb5fad4979bf3c08a8107b2",
+  "plot_svg_sha256": "1098c5a2417942176f3dcd614852023d2c2027d52e6d40640efccaca309763c5",
+  "schema": "sjaracne-brca100-consensus-recurrence-analysis-v1",
+  "selection": null,
+  "selection_note": "No operating K is selected without downstream activity or biological validation"
+}

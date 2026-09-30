@@ -1,0 +1,5 @@
+metric	value
+bootstrap_runs	100
+minimum_support	6
+union_edges	5666377
+retained_edges	416408

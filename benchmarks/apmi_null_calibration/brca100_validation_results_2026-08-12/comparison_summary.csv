@@ -1,0 +1,2 @@
+m,model_accepted_by_calibration,ks_statistic,ks_pvalue,max_abs_reported_quantile_delta_q50_to_q999,mean_difference,mean_relative_difference,all_brca_nominal_in_pointwise_ci,all_synthetic_nominal_in_pointwise_ci,direct_validation_p_min,default_model_p,default_p_directly_tested
+80,True,0.002650000000000041,0.8730264346621154,0.003985470703803173,0.00019016709598699937,0.0207296525027445,True,True,0.0002,1e-07,False

@@ -1,0 +1,7 @@
+>  Source per-subsample p: 0.001
+>  Source point: p1e-03
+>  Sampling: fixed 80% without replacement
+>  Npar: 40
+>  DPI epsilon: 0
+>  Consensus recurrence rule: support_count >= 9
+>  Consensus tail method: plug-in Poisson-binomial using frozen U and E_i

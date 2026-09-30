@@ -1,0 +1,13 @@
+{
+  "elapsed_seconds": 458.876335404,
+  "input": {
+    "enhancer_sha256": "eede0a73c4582deddd084f9495f5d362244f3a2bf8f1f3e28d3bea966a64d9b7",
+    "expression_sha256": "ad8a334f5f8cdf46a1000d3ee259b35258a18b3da2e314bb3a0cf7a421d98bc8",
+    "minimum_support": 6,
+    "recurrence_sha256": "9058244a5bb13c921962dbd62bd36108c5ec374418e7c2d8ced866c1c954549a"
+  },
+  "ncol_sha256": "9e55caaabce7c126ab165965452379be52e1ad8a481fbb955044a648879e1e55",
+  "rows": 416408,
+  "schema": "sjaracne-brca100-consensus-recurrence-enhanced-base-v1",
+  "three_col_sha256": "144ed747ccb97f3ee8e01070ae4395cd88a4bc7e0433324badf2e3eeb5d724f0"
+}

@@ -1,0 +1,36 @@
+{
+  "command": [
+    "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/benchmarks/brca100_netbid_qc/netbid2-r",
+    "Rscript",
+    "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/benchmarks/brca100_pr67_threshold_sweep/run_netbid_qc.R",
+    "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-sweep-20260820/results/sig/k009/consensus_network_ncol_.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/inputs/BRCA100_SIG.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-sweep-20260820/results/sig/k009/netbid2_qc.partial",
+    "SIG_",
+    "false"
+  ],
+  "driver": "sig",
+  "input": {
+    "driver_sha256": "16ca27df655f16684f880a4ad719c4e2ae3f8dc0d7e6b9eccdd24cd97c40797c",
+    "environment": {
+      "NetBID2": "2.2.0",
+      "NetBID2_remote_sha": "5defa454d600b94f5dd6d1f9f4428f99759a6821",
+      "R": "R version 4.4.3 (2025-02-28)",
+      "igraph": "2.3.3"
+    },
+    "generate_html": false,
+    "network_manifest_sha256": "6832da83c285b43fbcd2660f3e050f70b0ba3219b28e4c104827d1a4740e0dd8",
+    "network_sha256": "ef081d1b0696e2e225e788f3e84ba44a557dcb1342783f4b76169dbf7ac2a518",
+    "r_script_sha256": "f9485b923e278ce7883d359181819cd728402dff11fcd4172b7fd6c0c51149a4",
+    "wrapper_sha256": "c706c7665fc2e589bf70030bb5dc0fc21935b93922b16fb256a5801752220095"
+  },
+  "minimum_support": 9,
+  "outputs": {
+    "driver_target_sizes.tsv": "e682bef3c072ceb09d8c188302416329830b843f933c9b73d4f21f4a1052a854",
+    "netbid_environment.tsv": "589fd14d9f877353eaf0b97e8dbc5a0b5e09bb4248ef6ee0114d709279facb9b",
+    "network_summary.tsv": "8588ced3a237e6f1b799e7b0449f3cb339b60cf0f5555503abcecde403bca7f3"
+  },
+  "schema": "sjaracne-brca100-consensus-recurrence-netbid2-v1",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "555b37050c48c7444cf39a0b7f7031a2827a43a40ced2dc4cff1c3eb7e434a6d"
+}
