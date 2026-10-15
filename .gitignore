@@ -115,5 +115,3 @@ venv.bak/
 
 # Reproducible, machine-generated performance benchmark matrices
 /benchmarks/rank_cache/generated/
-/benchmarks/dream5_network1/_work/
-/benchmarks/dream5_network1/reference/
