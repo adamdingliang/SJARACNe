@@ -1,0 +1,20 @@
+{
+  "binary_sha256": "83c88f4224aa7a7782e8a6810bfb2590d09aa19ed3f4417fb4bb51f1cfadf29b",
+  "command": [
+    "/usr/bin/time",
+    "-f",
+    "elapsed_s=%e\nuser_s=%U\nsystem_s=%S\nmax_rss_kib=%M",
+    "-o",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/tf/logs/support_summary.time.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/tools/summarize_consensus_support",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/tf/consensus/consensus_network_ncol_.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/tf/adjacency",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/tf/consensus/consensus_support.tsv"
+  ],
+  "driver": "tf",
+  "fingerprint": "c9e6bb1f5b886c7c093c8649984b367a150254bf5f99f481b454ec2b9a77cc7f",
+  "output": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/tf/consensus/consensus_support.tsv",
+  "output_sha256": "46a6d681116414cd93cb28f2c62e8481a5efefd8657f8edd31432ea693183768",
+  "retained_edges": 800099,
+  "stage": "baseline_12113fb"
+}

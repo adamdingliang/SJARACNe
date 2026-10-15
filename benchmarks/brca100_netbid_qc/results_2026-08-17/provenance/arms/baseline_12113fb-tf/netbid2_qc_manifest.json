@@ -1,0 +1,23 @@
+{
+  "command": [
+    "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/benchmarks/brca100_netbid_qc/netbid2-r",
+    "Rscript",
+    "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/benchmarks/brca100_netbid_qc/run_netbid_qc.R",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/tf/consensus/consensus_network_ncol_.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/inputs/BRCA100_TF.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/tf/netbid2_qc.partial",
+    "TF_"
+  ],
+  "consensus_sha256": "81bbb47a10627501c56b9e222b5ba53e39012a17cecbb86315ad8d32dd4c34dd",
+  "driver": "tf",
+  "driver_target_sizes_sha256": "13a3a0c64359b3b191ba0414d4cc0b0e21430819942935a8db6650797cc051e2",
+  "fingerprint": "510125c3ce4d2b2fdd2196cf3d7dfc0f468e32b6d8e9afa6b21727993af8d839",
+  "html": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/baseline_12113fb/tf/netbid2_qc/TF_netQC.html",
+  "html_bytes": 1995515,
+  "html_sha256": "a6b251f7863c74f987907d45a01e588c2e57757c72f9c1abbb08bae88a2a9d54",
+  "network_summary_sha256": "9362c09cc6f25838a376bee64e03ee2e3b966f4b65320470b589f7a69b5999e4",
+  "stage": "baseline_12113fb",
+  "stderr_bytes": 257,
+  "stderr_sha256": "1ed1d15b480e649adc2f313ce3fb0220f004db7a22cffbad093c949e77c92135",
+  "stdout_sha256": "abea610f849d1a7a73c99fbd6da741283a2b07f2d6a18df7c27f329eabf9f86c"
+}

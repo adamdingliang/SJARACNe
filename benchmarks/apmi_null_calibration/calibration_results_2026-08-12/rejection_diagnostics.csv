@@ -1,0 +1,7 @@
+m,stability_pass,relative_stability_range,validation_pass,reason
+50,False,0.6006570959814622,False,unstable p=1e-7 cutoff and held-out tail failures
+64,False,0.5469784963104616,False,unstable p=1e-7 cutoff and noncontiguous held-out tail failures
+75,False,0.00129021350479631,False,held-out failure at p=5e-4 and invalid q=0.9925 endpoint
+80,True,0.0843639217817058,True,accepted
+90,True,0.037055035881739334,True,accepted
+100,False,0.1469880348440678,False,unstable p=1e-7 cutoff and held-out failure at p=1e-3

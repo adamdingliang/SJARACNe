@@ -1,0 +1,6 @@
+k_dpi	small_h1335_pruned_fraction_median	middle_h5340_pruned_fraction_median	full_h10680_pruned_fraction_median	paired_full_minus_small_gap_median	normalized_absolute_gap_vs_k1_median	small_pruning_retained_vs_k1_median	full_pruning_retained_vs_k1_median	full_over_small_ratio_median	absolute_gap_reduced_seeds_of_10
+1	0.2264	0.3372	0.3959	0.169159	1.000000	1.000000	1.000000	1.749735	0
+2	0.1309	0.2561	0.3198	0.184871	1.114290	0.574087	0.806112	2.455490	0
+3	0.0869	0.2124	0.2802	0.188757	1.137013	0.382000	0.706184	3.234613	0
+5	0.0418	0.1586	0.2309	0.183017	1.102663	0.185086	0.580602	5.433117	1
+10	0.0037	0.0895	0.1652	0.159149	0.925922	0.016579	0.408950	43.347463	9

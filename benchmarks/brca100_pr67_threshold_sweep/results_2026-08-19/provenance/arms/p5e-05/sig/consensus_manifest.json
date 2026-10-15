@@ -1,0 +1,35 @@
+{
+  "bootstrap_info_sha256": "d6cb0b61ef39894792be8381d8874ad3dec368d92261ded174ecae8f633180d6",
+  "command": [
+    "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/.micromamba/envs/netbid2-r44/bin/python",
+    "-m",
+    "SJARACNe.bin.create_consensus_network",
+    "-a",
+    "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/results/p5e-05/sig/adjacency",
+    "-p",
+    "0.00001",
+    "-e",
+    "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/inputs/BRCA100.exp",
+    "-o",
+    "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/results/p5e-05/sig/consensus.partial"
+  ],
+  "consensus_3col_sha256": "a9896714dae87ca8d3356098aef865da1f151a7d878147249734e832beddf33b",
+  "driver": "sig",
+  "fingerprint": "a5037d3e3d7ff05f7b08498b335e176f7f04bda03780a1507ae38291808ae5f5",
+  "finished_at_utc": "2026-08-19T00:54:31.737709+00:00",
+  "gnu_time": {
+    "elapsed_s": 120.48,
+    "max_rss_kib": 808600,
+    "system_s": 1.04,
+    "user_s": 115.37
+  },
+  "ncol": {
+    "active_drivers": 7336,
+    "bytes": 6721091,
+    "edges": 90860,
+    "incident_nodes": 16897,
+    "sha256": "ee6bfb82951f8d3b8c90552d57d28b6c062f5e7e8bb3ed62309d9db26c8b3d18"
+  },
+  "parameter_info_sha256": "257ae122bf94f73692b9dddba2d277f87f517ff83027603ad75b94e70f687569",
+  "stage": "p5e-05"
+}

@@ -1,0 +1,275 @@
+{
+  "benchmark_repo": "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc",
+  "builds": {
+    "baseline_12113fb": {
+      "binary": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/builds/baseline_12113fb/bin/sjaracne.exe",
+      "binary_sha256": "aea2f5c6f7030cd19d5e2ca56ad663cbbbd1e920486f0dcfa60d893fcbd8759b",
+      "built_at_utc": "2026-08-17T21:19:38.368968+00:00",
+      "commit": "12113fbc80d753d945598ffc2c7d9e45787bc8e0",
+      "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "config_directory": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/builds/baseline_12113fb/source/SJARACNe/config",
+      "config_sha256": "a162721431ada165b2be4f0877a2d7762c12c6553f29ba1f03710300e5075e3e",
+      "stage": "baseline_12113fb"
+    },
+    "pr66_5809183": {
+      "binary": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/builds/pr66_5809183/bin/sjaracne.exe",
+      "binary_sha256": "4805c626a2560f2c6d05b03d3e8498f0922c23a94bcefefeaaee90160071416d",
+      "built_at_utc": "2026-08-17T21:19:44.084326+00:00",
+      "commit": "58091832848b2eaf2ae08f6f69482357b6b9b72c",
+      "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "config_directory": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/builds/pr66_5809183/source/SJARACNe/config",
+      "config_sha256": "a162721431ada165b2be4f0877a2d7762c12c6553f29ba1f03710300e5075e3e",
+      "stage": "pr66_5809183"
+    },
+    "pr67_7633ebb": {
+      "binary": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/builds/pr67_7633ebb/bin/sjaracne.exe",
+      "binary_sha256": "c66f48980d07eb542aa6a0f6f0a0e3c6651828e1d115c1a62cf49672e3bfa7c3",
+      "built_at_utc": "2026-08-17T21:19:49.882084+00:00",
+      "commit": "7633ebb4a0d966dbda15a4e32d0efa492fb71aeb",
+      "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "config_directory": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/builds/pr67_7633ebb/source/SJARACNe/config",
+      "config_sha256": "dca25c4041800933e6d439fe8730d4e78039839f956932968401540bdf454dca",
+      "null_model": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/builds/pr67_7633ebb/source/SJARACNe/config/apmi_null/apmi_null_m00080_npar040.model",
+      "null_model_sha256": "e3a8522682a8ea239821aaa10b12db72d00e07bfdcad43599d8e76a06be80944",
+      "stage": "pr67_7633ebb"
+    }
+  },
+  "common_parameters": {
+    "algorithm": "adaptive_partitioning",
+    "bootstrap_p": 1e-07,
+    "consensus_p": 1e-05,
+    "dpi_epsilon": 0,
+    "npar": 40
+  },
+  "drivers": [
+    {
+      "expected_count": 2608,
+      "filename": "BRCA100_TF.txt",
+      "key": "tf"
+    },
+    {
+      "expected_count": 10680,
+      "filename": "BRCA100_SIG.txt",
+      "key": "sig"
+    }
+  ],
+  "generated_at_utc": "2026-08-17T21:19:49.882313+00:00",
+  "inference_workers": 12,
+  "inputs": {
+    "BRCA100.exp": {
+      "bytes": 49824227,
+      "path": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/inputs/BRCA100.exp",
+      "sha256": "ad8a334f5f8cdf46a1000d3ee259b35258a18b3da2e314bb3a0cf7a421d98bc8"
+    },
+    "BRCA100_SIG.txt": {
+      "bytes": 138840,
+      "path": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/inputs/BRCA100_SIG.txt",
+      "sha256": "16ca27df655f16684f880a4ad719c4e2ae3f8dc0d7e6b9eccdd24cd97c40797c"
+    },
+    "BRCA100_TF.txt": {
+      "bytes": 33904,
+      "path": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/inputs/BRCA100_TF.txt",
+      "sha256": "9b1219a489b99432175e4c4ad46add7b06f25aae388ee8dd3261fa91e4c43ffd"
+    },
+    "expression_id_count": {
+      "count": 28278
+    }
+  },
+  "invocations": [
+    {
+      "drivers": [
+        "tf",
+        "sig"
+      ],
+      "finished_at_utc": "2026-08-18T01:20:34.184987+00:00",
+      "inference_jobs": 600,
+      "inference_new_jobs": 0,
+      "inference_resumed_jobs": 600,
+      "phase": "infer",
+      "seed_end": 100,
+      "seed_start": 1,
+      "stages": [
+        "baseline_12113fb",
+        "pr66_5809183",
+        "pr67_7633ebb"
+      ],
+      "started_at_utc": "2026-08-18T01:14:25.796663+00:00",
+      "status": "complete",
+      "workers": 12
+    },
+    {
+      "drivers": [
+        "tf",
+        "sig"
+      ],
+      "finished_at_utc": "2026-08-18T02:16:54.500026+00:00",
+      "phase": "consensus",
+      "seed_end": 100,
+      "seed_start": 1,
+      "stages": [
+        "baseline_12113fb",
+        "pr66_5809183",
+        "pr67_7633ebb"
+      ],
+      "started_at_utc": "2026-08-18T01:23:10.906359+00:00",
+      "status": "complete",
+      "workers": 1
+    }
+  ],
+  "schema": "sjaracne-brca100-netbid-qc-v1",
+  "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    100
+  ],
+  "stages": [
+    {
+      "commit": "12113fbc80d753d945598ffc2c7d9e45787bc8e0",
+      "key": "baseline_12113fb",
+      "null_model_relative": null,
+      "required_headers": [
+        ">  MI P-value      1e-07",
+        ">  MI threshold    0.153257"
+      ],
+      "sampling_args": [
+        "-r",
+        "1"
+      ]
+    },
+    {
+      "commit": "58091832848b2eaf2ae08f6f69482357b6b9b72c",
+      "key": "pr66_5809183",
+      "null_model_relative": null,
+      "required_headers": [
+        ">  Sampling method fixed-size without replacement",
+        ">  Sampling request 80%",
+        ">  Eligible observations 100",
+        ">  Sampled observations 80",
+        ">  MI threshold    0.172803"
+      ],
+      "sampling_args": [
+        "-u",
+        "80%"
+      ]
+    },
+    {
+      "commit": "7633ebb4a0d966dbda15a4e32d0efa492fb71aeb",
+      "key": "pr67_7633ebb",
+      "null_model_relative": "SJARACNe/config/apmi_null/apmi_null_m00080_npar040.model",
+      "required_headers": [
+        ">  MI threshold method estimator-matched AP-MI permutation-null GPD tail",
+        ">  AP-MI null model m 80",
+        ">  AP-MI null model Npar 40",
+        ">  AP-MI cutoff tail extrapolated yes",
+        ">  Sampling method fixed-size without replacement",
+        ">  Sampling request 80%",
+        ">  Eligible observations 100",
+        ">  Sampled observations 80",
+        ">  MI threshold    0.322465"
+      ],
+      "sampling_args": [
+        "-u",
+        "80%"
+      ]
+    }
+  ],
+  "work_root": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun",
+  "workers": 8
+}

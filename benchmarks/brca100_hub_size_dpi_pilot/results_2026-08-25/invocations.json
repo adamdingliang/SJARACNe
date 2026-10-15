@@ -1,0 +1,104 @@
+{
+  "invocations": [
+    {
+      "anchor_root": null,
+      "arms": [
+        "sig_h01335",
+        "sig_h05340",
+        "sig_h10680",
+        "tf_h00326",
+        "tf_h01304",
+        "tf_h02608"
+      ],
+      "dry_run": false,
+      "finished_at_utc": "2026-08-26T00:33:54.327017+00:00",
+      "phase": "prepare",
+      "seed_end": 100,
+      "seed_start": 1,
+      "source_commit": "32fe12c168ef80291e487dbf4045f430b9c5d90a",
+      "started_at_utc": "2026-08-26T00:33:54.326779+00:00",
+      "status": "complete",
+      "workers": 12
+    },
+    {
+      "anchor_root": "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818",
+      "arms": [
+        "tf_h02608"
+      ],
+      "dry_run": false,
+      "finished_at_utc": "2026-08-26T00:35:28.482161+00:00",
+      "inference_jobs": 1,
+      "inference_new_jobs": 1,
+      "inference_resumed_jobs": 0,
+      "phase": "infer",
+      "seed_end": 1,
+      "seed_start": 1,
+      "source_commit": "32fe12c168ef80291e487dbf4045f430b9c5d90a",
+      "started_at_utc": "2026-08-26T00:34:48.443402+00:00",
+      "status": "complete",
+      "workers": 1
+    },
+    {
+      "anchor_root": "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818",
+      "arms": [
+        "sig_h10680"
+      ],
+      "dry_run": false,
+      "finished_at_utc": "2026-08-26T00:38:22.109399+00:00",
+      "inference_jobs": 1,
+      "inference_new_jobs": 1,
+      "inference_resumed_jobs": 0,
+      "phase": "infer",
+      "seed_end": 1,
+      "seed_start": 1,
+      "source_commit": "32fe12c168ef80291e487dbf4045f430b9c5d90a",
+      "started_at_utc": "2026-08-26T00:35:42.436506+00:00",
+      "status": "complete",
+      "workers": 1
+    },
+    {
+      "anchor_root": "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818",
+      "arms": [
+        "sig_h01335",
+        "sig_h05340",
+        "sig_h10680",
+        "tf_h00326",
+        "tf_h01304",
+        "tf_h02608"
+      ],
+      "dry_run": false,
+      "finished_at_utc": "2026-08-26T02:05:49.991706+00:00",
+      "inference_jobs": 600,
+      "inference_new_jobs": 598,
+      "inference_resumed_jobs": 2,
+      "phase": "infer",
+      "seed_end": 100,
+      "seed_start": 1,
+      "source_commit": "32fe12c168ef80291e487dbf4045f430b9c5d90a",
+      "started_at_utc": "2026-08-26T00:38:43.975443+00:00",
+      "status": "complete",
+      "workers": 12
+    },
+    {
+      "anchor_root": null,
+      "arms": [
+        "sig_h01335",
+        "sig_h05340",
+        "sig_h10680",
+        "tf_h00326",
+        "tf_h01304",
+        "tf_h02608"
+      ],
+      "dry_run": false,
+      "finished_at_utc": "2026-08-26T02:08:42.235375+00:00",
+      "phase": "aggregate",
+      "seed_end": 100,
+      "seed_start": 1,
+      "source_commit": "32fe12c168ef80291e487dbf4045f430b9c5d90a",
+      "started_at_utc": "2026-08-26T02:06:18.260269+00:00",
+      "status": "complete",
+      "workers": 12
+    }
+  ],
+  "schema": "sjaracne-brca100-hub-size-dpi-invocations-v1"
+}

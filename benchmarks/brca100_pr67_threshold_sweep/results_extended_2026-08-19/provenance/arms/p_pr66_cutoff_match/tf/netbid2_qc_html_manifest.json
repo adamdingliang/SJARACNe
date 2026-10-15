@@ -1,0 +1,65 @@
+{
+  "command": [
+    "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/benchmarks/brca100_netbid_qc/netbid2-r",
+    "Rscript",
+    "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/benchmarks/brca100_pr67_threshold_sweep/run_netbid_qc.R",
+    "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/results/p_pr66_cutoff_match/tf/consensus/consensus_network_ncol_.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/inputs/BRCA100_TF.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/results/p_pr66_cutoff_match/tf/netbid2_qc_html.partial",
+    "TF_",
+    "true"
+  ],
+  "consensus_manifest_sha256": "9cb96995ad8d55bff512c519eee3543e8fdccfa82da0606ae7a061b5df9fea1c",
+  "consensus_sha256": "16a6191be533ab333d74f87bf8b3b3c8a2b6ec9f16d2107946aae8d44237996f",
+  "driver": "tf",
+  "driver_sha256": "9b1219a489b99432175e4c4ad46add7b06f25aae388ee8dd3261fa91e4c43ffd",
+  "environment": {
+    "NetBID2": "2.2.0",
+    "NetBID2_remote_sha": "5defa454d600b94f5dd6d1f9f4428f99759a6821",
+    "R": "R version 4.4.3 (2025-02-28)",
+    "igraph": "2.3.3"
+  },
+  "fingerprint": "641ecc09e48d08d81e415c85fb475193431d957230eea9770498e8f89c48e4ca",
+  "finished_at_utc": "2026-08-19T01:45:58.679608+00:00",
+  "mi_cutoff": 0.1728032151574967,
+  "mode": "html",
+  "output": "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/results/p_pr66_cutoff_match/tf/netbid2_qc_html",
+  "output_inventory": [
+    {
+      "bytes": 10150,
+      "path": "TF_netQC.Rmd",
+      "sha256": "195a8f51e875c1bf8d0d0a50ee9a2c9e7cdd1938ada3664dc76cae2ed70d2d60"
+    },
+    {
+      "bytes": 1957898,
+      "path": "TF_netQC.html",
+      "sha256": "cdaa439335bd0c264e8397240dd4060299067aed3d44ac93dce555e9f462b111"
+    },
+    {
+      "bytes": 41014,
+      "path": "driver_target_sizes.tsv",
+      "sha256": "9427b4117e25a55fa087cee408b21e19fefd09096ca3518b9c77c9ed7310b4cf"
+    },
+    {
+      "bytes": 136,
+      "path": "netbid_environment.tsv",
+      "sha256": "589fd14d9f877353eaf0b97e8dbc5a0b5e09bb4248ef6ee0114d709279facb9b"
+    },
+    {
+      "bytes": 583,
+      "path": "network_summary.tsv",
+      "sha256": "c6e86d41670c8ef84505f871b1b4906231244c951650f356d69d68e68c2cf3fd"
+    }
+  ],
+  "p_value": 0.000352804562601613,
+  "point": "p_pr66_cutoff_match",
+  "point_manifest_sha256": "8f390d7b798a75bd65c1c3216597dcf4be1f64621e79d5eed1c049632c624e9d",
+  "prefix": "TF_",
+  "r_script_sha256": "f9485b923e278ce7883d359181819cd728402dff11fcd4172b7fd6c0c51149a4",
+  "schema": "sjaracne-brca100-pr67-p-sweep-netbid2-v1",
+  "stderr_bytes": 270,
+  "stderr_sha256": "ed783a2e31bbc3d6baa1fb255ecc650f6a2057710377ef62a68c9f38f89be53b",
+  "stdout_sha256": "c2371200355768c130c6dc52b5b03758a7c0d4220f6b6130d82cb9d7efdf045f",
+  "sweep_design_sha256": "2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5",
+  "wrapper_sha256": "c706c7665fc2e589bf70030bb5dc0fc21935b93922b16fb256a5801752220095"
+}

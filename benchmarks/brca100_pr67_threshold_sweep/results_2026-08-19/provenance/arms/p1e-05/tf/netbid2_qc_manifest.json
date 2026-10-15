@@ -1,0 +1,55 @@
+{
+  "command": [
+    "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/benchmarks/brca100_netbid_qc/netbid2-r",
+    "Rscript",
+    "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/benchmarks/brca100_pr67_threshold_sweep/run_netbid_qc.R",
+    "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/results/p1e-05/tf/consensus/consensus_network_ncol_.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/inputs/BRCA100_TF.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/results/p1e-05/tf/netbid2_qc.partial",
+    "TF_",
+    "false"
+  ],
+  "consensus_manifest_sha256": "752fd5f82812e26c482e06b8cbf219dc5061343a8ce89cc3b1c76bb87b584cf2",
+  "consensus_sha256": "cbdaa2cac30e9ca402bf03e7b58bf15665de80d3d376082ccb0b98e161265c5e",
+  "driver": "tf",
+  "driver_sha256": "9b1219a489b99432175e4c4ad46add7b06f25aae388ee8dd3261fa91e4c43ffd",
+  "environment": {
+    "NetBID2": "2.2.0",
+    "NetBID2_remote_sha": "5defa454d600b94f5dd6d1f9f4428f99759a6821",
+    "R": "R version 4.4.3 (2025-02-28)",
+    "igraph": "2.3.3"
+  },
+  "fingerprint": "869f905477cec09c927a7dd9b315ba82bcbc05fa6db1a5a31a3b3d1d48bf5a42",
+  "finished_at_utc": "2026-08-19T01:24:12.995161+00:00",
+  "mi_cutoff": 0.2479512481172926,
+  "mode": "summary",
+  "output": "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/results/p1e-05/tf/netbid2_qc",
+  "output_inventory": [
+    {
+      "bytes": 39445,
+      "path": "driver_target_sizes.tsv",
+      "sha256": "d260c58a6a8184063936f91e8d68f8c6b02a78e7b36750d0f460c80c91d37d55"
+    },
+    {
+      "bytes": 136,
+      "path": "netbid_environment.tsv",
+      "sha256": "589fd14d9f877353eaf0b97e8dbc5a0b5e09bb4248ef6ee0114d709279facb9b"
+    },
+    {
+      "bytes": 579,
+      "path": "network_summary.tsv",
+      "sha256": "042d2791762ae0e8eaad93e8198dd15213fc0414b3b1b7b283d42f17210a3f49"
+    }
+  ],
+  "p_value": 1e-05,
+  "point": "p1e-05",
+  "point_manifest_sha256": "ae17cf0d1e305c21161a3f70f30b7b89286901648b93a61bcac1ed43c33769ad",
+  "prefix": "TF_",
+  "r_script_sha256": "f9485b923e278ce7883d359181819cd728402dff11fcd4172b7fd6c0c51149a4",
+  "schema": "sjaracne-brca100-pr67-p-sweep-netbid2-v1",
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "cb603270f910bfe386d0e217751743ac0caf63e81b192d242e685dde6a50abac",
+  "sweep_design_sha256": "9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb",
+  "wrapper_sha256": "c706c7665fc2e589bf70030bb5dc0fc21935b93922b16fb256a5801752220095"
+}

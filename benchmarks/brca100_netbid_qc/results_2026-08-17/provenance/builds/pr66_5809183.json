@@ -1,0 +1,10 @@
+{
+  "binary": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/builds/pr66_5809183/bin/sjaracne.exe",
+  "binary_sha256": "4805c626a2560f2c6d05b03d3e8498f0922c23a94bcefefeaaee90160071416d",
+  "built_at_utc": "2026-08-17T21:19:44.084326+00:00",
+  "commit": "58091832848b2eaf2ae08f6f69482357b6b9b72c",
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "config_directory": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/builds/pr66_5809183/source/SJARACNe/config",
+  "config_sha256": "a162721431ada165b2be4f0877a2d7762c12c6553f29ba1f03710300e5075e3e",
+  "stage": "pr66_5809183"
+}

@@ -40,6 +40,10 @@ def main():
                                help='P-value threshold to select edges in building consensus network.')
     parent_parser.add_argument('-pb', '--p-value-bootstrap', metavar='FLOAT', default=1e-7,
                                help='P-value threshold to filter mutual information in each resampled network.')
+    parent_parser.add_argument(
+        '-M', '--apmi-null-model', metavar='FILE',
+        help='Exact-m, exact-depth estimator-matched AP-MI GPD-tail model passed to every resampled network.',
+    )
     parent_parser.add_argument('-d', '--depth', metavar='INT', default=40, help='maximum partitioning depth.')
     parent_parser.add_argument('-c', '--config-dir', metavar='DIR', help='Directory containing ARACNe configuration '
                                                                          'files. Use default configs if not provided.')
@@ -115,6 +119,10 @@ def main():
                                                    args.p_value_consensus, args.p_value_bootstrap, args.depth,
                                                    config_dir, args.bootstrap_num, json.dumps(subsample_spec),
                                                    output_dir_name)
+        if args.apmi_null_model is not None:
+            contents += '\napmi_null_model:\n  class: File\n  path: {}'.format(
+                json.dumps(os.path.abspath(args.apmi_null_model))
+            )
         logging.info(contents)
         fp_yml.write(contents)
         fp_yml.flush()

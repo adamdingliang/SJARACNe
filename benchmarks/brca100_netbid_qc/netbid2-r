@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+MAMBA_ROOT="$ROOT/.micromamba"
+ENV_PREFIX="$MAMBA_ROOT/envs/netbid2-r44"
+MICROMAMBA="$MAMBA_ROOT/bin/micromamba"
+
+if [[ ! -x "$MICROMAMBA" ]]; then
+  echo "Missing micromamba executable: $MICROMAMBA" >&2
+  exit 1
+fi
+
+if [[ ! -x "$ENV_PREFIX/bin/R" ]]; then
+  echo "Missing NetBID2 environment: $ENV_PREFIX" >&2
+  exit 1
+fi
+
+export HOME="$MAMBA_ROOT/home"
+export XDG_CACHE_HOME="$MAMBA_ROOT/cache"
+export R_ENVIRON_USER="$MAMBA_ROOT/home/.Renviron"
+export LD_LIBRARY_PATH="$ENV_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+exec "$MICROMAMBA" run \
+  -r "$MAMBA_ROOT" \
+  -p "$ENV_PREFIX" \
+  "$@"

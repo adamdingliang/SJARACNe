@@ -1,0 +1,3 @@
+# Preserve generated evidence byte-for-byte across platforms.
+* -text -whitespace
+** -text -whitespace

@@ -1,0 +1,278 @@
+{
+  "fingerprint": "d21a37d4cf45a40e74b2befdc4b98b7037bdc8840132ce6ef2c6cd7b189a5a4a",
+  "from_sweep_design_sha256": "9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb",
+  "migrated_runs": [
+    {
+      "active_manifest_path": "results/p1e-04/sig/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-04/sig/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "0d74cb3e1720b7568d15f4c2af61edf10a617a1b1b59f39f4425a9962e5716d9",
+      "current_manifest_sha256": "3d784ff916d405a580efbd18432b1ee1aec66136fecf77ece76b6087d64008dd",
+      "driver": "sig",
+      "mode": "summary",
+      "new_fingerprint": "7b67d7201f6905a1a2c75560d75a5c7150c3cd81762e4707f3d703b757bc1776",
+      "old_fingerprint": "59cc2936e4e0ea698581594d632ea4548e267b551c9c8e47de628b28d88ae33a",
+      "point": "p1e-04"
+    },
+    {
+      "active_manifest_path": "results/p1e-04/tf/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-04/tf/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "7ff6aa90364d058fcf1b5ad48a487aff58f86cefb4f2311a60dc7eff25bbaa9d",
+      "current_manifest_sha256": "9d8540d2e2d7ce5bdb1f6159f6b89f62721ea085a832436a8ef937ae434aa6b2",
+      "driver": "tf",
+      "mode": "summary",
+      "new_fingerprint": "160455dffff0285d5d3eda99ee082ae4e5053d103f73755a3867594b21c9642f",
+      "old_fingerprint": "f55558a7be293046d17fe748ef7fc38f8c2ff909ac02f793cb8e5b3deb691d5c",
+      "point": "p1e-04"
+    },
+    {
+      "active_manifest_path": "results/p1e-05/sig/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-05/sig/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "b8d5da3c7ed3094547c14ea7c279b4cac38c4ebaf9b1c3259a7ce6c6cf906ce0",
+      "current_manifest_sha256": "88d222689f7327c538bf2dc154c4d3f248c4c9092a484476689c1a63397a0fbc",
+      "driver": "sig",
+      "mode": "summary",
+      "new_fingerprint": "7a14cb41e947f6d939d42a98d09f6f0c4692dce6dc4a11d967448f938f94fd1b",
+      "old_fingerprint": "a89d42021c23673d7318f127f77f8ceacdc114435849ce10b5a419d03cb62b94",
+      "point": "p1e-05"
+    },
+    {
+      "active_manifest_path": "results/p1e-05/tf/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-05/tf/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "40d0bfb622e01a49697ba1739acf665f22855370072f8f29e3f890d43374ac24",
+      "current_manifest_sha256": "72722c2a1c849258f464eb170dc4e7eb5343fa397763d404ed727ed8bce46054",
+      "driver": "tf",
+      "mode": "summary",
+      "new_fingerprint": "8e748f2b049739d5f38adb3a60221e91df89cf5b077c59483c64dca9878b2571",
+      "old_fingerprint": "869f905477cec09c927a7dd9b315ba82bcbc05fa6db1a5a31a3b3d1d48bf5a42",
+      "point": "p1e-05"
+    },
+    {
+      "active_manifest_path": "results/p1e-06/sig/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-06/sig/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "14d59e8a421c009d037f293e352e99169bf7ca631a8238b3a46244933925d6d6",
+      "current_manifest_sha256": "263f3ed11cebc7bd9588c30e372055356a794b0fa954f8e267c761bfe4a1d27b",
+      "driver": "sig",
+      "mode": "summary",
+      "new_fingerprint": "9991152a3b3b7b4edec48a123edbf8903b3409570e2ead3efac500c585c8cc5d",
+      "old_fingerprint": "67666412a29c53e4609ef22368a6f338bbb7d207a7b692b76977e87abc2b193c",
+      "point": "p1e-06"
+    },
+    {
+      "active_manifest_path": "results/p1e-06/tf/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-06/tf/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "d37f6ea2487a19edd2ce4c56e8a74322457511ba30dffe32fab84178c32f019d",
+      "current_manifest_sha256": "735f2a45be1d689af0f7573b9fafe44b580316e910d9d38337f0193907ced2c8",
+      "driver": "tf",
+      "mode": "summary",
+      "new_fingerprint": "d3d7665f5dacd32c06ba531497e5cd18c666da8e290ff48e30afea656f399264",
+      "old_fingerprint": "9926818bcbedebc54f06e56c802407c82362aa6479096b6f7fbb3ab7a815af34",
+      "point": "p1e-06"
+    },
+    {
+      "active_manifest_path": "results/p1e-07/sig/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-07/sig/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "79d9b60ec2ef28892c2ca23882090a30cd0628d4cdfc20506670012bc5d3e010",
+      "current_manifest_sha256": "059cadcf03509efc2af63c79f01c009cc9385f3976b7deb1b5ceb9348fc50f33",
+      "driver": "sig",
+      "mode": "summary",
+      "new_fingerprint": "a4f686c399696cabae287b8555f15b0ec3a8b21307a8a8bb6554009a3ef54884",
+      "old_fingerprint": "f48ede054d9c5d8173c1f8d1a47cc763e7bfa79673c7e17b16f12588974962fa",
+      "point": "p1e-07"
+    },
+    {
+      "active_manifest_path": "results/p1e-07/tf/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p1e-07/tf/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "51ac300bc7d0d78ed859233c76c7f02fa2f8a7e88681ded7216b14fb09069c2c",
+      "current_manifest_sha256": "8238d2ca4340602a5e63fd3de27a9f532cffc626892fb8dc17ebc04b0657e524",
+      "driver": "tf",
+      "mode": "summary",
+      "new_fingerprint": "708e52ba7a4e23f4ac9ec793d4aab9d5af998490209a8f4100342abf8cecb15d",
+      "old_fingerprint": "e6dea84e9aed812e3e5dfa48b5d1023df3504dcfcef95993ee09b2edbdfa63c0",
+      "point": "p1e-07"
+    },
+    {
+      "active_manifest_path": "results/p2e-04/sig/netbid2_qc_html_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p2e-04/sig/netbid2_qc_html_manifest.json",
+      "archived_manifest_sha256": "58b562a818a8ecb27f0d08adbe741a12772dec83972d1fc5865c05d8d83e3772",
+      "current_manifest_sha256": "f02133c8f1848c10b1c38a0f5cc1cd4c5311120e73147395ca70b7757ce2e6ea",
+      "driver": "sig",
+      "mode": "html",
+      "new_fingerprint": "dcda6f066acb2924710e2d001de2c8b43a425836cff9576628f0824d5040c569",
+      "old_fingerprint": "537f3ad77af4db344f28331b09e0e9cffca145c1829fe48032aa9747b5441d35",
+      "point": "p2e-04"
+    },
+    {
+      "active_manifest_path": "results/p2e-04/sig/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p2e-04/sig/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "94e5b293511e58ef23ef18e9745749b568ad6b7a0016e44c11eeb1eb5a70e277",
+      "current_manifest_sha256": "bfe5bed03dc72703e579426f9641e2bb95cde1c16e9d57decbd045b56e016b3d",
+      "driver": "sig",
+      "mode": "summary",
+      "new_fingerprint": "9fefcca41337c80a7b9700510afb396a71a5ef5d9b3670683fc0b0a904e5ed00",
+      "old_fingerprint": "fb4d29d27bf21e2682cabbaf3ced1ae59f88cbaea6b7b6d3b1bb09bbe0fdd6a9",
+      "point": "p2e-04"
+    },
+    {
+      "active_manifest_path": "results/p2e-04/tf/netbid2_qc_html_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p2e-04/tf/netbid2_qc_html_manifest.json",
+      "archived_manifest_sha256": "687b9d9b5b2e9e459c489d143325c28acc7b9b9c9e1b36b1f605c581bdb748d9",
+      "current_manifest_sha256": "ab6ec6b29c0fe0c8cee0e7cb3b58c425e4852e8659c61c35fdde9f39e109dc16",
+      "driver": "tf",
+      "mode": "html",
+      "new_fingerprint": "67f8e9cf7fba8e9acd188c651eac9ae1e9ddff5a8094d051d9d1d575bd405804",
+      "old_fingerprint": "4262bc325f274f48a79a64406d827119d93c615f9f16ca83f8206402e1e9dd59",
+      "point": "p2e-04"
+    },
+    {
+      "active_manifest_path": "results/p2e-04/tf/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p2e-04/tf/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "91605527045afbf59a88b7ea88988efbeaf9e7c9f52f921f273fc7e4c586665b",
+      "current_manifest_sha256": "6db53af17664b82b09ee784df515a7d85a6e80e17896518ad90db86d63e668f3",
+      "driver": "tf",
+      "mode": "summary",
+      "new_fingerprint": "3b173f82774b6c0cf16b93a01ac290c4f2be18c2c3ae2ae11ca13fabc95df63b",
+      "old_fingerprint": "882847ffe0a037618b2cdf9c458e6d4a962a7763136f2aec0e70d75977c5410d",
+      "point": "p2e-04"
+    },
+    {
+      "active_manifest_path": "results/p2e-05/sig/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p2e-05/sig/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "9cd064f9663c95302a48ae5f2539207278cc95244a9b3c03eee29e7ad653490b",
+      "current_manifest_sha256": "6efcd87e2b596b448558cbc04fd6de3276b9e8fd75fd9e4c5d7ded5619cc8d8a",
+      "driver": "sig",
+      "mode": "summary",
+      "new_fingerprint": "a7db3009c2ba0d52da02989bb1d6d551984cc4fb7b8d51c324e9dee1b91a4c07",
+      "old_fingerprint": "cd9b9a313cfa15f2a3eaae36abcb04a9b9ba08a5c798ddd10c3374955ef6a83b",
+      "point": "p2e-05"
+    },
+    {
+      "active_manifest_path": "results/p2e-05/tf/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p2e-05/tf/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "dc36d4aff8cb1506de11a54723e1ac01c32dac5d152b1c0a1439344b527452e3",
+      "current_manifest_sha256": "0dd4ee330675093ac13f8dd413e352978d45aae652362a50d971ad0de5bd2f2f",
+      "driver": "tf",
+      "mode": "summary",
+      "new_fingerprint": "b2e588ad9f358bcb86f27613e8b04bba285edb8843f44dffe3eaf5285417c1bf",
+      "old_fingerprint": "3f56a316166519f41c8b968e1d548248dea9b7a56847505dde452b44ce440348",
+      "point": "p2e-05"
+    },
+    {
+      "active_manifest_path": "results/p3e-04/sig/netbid2_qc_html_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p3e-04/sig/netbid2_qc_html_manifest.json",
+      "archived_manifest_sha256": "f198b3b0e22a0daded109ee842cb242a8d69f42ba85d9b480ce183760eb00dad",
+      "current_manifest_sha256": "b62d26531d43af38e5d49d31edc9213187761c238800db076c2337060260eb18",
+      "driver": "sig",
+      "mode": "html",
+      "new_fingerprint": "0a5fce501e2037a14232ef59ed08500c70a342c55fd831de9c943c440172267a",
+      "old_fingerprint": "e4da786fe427dd20656f7835aa54397f6c203ff37416e7395aa79d461f91438a",
+      "point": "p3e-04"
+    },
+    {
+      "active_manifest_path": "results/p3e-04/sig/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p3e-04/sig/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "d4cab8a3244f3e2fd8ae707ce021cdeb2955c63b36b3ba53da5c880d0701b705",
+      "current_manifest_sha256": "06f6c5efb71c3470d1e7aa779c0a1fd334644b30e244c90d66060a28ac3f2454",
+      "driver": "sig",
+      "mode": "summary",
+      "new_fingerprint": "fe5c261ff9b4248935d4c8b45fea5d27b5551907b26ec1bcfa80dc2ddf5a5b31",
+      "old_fingerprint": "1341f91e021b1cf0a382c43b4176f350fd08f155099b81193a12c6de090b11f2",
+      "point": "p3e-04"
+    },
+    {
+      "active_manifest_path": "results/p3e-04/tf/netbid2_qc_html_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p3e-04/tf/netbid2_qc_html_manifest.json",
+      "archived_manifest_sha256": "064fc4fd4a8115d0c73ba0fb48229691409a07e0f7bfed023f0015e9fbc3a9f5",
+      "current_manifest_sha256": "b11d98b6e19eb618f62664d92c29cf3fc31a2c9491c59e9cea4f3e5895760b78",
+      "driver": "tf",
+      "mode": "html",
+      "new_fingerprint": "ccb527d31d19dfd3ea6bf98b6306aeafa7aa5da5c75ad769e891e78f73e5412e",
+      "old_fingerprint": "b5079c5872a4fb8720de523e9e55034387db04d478b2162b6d85299b614ebb8c",
+      "point": "p3e-04"
+    },
+    {
+      "active_manifest_path": "results/p3e-04/tf/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p3e-04/tf/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "a62b7fc916876cf8a3082a84c08e3ae6318fe3fd9f93fe992b308ba37dc83316",
+      "current_manifest_sha256": "2fb810473713579a99e2aaccc54efa332248f60cbbd016a8b752c0f3f3c21dba",
+      "driver": "tf",
+      "mode": "summary",
+      "new_fingerprint": "a27c9e62207d5a7da6ead53b0e8cc861da4a088e5c728be8485b5637b3009c2e",
+      "old_fingerprint": "78a78c211910e45440987d1833a92a1d8f11332882585feb74a8aec13eb8a661",
+      "point": "p3e-04"
+    },
+    {
+      "active_manifest_path": "results/p5e-05/sig/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p5e-05/sig/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "0b08062bc972eccee102a5c6357ff5c5e8bd83d0ddb8c5aba63926fbf9a8d4a2",
+      "current_manifest_sha256": "ae8e662651f30af9a32e1e8f32d108903edf883e4afad0d68d583da967a25f9d",
+      "driver": "sig",
+      "mode": "summary",
+      "new_fingerprint": "b218c7ed5ed63f02563d95f9318e60028711ea643bcffbd6e7ebf7f69e29d71b",
+      "old_fingerprint": "b2ecb7b4ef980ee356982f69968011e24f8c248e0af0159fc0d837dd4e12fcbf",
+      "point": "p5e-05"
+    },
+    {
+      "active_manifest_path": "results/p5e-05/tf/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p5e-05/tf/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "e6b60c6efb42e4cbbd87314239888c21b44d1682f4fada5e7141266c5190e7a5",
+      "current_manifest_sha256": "cef3a931e8b6869014ad3a3e3d9b88942eb52eb7978a35c7cc985f0af0952d93",
+      "driver": "tf",
+      "mode": "summary",
+      "new_fingerprint": "14da0b52fa962a9e1f5acaec56618f981a6274fd39ec984fc48a1b76efb7d395",
+      "old_fingerprint": "ba0eecd6005d46805d9882dee7672a9ccd39907328409f4d7e36b141949f0dd7",
+      "point": "p5e-05"
+    },
+    {
+      "active_manifest_path": "results/p_pr66_cutoff_match/sig/netbid2_qc_html_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p_pr66_cutoff_match/sig/netbid2_qc_html_manifest.json",
+      "archived_manifest_sha256": "39c45f9e0e1bcd5031a440b5888e45170b8b5976133aa5ee6549e7459066a300",
+      "current_manifest_sha256": "7de610faa0cec1ef2dcd493f875fece3270c4738e42a46fc031905299d6e9b5b",
+      "driver": "sig",
+      "mode": "html",
+      "new_fingerprint": "d8452eeb0c2cd36271fec82f6fcf5d28952ea195ca5e4e265155761f6cfc2cfe",
+      "old_fingerprint": "34cde103638f46887131b1d249e8347b2cc5e7f3a2f057cad0bda5d2b6363126",
+      "point": "p_pr66_cutoff_match"
+    },
+    {
+      "active_manifest_path": "results/p_pr66_cutoff_match/sig/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p_pr66_cutoff_match/sig/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "2784db6c9552ca1426f625db8105fd7f0d2a87952d8c2f02ed6e610211903258",
+      "current_manifest_sha256": "bc982ff5ee7c201b85f2adb5e6bdb7cf1579c9999e7c6142c7f28c5b63928816",
+      "driver": "sig",
+      "mode": "summary",
+      "new_fingerprint": "b0d24fc69b6ad3b3689197996a4508f35677a4fe89e2c5351ae91be709913cec",
+      "old_fingerprint": "ba9f8c7bb85a54f7330497e42f3704c9aa949e46c7fd886ad6837950d8593656",
+      "point": "p_pr66_cutoff_match"
+    },
+    {
+      "active_manifest_path": "results/p_pr66_cutoff_match/tf/netbid2_qc_html_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p_pr66_cutoff_match/tf/netbid2_qc_html_manifest.json",
+      "archived_manifest_sha256": "a71a066f7708faa173cd97f065020c5ab456684ae159db1d4e399c157d9d729c",
+      "current_manifest_sha256": "53212c2c5cd0fc9835b76ead7f5d43b92f746a6e2338d0888c60121acd16ecb8",
+      "driver": "tf",
+      "mode": "html",
+      "new_fingerprint": "641ecc09e48d08d81e415c85fb475193431d957230eea9770498e8f89c48e4ca",
+      "old_fingerprint": "85a78e3e10394d31a7b5f39a9b5f2a255d96baeca9d3179bc1937b5e5e336375",
+      "point": "p_pr66_cutoff_match"
+    },
+    {
+      "active_manifest_path": "results/p_pr66_cutoff_match/tf/netbid2_qc_manifest.json",
+      "archived_manifest_path": "netbid2_manifest_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5/arms/p_pr66_cutoff_match/tf/netbid2_qc_manifest.json",
+      "archived_manifest_sha256": "06f178d80cb9feb1574193dc82245752da93b355f7658eb915f6758507b38dfa",
+      "current_manifest_sha256": "74c5f8d78733e45df47a07e2c8b66661d4ccad985c45a59d0b232b5c26926533",
+      "driver": "tf",
+      "mode": "summary",
+      "new_fingerprint": "6ae10973c01f685aab134f1985907598f57fd02f50de730f18166052601a771c",
+      "old_fingerprint": "c8184978c6c82f933145f10a3dd2d473c80195c308e04d59b4243d7846cd07c2",
+      "point": "p_pr66_cutoff_match"
+    }
+  ],
+  "operation": "refresh-sweep-design-fingerprint-after-append-only-extension",
+  "schema": "sjaracne-brca100-pr67-p-sweep-netbid2-manifest-migration-v1",
+  "sweep_design_migration": {
+    "fingerprint": "d1885e695109676e03c3eca7f3c1c7e27d96c5115155a97a44a994ca71091578",
+    "manifest_path": "sweep_design_history/9fd4db540575d03d0fb50aeb7b4860f3c3afd24a5190186d04ae2523eb4ceefb_to_2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5.migration.json",
+    "manifest_sha256": "d461eafe48a4cfd2595c754fd328777dca9a65876f57d9fc087751bfa8967532"
+  },
+  "to_sweep_design_sha256": "2eca0f9ef388fdf48632f8292c226bac59e0e325d9641574b314689651c6a8e5"
+}

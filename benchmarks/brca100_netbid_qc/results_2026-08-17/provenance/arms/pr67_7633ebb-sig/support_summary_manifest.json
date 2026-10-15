@@ -1,0 +1,20 @@
+{
+  "binary_sha256": "83c88f4224aa7a7782e8a6810bfb2590d09aa19ed3f4417fb4bb51f1cfadf29b",
+  "command": [
+    "/usr/bin/time",
+    "-f",
+    "elapsed_s=%e\nuser_s=%U\nsystem_s=%S\nmax_rss_kib=%M",
+    "-o",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/sig/logs/support_summary.time.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/tools/summarize_consensus_support",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/sig/consensus/consensus_network_ncol_.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/sig/adjacency",
+    "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/sig/consensus/consensus_support.tsv"
+  ],
+  "driver": "sig",
+  "fingerprint": "43ab04b8de5f69fca4f91cb5556afdd7b50b1438a084c5f7720bbc4479aac7f3",
+  "output": "/home/adam/sjaracne-benchmarks/brca100-netbid-qc-20260817-rerun/results/pr67_7633ebb/sig/consensus/consensus_support.tsv",
+  "output_sha256": "0e48e408eda35728424d5a89f71fdbd78674668409f6352fb48ef1204c0102c4",
+  "retained_edges": 13183,
+  "stage": "pr67_7633ebb"
+}

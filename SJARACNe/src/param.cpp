@@ -81,15 +81,32 @@ void checkParameter(Parameter &p)
    if (p.threshold < 0.0)
       throw std::string("MI threshold '-t' must be nonnegative!");
 
-   if (p.threshold > 0.0 && p.pvalue != 1.0)
+   if (p.thresholdSpecified && p.pvalue != 1.0)
       std::cout << "P-value will not be used, since a threshold has been specified."
                 << std::endl;
+
+   // An explicit threshold makes the model irrelevant, including the valid
+   // preserve-all request '-t 0'. Otherwise, both legacy replacement sampling and
+   // adjacency replay violate the estimator/model contract.
+   if (!p.nullModelFile.empty() && !p.thresholdSpecified && p.sample > 0)
+      throw std::string("Estimator-matched AP-MI null models ('-M') cannot be used "
+                        "with legacy replacement sampling '-r'; use fixed-size "
+                        "sampling without replacement '-u' or an explicit '-t'.");
+
+   if (!p.nullModelFile.empty() && !p.thresholdSpecified && !p.adjfile.empty())
+      throw std::string("Estimator-matched AP-MI null models ('-M') cannot be used "
+                        "while replaying an existing adjacency matrix with '-j'; "
+                        "use the threshold recorded in that matrix or an explicit '-t'.");
 
    if (p.pvalue <= 0.0 || p.pvalue > 1.0)
       throw std::string("P-value '-p' must be in the range (0,1]!");
 
    if (p.eps < 0.0 || p.eps > 1.0)
       throw std::string("DPI tolerance '-e' must be within [0,1]!");
+
+   if (!p.dpiWitnessFile.empty() && p.eps == 1.0)
+      throw std::string("DPI witness diagnostic '-W' requires active DPI "
+                        "('-e' must be less than 1).");
 
    if (p.percent <= 0.0 || p.percent >= 1.0)
       throw std::string("Percentage microarray must be within (0,1)!");
@@ -272,12 +289,19 @@ void displayParameter(Parameter &p)
    std::cout << "[PARA] Input file:    " << p.infile  << std::endl;
    std::cout << "[PARA] Output file:   " << p.outfile << std::endl;
 
-   if (p.threshold > 0.0)
+   if (p.thresholdSpecified)
       std::cout << "[PARA] MI threshold:  " << p.threshold << std::endl;
    else
       std::cout << "[PARA] MI P-value:    " << p.pvalue    << std::endl;
 
+   if (!p.nullModelFile.empty())
+      std::cout << "[PARA] AP-MI null model: " << p.nullModelFile << std::endl;
+
    std::cout << "[PARA] DPI tolerance: " << p.eps << std::endl;
+
+   if (!p.dpiWitnessFile.empty())
+      std::cout << "[PARA] DPI witness diagnostic: " << p.dpiWitnessFile
+                << std::endl;
 
    if (p.correction > 0.0)
       std::cout << "[PARA] Correction for MI estimation (array noise level: "

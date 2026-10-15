@@ -1,0 +1,26 @@
+{
+  "declaration_timing": "Engineering floors were declared after observing the prior PR66/PR67 endpoint comparison but before observing intermediate sweep-point results.",
+  "engineering_floors": {
+    "active_driver_fraction": 0.9,
+    "incident_node_fraction_expression": 0.7,
+    "largest_weak_component_fraction_incident": 0.95
+  },
+  "exact_gate2_grid": [
+    2e-05,
+    5e-05,
+    0.0001,
+    0.0002
+  ],
+  "held_out_p_range": [
+    2e-05,
+    0.002
+  ],
+  "rule": "Among points passing all three engineering floors for both TF and SIG inside the held-out range, choose the smallest p on the exact Gate-2 grid; use the smallest interpolated p only if no exact-tested point passes.",
+  "schema": "sjaracne-brca100-pr67-threshold-selection-v1",
+  "scope": "Provisional topology operating-point screen only; not biological validation and not an empirical FDR estimate.",
+  "selected_calibration_point_class": "interpolation-within-accepted-range",
+  "selected_p_key": "p3e-04",
+  "selected_p_value": 0.0003,
+  "selected_point_kind": "provisional-topology-operating-point",
+  "selection_status": "provisional-interpolated-fallback"
+}

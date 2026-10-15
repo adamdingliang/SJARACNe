@@ -1,0 +1,59 @@
+{
+  "all_required_gates_pass": true,
+  "collection_errors": [],
+  "gates": [
+    {
+      "detail": "runs=30/30; metrics=300/300; errors=0",
+      "name": "complete_matched_runs",
+      "status": "pass"
+    },
+    {
+      "detail": "sample/DPI/adjacency-data failures=0",
+      "name": "exact_k1_reproduction",
+      "status": "pass"
+    },
+    {
+      "detail": "sum(pre) or sum(witnesses_ge_1) failures=0",
+      "name": "exact_sidecar_accounting",
+      "status": "pass"
+    },
+    {
+      "detail": "marker provenance failures=0",
+      "name": "frozen_candidate_provenance",
+      "status": "pass"
+    },
+    {
+      "detail": "nested-panel failures=0",
+      "name": "nested_common_source_coverage",
+      "status": "pass"
+    },
+    {
+      "detail": "source-row comparisons=26700/26700; mismatches=0; missing panel/seed pairs=0",
+      "name": "identical_common_source_pre_dpi_edge_counts",
+      "status": "pass"
+    },
+    {
+      "detail": "source-group trajectories with violations=0",
+      "name": "per_seed_pruning_monotone_with_kdpi",
+      "status": "pass"
+    },
+    {
+      "detail": "mismatched seed/K rows=0",
+      "name": "small_panel_all_equals_common",
+      "status": "pass"
+    },
+    {
+      "detail": "paired rows=10/10",
+      "name": "complete_paired_full_minus_small_effects",
+      "status": "pass"
+    }
+  ],
+  "limitations": [
+    "Ten seeds and one deterministic nested SIG panel trajectory are only a screening design.",
+    "The sidecar infers K_DPI outputs from exact per-edge witness multiplicities; it does not emit separate adjacency files for K_DPI>1.",
+    "No K_edge consensus aggregation or downstream activity robustness is evaluated.",
+    "The screen does not establish biological correctness for removed or retained edges.",
+    "A reduced size gap is not useful if it is achieved by making DPI nearly inert."
+  ],
+  "schema": "sjaracne-brca100-kdpi-witness-validation-v1"
+}
