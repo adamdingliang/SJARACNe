@@ -142,9 +142,11 @@ important dataset, compare a small sensitivity range (for example, 64%, 80%, and
 Dataset-level benchmark processes, results and data provenance, including the
 simulated DREAM5 Network 1 comparison, are maintained separately in
 [sjaracne_benchmark](https://github.com/adamdingliang/sjaracne_benchmark)
-(currently private). SJARACNe does not require that repository to build, run or
-test. Engine regression fixtures and implementation-performance benchmarks
-remain here. Benchmark results are not a new default-fraction recommendation.
+(currently private). Historical implementation-performance evidence and its
+reusable benchmarking tools are maintained there as well. SJARACNe does not
+require that repository to build, run or test. Small engine correctness fixtures
+remain here under `tests/fixtures/`; the root `benchmarks/` directory has been
+retired. Benchmark results are not a new default-fraction recommendation.
 
 
 ## Examples to create a transcription factor network

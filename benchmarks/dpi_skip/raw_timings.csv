@@ -1,7 +1,0 @@
-implementation,repeat,wall_seconds,user_seconds,system_seconds,max_rss_kb
-baseline,1,1.85,1.71,0.13,216984
-candidate,1,1.42,1.29,0.12,216604
-baseline,2,1.88,1.75,0.12,216988
-candidate,2,1.39,1.25,0.13,216604
-candidate,3,1.49,1.33,0.15,216604
-baseline,3,1.90,1.74,0.16,216984
