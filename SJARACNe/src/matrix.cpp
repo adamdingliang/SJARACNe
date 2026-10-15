@@ -23,6 +23,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <iostream>
+#include "apmi.h"
 #include "matrix.h"
 #include "util.h"
 
@@ -222,62 +223,6 @@ public:
       return (a.value < b.value ||
               (a.value == b.value && a.position < b.position));
    }
-};
-
-//------------------------------------------------------------------------------------
-
-// One workspace belongs to one createEdgeMatrix() invocation.  Every buffer range
-// that can be read must be reset or overwritten before each MI pair or partition.
-class AdaptivePartitionWorkspace
-{
-public:
-   AdaptivePartitionWorkspace()
-      : observationCount(0), partitionLimit(0), poc(), kon(), poradi(), marg(),
-        apor(), quadrant(), NN(), amarg() { }
-
-   void initialize(int N, int M)
-   {
-      observationCount = N;
-      partitionLimit   = M;
-
-      poc.resize(M);
-      kon.resize(M);
-      poradi.resize(N);
-      marg.resize(4 * static_cast<std::size_t>(M));
-      apor.resize(N);
-      quadrant.resize(N);
-      NN.resize(4);
-      amarg.resize(16);
-   }
-
-   bool matches(int N, int M) const
-   {
-      return observationCount == N && partitionLimit == M;
-   }
-
-   void resetEdge()
-   {
-      std::fill(poc.begin(), poc.end(), 1);
-      std::fill(kon.begin(), kon.end(), observationCount);
-      std::fill(marg.begin(), marg.end(), 0);
-
-      for (int i = 0; i < observationCount; i++)
-         poradi[i] = i + 1;
-
-      marg[0] = marg[partitionLimit] = 1;
-      marg[2 * partitionLimit] = marg[3 * partitionLimit] = observationCount;
-   }
-
-   int observationCount;
-   int partitionLimit;
-   std::vector<int> poc;
-   std::vector<int> kon;
-   std::vector<int> poradi;
-   std::vector<int> marg;
-   std::vector<int> apor;
-   std::vector<unsigned char> quadrant;
-   std::vector<int> NN;
-   std::vector<int> amarg;
 };
 
 //------------------------------------------------------------------------------------
@@ -629,6 +574,39 @@ void Matrix::write(const Microarray_Set& data, const std::vector<int>& ids,
    //out << ">  Kernel width    " << p.sigma      << std::endl;
    out << ">  MI threshold    " << p.threshold  << std::endl;
    out << ">  MI P-value      " << p.pvalue     << std::endl;
+   if (!p.nullModelFormat.empty())
+   {
+      out << ">  MI threshold method " << p.thresholdMethod << std::endl;
+      out << ">  AP-MI null model file " << p.nullModelFile << std::endl;
+      out << ">  AP-MI null model format " << p.nullModelFormat << std::endl;
+      out << ">  AP-MI kernel schema " << p.nullModelKernelSchema << std::endl;
+      out << ">  AP-MI estimator " << p.nullModelEstimator << std::endl;
+      out << ">  AP-MI tail model " << p.nullModelTailModel << std::endl;
+      out << ">  AP-MI calibrator schema " << p.nullModelCalibratorSchema
+          << std::endl;
+      out << ">  AP-MI calibrator SHA256 " << p.nullModelCalibratorSha256
+          << std::endl;
+      out << ">  AP-MI null model m " << p.nullModelM << std::endl;
+      out << ">  AP-MI null model Npar " << p.nullModelNparLimit << std::endl;
+      out << ">  AP-MI supported p range [" << p.nullModelSupportedPMin
+          << "," << p.nullModelSupportedPMax << "]" << std::endl;
+      if (p.nullModelHasValidatedPMin)
+         out << ">  AP-MI validated p min " << p.nullModelValidatedPMin
+             << std::endl;
+      if (p.nullModelHasValidatedPMin)
+         out << ">  AP-MI validated p max " << p.nullModelValidatedPMax
+             << std::endl;
+      else
+         out << ">  AP-MI validated p min none" << std::endl;
+      out << ">  AP-MI cutoff tail extrapolated "
+          << (p.nullModelTailExtrapolated ? "yes" : "no") << std::endl;
+      out << ">  AP-MI generator SHA256 " << p.nullModelGeneratorSha256
+          << std::endl;
+      out << ">  AP-MI fit values SHA256 " << p.nullModelFitValuesSha256
+          << std::endl;
+      out << ">  AP-MI validation values SHA256 "
+          << p.nullModelValidationValuesSha256 << std::endl;
+   }
    out << ">  DPI tolerance   " << p.eps        << std::endl;
    //out << ">  Correction      " << p.correction << std::endl;
    out << ">  Subnetwork file " << p.subnetfile << std::endl;
@@ -1659,148 +1637,6 @@ static void BuildRankCache(const Microarray_Set& data, int maNum,
 
 //------------------------------------------------------------------------------------
 
-static double Compute_Pairwise_MI(const int *xranks, const int *yranks, int N,
-                                  int nparLimit,
-                                  AdaptivePartitionWorkspace& workspace)
-{
-   const int M = nparLimit;
-
-   int npar = 1; maxNpar = 1;
-   int run  = 0;
-
-   double xcor = 0.0;
-
-   if (!workspace.matches(N, M))
-      throw std::string("Adaptive-partitioning workspace dimensions do not match MI input.");
-
-   workspace.resetEdge();
-
-   std::vector<int>& poc    = workspace.poc;
-   std::vector<int>& kon    = workspace.kon;
-   std::vector<int>& poradi = workspace.poradi;
-   std::vector<int>& marg   = workspace.marg;
-   std::vector<int>& apor   = workspace.apor;
-   std::vector<unsigned char>& quadrant = workspace.quadrant;
-   std::vector<int>& NN     = workspace.NN;
-   std::vector<int>& amarg  = workspace.amarg;
-
-   while (npar > 0)
-   {
-      run++;
-
-      int np   = npar - 1;
-      int apoc = poc[np];
-      int akon = kon[np];
-      int Nex  = akon - apoc + 1;
-
-      for (int i = 0; i < Nex; i++)
-         apor[i] = poradi[apoc + i - 1];
-
-      int ave1 = std::floor((marg[np] + marg[np + 2 * M]) / 2);
-      int ave2 = std::floor((marg[np + M] + marg[np + 3 * M]) / 2);
-
-      std::fill(NN.begin(), NN.end(), 0);
-
-      for (int i = 0; i < Nex; i++)
-      {
-         int k = apor[i] - 1;
-
-         int j = (xranks[k] <= ave1 ? 0 : 2) + (yranks[k] <= ave2 ? 0 : 1);
-
-         quadrant[i] = static_cast<unsigned char>(j);
-         NN[j]++;
-      }
-
-      double c   = Nex / 4.0;
-      double sum = 0.0;
-
-      for (int i = 0; i < 4; i++)
-      {
-         double d = NN[i] - c;
-         sum += d * d;
-      }
-
-      double tst = 4 * sum / Nex;
-
-      if (tst > 7.8 || run == 1)
-      {
-         amarg[ 0] = amarg[ 1] = marg[np];
-         amarg[ 2] = amarg[ 3] = ave1 + 1;
-         amarg[ 4] = amarg[ 6] = marg[np + M];
-         amarg[ 5] = amarg[ 7] = ave2 + 1;
-         amarg[ 8] = amarg[ 9] = ave1;
-         amarg[10] = amarg[11] = marg[np + 2 * M];
-         amarg[12] = amarg[14] = ave2;
-         amarg[13] = amarg[15] = marg[np + 3 * M];
-
-         // Pack every non-leaf child in one stable pass.  The old code scanned
-         // the parent once per child quadrant and copied through a temporary
-         // vector; these offsets preserve both quadrant and observation order.
-         int writePosition[4] = { -1, -1, -1, -1 };
-         int nextPosition = apoc - 1;
-
-         for (int i = 0; i < 4; i++)
-            if (NN[i] > 2)
-            {
-               writePosition[i] = nextPosition;
-               nextPosition += NN[i];
-            }
-
-         for (int i = 0; i < Nex; i++)
-         {
-            int childQuadrant = quadrant[i];
-
-            if (writePosition[childQuadrant] >= 0)
-               poradi[writePosition[childQuadrant]++] = apor[i];
-         }
-
-         npar--;
-
-         for (int i = 0; i < 4; i++)
-            if (NN[i] > 2)
-            {
-               if (++npar > M)
-                  throw std::string("Exceeded npar limit!");
-
-               if (npar > maxNpar)
-                  maxNpar = npar;
-
-               akon = apoc + NN[i] - 1;
-
-               int np = npar - 1;
-
-               poc[np] = apoc;
-               kon[np] = akon;
-
-               for (int j = 0; j < 4; j++)
-                  marg[np + j * M] = amarg[i + 4 * j];
-
-               apoc = akon + 1;
-            }
-            else if (NN[i] > 0)
-            {
-               double Nx = amarg[i +  8] - amarg[i] + 1;
-               double Ny = amarg[i + 12] - amarg[i + 4] + 1;
-
-               xcor += NN[i] * std::log(NN[i] / (Nx * Ny));
-            }
-      }
-      else
-      {
-         double Nx = marg[np + 2 * M] - marg[np] + 1;
-         double Ny = marg[np + 3 * M] - marg[np + M] + 1;
-
-         xcor += Nex * std::log(Nex / (Nx * Ny));
-
-         npar--;
-      }
-   }
-
-   return (xcor / N + std::log(N));
-}
-
-//------------------------------------------------------------------------------------
-
 double Microarray_Set::calculateMI(int maNum, int probeId1, int probeId2,
                                    double threshold, double noise2, int nparLimit,
                                    const std::vector<int>& rankCache,
@@ -1819,8 +1655,13 @@ double Microarray_Set::calculateMI(int maNum, int probeId1, int probeId2,
    std::size_t offset1 = static_cast<std::size_t>(rankRows[probeId1]) * maNum;
    std::size_t offset2 = static_cast<std::size_t>(rankRows[probeId2]) * maNum;
 
-   double mi = Compute_Pairwise_MI(&rankCache[offset1], &rankCache[offset2],
-                                   maNum, nparLimit, workspace);
+   int pairMaxNpar = 1;
+   double mi = computeAdaptivePartitionMI(&rankCache[offset1], &rankCache[offset2],
+                                          maNum, nparLimit, workspace,
+                                          &pairMaxNpar);
+
+   if (pairMaxNpar > maxNpar)
+      maxNpar = pairMaxNpar;
 
    if (!std::isfinite(mi))
    {

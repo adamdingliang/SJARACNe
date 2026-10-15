@@ -10,6 +10,9 @@ import logging
 import pathlib
 
 
+DEFAULT_MIN_RECURRENCE = 6
+
+
 def sampling_fraction(value):
     parsed = float(value)
     if not 0.0 < parsed <= 1.0:
@@ -21,6 +24,33 @@ def sampling_size(value):
     parsed = int(value)
     if parsed < 2:
         raise argparse.ArgumentTypeError('subsample size must be at least 2')
+    return parsed
+
+
+def minimum_recurrence(value):
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        raise argparse.ArgumentTypeError('minimum recurrence must be an integer')
+    if parsed < 1:
+        raise argparse.ArgumentTypeError('minimum recurrence must be at least 1')
+    return parsed
+
+
+def bootstrap_count(value):
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        raise argparse.ArgumentTypeError('bootstrap count must be an integer')
+    if parsed < 1:
+        raise argparse.ArgumentTypeError('bootstrap count must be at least 1')
+    return parsed
+
+
+def consensus_probability(value):
+    parsed = float(value)
+    if not 0.0 < parsed <= 1.0:
+        raise argparse.ArgumentTypeError('consensus p-value must be within (0, 1]')
     return parsed
 
 
@@ -36,14 +66,31 @@ def main():
                                'nodes in the network.')
     parent_parser.add_argument('-g', '--hub-genes', metavar='FILE', required=True,
                                help='Path to a file containing a list of symbols to be considered as hub genes.')
-    parent_parser.add_argument('-pc', '--p-value-consensus', metavar='FLOAT', default=1e-5,
-                               help='P-value threshold to select edges in building consensus network.')
+    consensus_group = parent_parser.add_mutually_exclusive_group()
+    consensus_group.add_argument(
+        '-k', '--min-recurrence', metavar='INT', type=minimum_recurrence,
+        help=(
+            'Minimum number of distinct resampled networks containing an edge; '
+            'default: 6.'
+        ),
+    )
+    consensus_group.add_argument(
+        '-pc', '--p-value-consensus', metavar='FLOAT', type=consensus_probability,
+        help=(
+            'Deprecated legacy normal-approximation P-value threshold for the '
+            'consensus network.'
+        ),
+    )
     parent_parser.add_argument('-pb', '--p-value-bootstrap', metavar='FLOAT', default=1e-7,
                                help='P-value threshold to filter mutual information in each resampled network.')
+    parent_parser.add_argument(
+        '-M', '--apmi-null-model', metavar='FILE',
+        help='Exact-m, exact-depth estimator-matched AP-MI GPD-tail model passed to every resampled network.',
+    )
     parent_parser.add_argument('-d', '--depth', metavar='INT', default=40, help='maximum partitioning depth.')
     parent_parser.add_argument('-c', '--config-dir', metavar='DIR', help='Directory containing ARACNe configuration '
                                                                          'files. Use default configs if not provided.')
-    parent_parser.add_argument('-n', '--bootstrap-num', metavar='INT', default=100,
+    parent_parser.add_argument('-n', '--bootstrap-num', metavar='INT', type=bootstrap_count, default=100,
                                help='Number of resampled networks to generate (legacy option name).')
     sampling_group = parent_parser.add_mutually_exclusive_group()
     sampling_group.add_argument(
@@ -78,6 +125,21 @@ def main():
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
 
+    recurrence = None
+    if args.p_value_consensus is None:
+        recurrence = (
+            DEFAULT_MIN_RECURRENCE
+            if args.min_recurrence is None
+            else args.min_recurrence
+        )
+        if recurrence > args.bootstrap_num:
+            parser.error(
+                'minimum recurrence {} exceeds bootstrap count {}'.format(
+                    recurrence,
+                    args.bootstrap_num,
+                )
+            )
+
     # to make executable and config findable
     installed_path = os.path.dirname(os.path.realpath(__file__))
     os.environ['PATH'] += (os.pathsep + installed_path + '/bin')
@@ -100,21 +162,31 @@ def main():
     if not os.path.isdir(args.output_dir):
         os.makedirs(args.output_dir)
     output_dir_name = os.path.basename(args.output_dir)
+    if args.p_value_consensus is not None:
+        consensus_selection = 'p_value_consensus: {}\n'.format(
+            args.p_value_consensus
+        )
+    else:
+        consensus_selection = 'min_recurrence: {}\n'.format(recurrence)
     # Create input yml file in a temp directory
     with open(pathlib.PurePath(args.output_dir).joinpath('sjaracne_workflow.yml'), 'w') as fp_yml:
         logging.info(fp_yml.name)
         contents = 'exp_file:\n  class: File\n  path: {}\n' \
                    'probe_file:\n  class: File\n  path: {}\n' \
-                   'p_value_consensus: {}\n' \
+                   '{}' \
                    'p_value_bootstrap: {}\n' \
                    'depth: {}\n' \
                    'aracne_config_dir:\n  class: Directory\n  path: {}\n' \
                    'bootstrap_num: {}\n' \
                    'subsample_spec: {}\n' \
                    'final_out_dir_name: {}'.format(os.path.abspath(args.exp_file), os.path.abspath(args.hub_genes),
-                                                   args.p_value_consensus, args.p_value_bootstrap, args.depth,
+                                                   consensus_selection, args.p_value_bootstrap, args.depth,
                                                    config_dir, args.bootstrap_num, json.dumps(subsample_spec),
                                                    output_dir_name)
+        if args.apmi_null_model is not None:
+            contents += '\napmi_null_model:\n  class: File\n  path: {}'.format(
+                json.dumps(os.path.abspath(args.apmi_null_model))
+            )
         logging.info(contents)
         fp_yml.write(contents)
         fp_yml.flush()

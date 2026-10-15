@@ -1,0 +1,85 @@
+{
+  "command": [
+    "/mnt/d/GitHub/SJARACNe-brca100-netbid-qc/benchmarks/brca100_netbid_qc/netbid2-r",
+    "Rscript",
+    "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-netbid2-html-20260820/runtime/run_netbid_qc.R",
+    "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-sweep-20260820/results/tf/k006/consensus_network_ncol_.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/inputs/BRCA100_TF.txt",
+    "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-netbid2-html-20260820/runs/tf/k006/netbid2_qc_html.partial",
+    "TF_",
+    "true"
+  ],
+  "driver": "tf",
+  "fingerprint": "675766fbc37decca9b1a29110930b91cf0216de531fcfb02b9ad29f4795401e8",
+  "finished_at_utc": "2026-08-20T19:07:14.688548+00:00",
+  "input": {
+    "design_fingerprint": "8948b3d2be1a9e1a69591131b0475b1c5265475b16665caca34be4f72d0a6e8e",
+    "design_sha256": "1228de2bd5f2ae0e59bfaadefc43d8a9a080c68e6ae7313713f1bba762269216",
+    "driver_file": "/home/adam/sjaracne-benchmarks/brca100-pr67-threshold-sweep-20260818/inputs/BRCA100_TF.txt",
+    "driver_sha256": "9b1219a489b99432175e4c4ad46add7b06f25aae388ee8dd3261fa91e4c43ffd",
+    "environment": {
+      "NetBID2": "2.2.0",
+      "NetBID2_remote_sha": "5defa454d600b94f5dd6d1f9f4428f99759a6821",
+      "R": "R version 4.4.3 (2025-02-28)",
+      "igraph": "2.3.3"
+    },
+    "expected_candidate_drivers": 2608,
+    "expected_edges": 416408,
+    "generate_html": true,
+    "generator_sha256": "e7d79279ba5b2de93b52292eb867b917602cfa6afe9543654afa11322129e33c",
+    "network": "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-sweep-20260820/results/tf/k006/consensus_network_ncol_.txt",
+    "network_bytes": 31191254,
+    "network_manifest_sha256": "1acb007a5d1f30889a050451c8ab55efedce47f62ac71c69301e2c6f80d6f5b7",
+    "network_sha256": "9e55caaabce7c126ab165965452379be52e1ad8a481fbb955044a648879e1e55",
+    "prefix": "TF_",
+    "r_script_sha256": "f9485b923e278ce7883d359181819cd728402dff11fcd4172b7fd6c0c51149a4",
+    "summary_manifest_sha256": "ff86e127bbb203e75be57628608c0d605bf06bf1690402715aa93889cd7ef973",
+    "summary_outputs": {
+      "driver_target_sizes.tsv": "a821872b52eb5eb136c233ad151d5b604667e29a89b349c5e30d83ee01cb251d",
+      "netbid_environment.tsv": "589fd14d9f877353eaf0b97e8dbc5a0b5e09bb4248ef6ee0114d709279facb9b",
+      "network_summary.tsv": "4a950f9d13df5cd74c501dc07059ed038b31f17b65871c67788234c61adcaf64"
+    },
+    "wrapper_sha256": "c706c7665fc2e589bf70030bb5dc0fc21935b93922b16fb256a5801752220095"
+  },
+  "input_fingerprint": "6d953573e177c1ffc97578e44c7a164572f5c1e7200255e1aab5ce5fe57eb54c",
+  "minimum_support": 6,
+  "output": "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-netbid2-html-20260820/runs/tf/k006/netbid2_qc_html",
+  "output_inventory": [
+    {
+      "bytes": 10150,
+      "path": "TF_netQC.Rmd",
+      "sha256": "195a8f51e875c1bf8d0d0a50ee9a2c9e7cdd1938ada3664dc76cae2ed70d2d60"
+    },
+    {
+      "bytes": 2000106,
+      "path": "TF_netQC.html",
+      "sha256": "8fbaaf0f341e11a74ab1ba26e01c497b563fb6204ad3fa330235dd00065dd62b"
+    },
+    {
+      "bytes": 43233,
+      "path": "driver_target_sizes.tsv",
+      "sha256": "a821872b52eb5eb136c233ad151d5b604667e29a89b349c5e30d83ee01cb251d"
+    },
+    {
+      "bytes": 136,
+      "path": "netbid_environment.tsv",
+      "sha256": "589fd14d9f877353eaf0b97e8dbc5a0b5e09bb4248ef6ee0114d709279facb9b"
+    },
+    {
+      "bytes": 564,
+      "path": "network_summary.tsv",
+      "sha256": "4a950f9d13df5cd74c501dc07059ed038b31f17b65871c67788234c61adcaf64"
+    }
+  ],
+  "schema": "sjaracne-brca100-consensus-recurrence-netbid2-html-v1",
+  "stderr": {
+    "bytes": 265,
+    "path": "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-netbid2-html-20260820/runs/tf/k006/logs/netbid2_qc_html.stderr.log",
+    "sha256": "f4d78c0f6deb8b5c02287ac0c4d03f72af6373cc26d608b8543bea426bfb09ae"
+  },
+  "stdout": {
+    "bytes": 1806,
+    "path": "/home/adam/sjaracne-benchmarks/brca100-consensus-recurrence-netbid2-html-20260820/runs/tf/k006/logs/netbid2_qc_html.stdout.log",
+    "sha256": "0ba67e1dee71663866d86298d5e1600ef2a152b52bcc5b20bbe878efd41b7421"
+  }
+}

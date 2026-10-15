@@ -33,10 +33,20 @@ struct Parameter
    int    seed;       // seed
    int    samplingPopulation; // observations eligible for resampling
    int    samplingSize;       // observations selected for MI calculation
+   bool   thresholdSpecified; // whether -t was supplied, including -t 0
 
    std::string verbose, infile, outfile, adjfile, hub;
    std::string subnetfile, annotfile, controlId, condition, home_dir;
    std::string subsampleSpec, samplingMethod;
+   std::string nullModelFile, thresholdMethod;
+   std::string nullModelFormat, nullModelKernelSchema, nullModelEstimator;
+   std::string nullModelTailModel, nullModelGeneratorSha256;
+   std::string nullModelCalibratorSchema, nullModelCalibratorSha256;
+   std::string nullModelFitValuesSha256, nullModelValidationValuesSha256;
+   int nullModelM, nullModelNparLimit;
+   double nullModelSupportedPMin, nullModelSupportedPMax;
+   double nullModelValidatedPMin, nullModelValidatedPMax;
+   bool nullModelHasValidatedPMin, nullModelTailExtrapolated;
 
    std::vector<std::string> subnet, tf_list;
 
@@ -45,9 +55,18 @@ struct Parameter
         sigma(default_sigma), sample(default_sample), percent(default_percent),
         mean(default_mean), cv(default_cv), correction(default_correction),
         nparLimit(default_nparLimit), seed(default_seed), samplingPopulation(0),
-        samplingSize(0), verbose("off"), infile(""), outfile(""), adjfile(""),
+        samplingSize(0), thresholdSpecified(false), verbose("off"), infile(""), outfile(""), adjfile(""),
         hub(""), subnetfile(""), annotfile(""), controlId(""), condition(""),
-        home_dir("./"), subsampleSpec(""), samplingMethod(""), subnet(), tf_list() { }
+        home_dir("./"), subsampleSpec(""), samplingMethod(""), nullModelFile(""),
+        thresholdMethod("none"), nullModelFormat(""), nullModelKernelSchema(""),
+        nullModelEstimator(""), nullModelTailModel(""), nullModelGeneratorSha256(""),
+        nullModelCalibratorSchema(""), nullModelCalibratorSha256(""),
+        nullModelFitValuesSha256(""), nullModelValidationValuesSha256(""),
+        nullModelM(0), nullModelNparLimit(0), nullModelSupportedPMin(0.0),
+        nullModelSupportedPMax(0.0), nullModelValidatedPMin(0.0),
+        nullModelValidatedPMax(0.0),
+        nullModelHasValidatedPMin(false), nullModelTailExtrapolated(false),
+        subnet(), tf_list() { }
 };
 
 //------------------------------------------------------------------------------------
