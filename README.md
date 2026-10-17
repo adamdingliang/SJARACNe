@@ -216,6 +216,12 @@ the published null-rate summaries describe the original benchmark callable.
 See the [process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m)
 and [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md).
 
+The end-to-end BRCA100 TF/SIG PCHIP refresh has separate
+[process](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/brca100_pchip_refresh/README.md)
+and [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/brca100_pchip_refresh/results_2026-10-17/RESULTS.md).
+The earlier threshold sweep informs provisional probability choices; network
+topology and NetBID2 QC are descriptive, not biological validation.
+
 ## Examples to create a transcription factor network
 **Note:** for testing purpose, the number of resampled networks (legacy option ```-n```) is set to 2, the consensus p-value threshold
 ```-pc``` is set to 1.0 in the following examples. ```-n 100``` and ```-pc 1e-5``` are recommended for real 

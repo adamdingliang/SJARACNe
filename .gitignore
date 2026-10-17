@@ -92,7 +92,6 @@ celerybeat-schedule
 # Environments
 .env
 .venv
-/.micromamba/
 env/
 venv/
 ENV/
