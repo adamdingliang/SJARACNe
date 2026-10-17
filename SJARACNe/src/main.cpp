@@ -10,7 +10,9 @@
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <iomanip>
 #include <sstream>
+#include "apmi.h"
 #include "apmi_null_model.h"
 #include "matrix.h"
 #include "parseargs.h"
@@ -38,8 +40,8 @@ const char *option[NUM_OPTIONS] =
 "                   default: determined by program",
 "-l <file>          File containing a list of probes annotated as transcription\n"
 "                   factors in the input dataset, default: NONE [***]",
-"-M <file>          Estimator-matched AP-MI GPD-tail null model. The model must\n"
-"                   exactly match the selected observation count and -N limit",
+"-M pchip           Opt in to the bundled experimental AP-MI PCHIP cutoff;\n"
+"                   requires -N 40, m=50..10000 and p=1e-7..0.05; no tail flag",
 "-N <npar_limit>    Maximum allowed value of npar, default: 20",
 "-S <Seed>	    Initial seed for random number generator, default: 1",
 "-n <level>         Array measurement noise level, default: 0",
@@ -144,13 +146,13 @@ Parameter parseParameter(int argc, char *argv[])
       case 'l': p.annotfile  = ARGF(); break;            // TF annotation file
       case 'M': p.nullModelFile = ARGF();                 // AP-MI null model
                 if (p.nullModelFile == "")
-                   throw std::string("Option '-M' requires a model file.");
+                   throw std::string("Option '-M' requires the bundled model name 'pchip'.");
                 break;
       case 'N': p.nparLimit  = std::atoi(ARGF()); break; // max npar value
       case 'S': p.seed       = std::atoi(ARGF()); break; // seed
       case 'n': p.correction = std::atof(ARGF()); break; // correction for noise
       case 'o': p.outfile    = ARGF(); break;            // output file
-      case 'p': p.pvalue     = std::atof(ARGF()); break; // p-value
+      case 'p': p.pvalue     = parseFiniteNumericOption("-p", ARGF()); break; // p-value
       case 'r': p.sample     = std::atoi(ARGF()); break; // bootstrap sample number
       case 's': p.subnetfile = ARGF();                   // subset of probes
                 if (p.subnetfile == "")
@@ -209,63 +211,28 @@ void findLegacyThreshold(int n, Parameter& p)
 
 void findEstimatorMatchedThreshold(int n, Parameter& p)
 {
-   const ApmiNullModel model = ApmiNullModel::load(p.nullModelFile);
-
-   if (model.m != n)
-   {
-      std::ostringstream message;
-      message << "AP-MI null model was calibrated for m=" << model.m
-              << ", but this run uses exactly m=" << n
-              << " observations. Exact-m models are not interpolated.";
-      throw message.str();
-   }
-   if (model.nparLimit != p.nparLimit)
-   {
-      std::ostringstream message;
-      message << "AP-MI null model was calibrated with npar_limit="
-              << model.nparLimit << ", but this run uses -N " << p.nparLimit
-              << ". The AP-MI estimator settings must match exactly.";
-      throw message.str();
-   }
-
-   p.threshold = model.cutoff(p.pvalue);
-   p.thresholdMethod = "estimator-matched AP-MI permutation-null GPD tail";
-   p.nullModelFormat = model.format;
-   p.nullModelKernelSchema = model.kernelSchema;
-   p.nullModelEstimator = model.estimator;
-   p.nullModelTailModel = model.tailModel;
-   p.nullModelCalibratorSchema = model.calibratorSchema;
-   p.nullModelCalibratorSha256 = model.calibratorSha256;
-   p.nullModelGeneratorSha256 = model.generatorSha256;
-   p.nullModelFitValuesSha256 = model.fitValuesSha256;
-   p.nullModelValidationValuesSha256 = model.validationValuesSha256;
-   p.nullModelM = model.m;
-   p.nullModelNparLimit = model.nparLimit;
-   p.nullModelSupportedPMin = model.supportedPMin;
-   p.nullModelSupportedPMax = model.supportedPMax;
-   p.nullModelHasValidatedPMin = model.hasValidatedPMin;
-   p.nullModelValidatedPMin = model.validatedPMin;
-   p.nullModelValidatedPMax = model.validatedPMax;
-   p.nullModelTailExtrapolated =
-      !model.hasValidatedPMin || p.pvalue < model.validatedPMin ||
-      p.pvalue > model.validatedPMax;
-
-   if (model.hasValidatedPMin && p.pvalue < model.validatedPMin)
-      std::cout << "[THRESHOLD] WARNING: requested p=" << p.pvalue
-                << " is below the model's held-out validated_p_min="
-                << model.validatedPMin
-                << "; this cutoff is a fitted-tail extrapolation."
+   if (std::string(adaptivePartitionKernelSchema()) != "sjaracne-apmi-v1")
+      throw std::string("Bundled PCHIP data do not match the active AP-MI kernel schema.");
+   p.threshold = Apmi::pchipCutoff(n, p.pvalue, p.nparLimit);
+   p.thresholdMethod = "experimental PCHIP empirical cutoff";
+   p.pchipPrimarySha256 = Apmi::pchipPrimarySha256();
+   p.pchipDataSha256 = Apmi::pchipDataSha256();
+   p.pchipSummarySha256 = Apmi::pchipSummarySha256();
+   p.pchipActualM = n;
+   std::cout << "[THRESHOLD] WARNING: PCHIP is experimental; uniform +/-10% "
+                "null-rate accuracy and biological FDR are not established." << std::endl;
+   if (n % 50 != 0)
+      std::cout << "[THRESHOLD] WARNING: m=" << n
+                << " is off the tested 50-step grid; this is unvalidated interpolation."
                 << std::endl;
-   else if (model.hasValidatedPMin && p.pvalue > model.validatedPMax)
-      std::cout << "[THRESHOLD] WARNING: requested p=" << p.pvalue
-                << " is above the model's held-out validated_p_max="
-                << model.validatedPMax
-                << "; this cutoff lies outside the held-out validated range."
+   if (p.pvalue < 0.0005)
+      std::cout << "[THRESHOLD] WARNING: p is outside the principal assessment range "
+                   "[0.0005,0.05]; this boundary is not a demonstrated failure threshold."
                 << std::endl;
-   else if (!model.hasValidatedPMin)
-      std::cout << "[THRESHOLD] WARNING: this AP-MI null model records no "
-                   "held-out validated p range; the requested cutoff is a "
-                   "fitted-tail extrapolation."
+   if (p.pvalue <= 1e-5)
+      std::cout << "[THRESHOLD] WARNING: extreme-tail Monte Carlo precision is limited; "
+                   "10M validation draws expect only 100, 10 and 1 exceedances at "
+                   "p=1e-5,1e-6,1e-7. Interpolation does not guarantee 10% accuracy."
                 << std::endl;
 }
 
@@ -367,6 +334,9 @@ void runStandard(int argc, char *argv[])
 
       std::cout << "MI threshold determined for p=" << p.pvalue << ": " << p.threshold
                 << std::endl;
+      if (!p.pchipPrimarySha256.empty())
+         std::cout << "[THRESHOLD] PCHIP cutoff binary64=" << std::setprecision(17)
+                   << p.threshold << std::setprecision(6) << std::endl;
    }
    else if (!p.nullModelFile.empty())
       std::cout << "[THRESHOLD] '-M' was supplied but p=1 preserves all MI values; "

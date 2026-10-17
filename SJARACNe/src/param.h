@@ -39,14 +39,8 @@ struct Parameter
    std::string subnetfile, annotfile, controlId, condition, home_dir;
    std::string subsampleSpec, samplingMethod;
    std::string nullModelFile, thresholdMethod;
-   std::string nullModelFormat, nullModelKernelSchema, nullModelEstimator;
-   std::string nullModelTailModel, nullModelGeneratorSha256;
-   std::string nullModelCalibratorSchema, nullModelCalibratorSha256;
-   std::string nullModelFitValuesSha256, nullModelValidationValuesSha256;
-   int nullModelM, nullModelNparLimit;
-   double nullModelSupportedPMin, nullModelSupportedPMax;
-   double nullModelValidatedPMin, nullModelValidatedPMax;
-   bool nullModelHasValidatedPMin, nullModelTailExtrapolated;
+   std::string pchipPrimarySha256, pchipDataSha256, pchipSummarySha256;
+   int pchipActualM;
 
    std::vector<std::string> subnet, tf_list;
 
@@ -58,14 +52,8 @@ struct Parameter
         samplingSize(0), thresholdSpecified(false), verbose("off"), infile(""), outfile(""), adjfile(""),
         hub(""), subnetfile(""), annotfile(""), controlId(""), condition(""),
         home_dir("./"), subsampleSpec(""), samplingMethod(""), nullModelFile(""),
-        thresholdMethod("none"), nullModelFormat(""), nullModelKernelSchema(""),
-        nullModelEstimator(""), nullModelTailModel(""), nullModelGeneratorSha256(""),
-        nullModelCalibratorSchema(""), nullModelCalibratorSha256(""),
-        nullModelFitValuesSha256(""), nullModelValidationValuesSha256(""),
-        nullModelM(0), nullModelNparLimit(0), nullModelSupportedPMin(0.0),
-        nullModelSupportedPMax(0.0), nullModelValidatedPMin(0.0),
-        nullModelValidatedPMax(0.0),
-        nullModelHasValidatedPMin(false), nullModelTailExtrapolated(false),
+        thresholdMethod("none"), pchipPrimarySha256(""), pchipDataSha256(""),
+        pchipSummarySha256(""), pchipActualM(0),
         subnet(), tf_list() { }
 };
 

@@ -113,6 +113,3 @@ venv.bak/
 .mypy_cache/
 .DS_Store
 ._.DS_Store
-
-# Reproducible, machine-generated performance benchmark matrices
-/benchmarks/rank_cache/generated/

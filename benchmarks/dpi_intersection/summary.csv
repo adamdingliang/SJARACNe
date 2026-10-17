@@ -1,6 +1,0 @@
-case_id,mode,adjacency,hubs,source_rows,genes_in_graph,directed_edges,baseline_median_seconds,candidate_median_seconds,speedup
-hub_h0010_t4000,selected_hubs,hub_h0010_t4000.adj,hub_h0010.txt,10,4010,40040,0.296172,0.102824,2.880378
-hub_h0050_t4000,selected_hubs,hub_h0050_t4000.adj,hub_h0050.txt,50,4050,200200,1.135199,0.241199,4.706483
-hub_h0100_t4000,selected_hubs,hub_h0100_t4000.adj,hub_h0100.txt,100,4100,400400,2.185594,0.442719,4.936752
-allgene_skew_h0100_t4000,all_gene_skewed,allgene_skew_h0100_t4000.adj,,4100,4100,800000,6.941341,1.212456,5.725025
-allgene_dense_tied_g0500,all_gene_dense_control,allgene_dense_tied_g0500.adj,,500,500,249500,0.232530,0.236049,0.985092

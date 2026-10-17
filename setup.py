@@ -36,7 +36,6 @@ setup(
     entry_points={
         "console_scripts": [
             "sjaracne=SJARACNe.sjaracne:main",
-            "sjaracne-calibrate-apmi-null=SJARACNe.calibrate_apmi_null:main",
         ]
     },
     cmdclass={

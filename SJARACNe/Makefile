@@ -72,6 +72,8 @@ $(NULL_OBJECT): $(TOOLDIR)/apmi_null_generator.cpp $(SRCDIR)/apmi.h
 	@mkdir -p $(BUILDDIR)/tools
 	@echo "Compiling $<..."; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
 
+$(BUILDDIR)/apmi_null_model.o: $(SRCDIR)/apmi_null_model.h $(SRCDIR)/apmi_pchip_data.h
+
 clean:
 	@echo "Cleaning $(TARGET) and $(NULL_TARGET)..."; $(RM) -r $(BUILDDIR)/* $(TARGET) $(NULL_TARGET)
 
