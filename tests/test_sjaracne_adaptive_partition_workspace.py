@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-FIXTURES = PROJECT_ROOT / "benchmarks" / "rank_cache" / "fixtures"
+FIXTURES = PROJECT_ROOT / "tests" / "fixtures" / "rank_cache"
 
 
 def find_sjaracne_executable():

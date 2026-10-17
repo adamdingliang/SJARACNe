@@ -139,6 +139,14 @@ or omit both to analyze all observations. Legacy workflow names such as
 The 80% default is a pragmatic starting point, not a universal optimum. For an
 important dataset, compare a small sensitivity range (for example, 64%, 80%, and
 90%) and recalibrate any sample-size-dependent MI threshold for each choice.
+Dataset-level benchmark processes, results and data provenance, including the
+simulated DREAM5 Network 1 comparison, are maintained separately in
+[sjaracne_benchmark](https://github.com/adamdingliang/sjaracne_benchmark)
+(currently private). Historical implementation-performance evidence and its
+reusable benchmarking tools are maintained there as well. SJARACNe does not
+require that repository to build, run or test. Small engine correctness fixtures
+remain here under `tests/fixtures/`; the root `benchmarks/` directory has been
+retired. Benchmark results are not a new default-fraction recommendation.
 
 ### Estimator-matched AP-MI significance models
 
