@@ -19,12 +19,16 @@ inputs:
     default: 1e-5
     label: P-value threshold in building consensus network
   p_value_bootstrap:
-    type: float
+    type: double
     default: 1e-7
     label: P-value threshold in building individual resampled networks
   apmi_null_model:
-    type: File?
-    label: Optional exact-m and exact-depth estimator-matched AP-MI null-tail model
+    type: string?
+    label: Optional bundled experimental AP-MI PCHIP model name pchip
+  allow_rare_tail:
+    type: boolean
+    default: false
+    label: Explicit acknowledgment for weakly measured PCHIP probabilities below 0.0005
   depth:
     type: int
     default: 40
@@ -96,6 +100,7 @@ steps:
       probe_file_subnetwork: ch_ending_probe/out_file
       p_value: p_value_bootstrap
       apmi_null_model: apmi_null_model
+      allow_rare_tail: allow_rare_tail
       aracne_config_dir: aracne_config_dir
       npar_limit: depth
       subsample_spec: subsample_spec

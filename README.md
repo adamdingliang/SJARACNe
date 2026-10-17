@@ -148,29 +148,65 @@ require that repository to build, run or test. Small engine correctness fixtures
 remain here under `tests/fixtures/`; the root `benchmarks/` directory has been
 retired. Benchmark results are not a new default-fraction recommendation.
 
-### Estimator-matched AP-MI significance models
+### Experimental PCHIP MI cutoffs (opt-in)
 
-SJARACNe can optionally replace the inherited affine ARACNe p-value conversion
-with a null calibrated against its exact C++ adaptive-partitioning estimator.
-Pass an accepted model with `-M` / `--apmi-null-model`. Models are exact in the
-sample count `m` and AP depth `-N`; a mismatch is rejected rather than
-interpolated. For example, the packaged BRCA100-sized model uses `m=80` and
-`Npar=40`:
+Use `-M pchip` / `--apmi-null-model pchip` to replace the legacy affine
+p-to-MI conversion **for that run** with the bundled empirical PCHIP surface.
+Existing defaults remain unchanged: no `-M` means legacy affine, workflow
+`-pb` remains `1e-7`, and native `-p 1` preserves all MI. PCHIP requires
+`Npar=40`, an actual selected sample count `m=50..10000`, and ordinarily
+`p=0.0005..0.05`. Set `-pb` explicitly when opting in:
 
 ```bash
 sjaracne local -e expression.exp -g hubs.txt -n 100 \
-  --subsample-size 80 -M SJARACNe/config/apmi_null/apmi_null_m00080_npar040.model \
+  --subsample-size 80 -M pchip -pb 0.001 \
   -o results -tmp tmp
 ```
 
-The workflow p-value default remains `1e-7`. At that depth, the cutoff comes
-from a fitted extreme tail and is beyond direct Monte Carlo validation; each
-network records this extrapolation and the full model provenance in its header.
-See [the calibration design, sweep results, and held-out BRCA100
-validation](benchmarks/apmi_null_calibration/README.md). Without a model,
-SJARACNe retains the historical affine calibration for backward compatibility
-and prints a warning. An explicit native `-t` cutoff still bypasses either
-p-value model.
+The same callable is available without running inference or importing SciPy:
+
+```python
+from SJARACNe import get_mi_cutoff
+
+tf_cutoff = get_mi_cutoff(m=80, p=0.001)       # approximately 0.147831
+sig_cutoff = get_mi_cutoff(m=80, p=0.0005)     # approximately 0.164452
+```
+
+Native equivalent: `sjaracne.exe -i expression.exp -s hubs.txt -N 40 -u 80 -M pchip -p 0.001`.
+Both TF and SIG use the same function; network identity does not choose a
+different default. These probabilities are provisional BRCA100 operating
+points, not universal biological recommendations.
+
+PCHIP is **experimental**, not a uniformly validated probability guarantee.
+The independent-rank study had 6599/6600 moderate observed-rate checks within
+10%, but simultaneous intervals confirmed only 784/800 core cases, with 16
+unresolved. Off-grid sample counts such as `m=80` are interpolated and were
+not tested in the 50-step broad-grid study. Rare probabilities down to `1e-7`
+require `--allow-rare-tail` (native `-R`; Python `allow_rare_tail=True`) and
+emit a warning: ten million validation draws cannot establish 10% accuracy
+at `1e-7`. No biological FDR control is claimed.
+The null assumes exchangeable observations and unique ordinal ranks; the
+calibration is not an independent validation of zero-inflated or heavily tied
+expression data.
+
+Unsupported inputs, crossed cutoff knots and estimator mismatches fail rather
+than extrapolating or silently falling back. Legacy with-replacement `-r` and
+adjacency replay `-j` are not supported when PCHIP is active. An explicit
+native `-t`, including zero, overrides the p-value conversion.
+
+The model and native coefficients are bundled with SJARACNe; there is no
+runtime dependency on the benchmark repository. Network headers retain source
+hashes, actual `m`, rare-tail/off-grid status and decimal/hex binary64 cutoffs.
+Literal training-size/probability knots retain their exact stored binary64
+values. Between knots, library/compiler arithmetic can differ from the study's
+NumPy/SciPy implementation by a few ULPs (15 in the recorded port check).
+Numerical closeness does not prove identical exceedance counts near MI ties;
+the published null-rate summaries describe the original benchmark callable.
+See the [process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m)
+and [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md).
+The earlier GPD calibrator and exact-size models are retained only as
+[exploratory benchmark history](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_gpd_exploratory),
+not installed as a runtime option.
 
 
 ## Examples to create a transcription factor network

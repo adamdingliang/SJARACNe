@@ -14,6 +14,7 @@
 #include <ctime>
 #include <fstream>
 #include <functional>
+#include <iomanip>
 #include <ios>
 #include <iterator>
 #include <limits>
@@ -574,38 +575,28 @@ void Matrix::write(const Microarray_Set& data, const std::vector<int>& ids,
    //out << ">  Kernel width    " << p.sigma      << std::endl;
    out << ">  MI threshold    " << p.threshold  << std::endl;
    out << ">  MI P-value      " << p.pvalue     << std::endl;
-   if (!p.nullModelFormat.empty())
+   if (!p.pchipPrimarySha256.empty())
    {
       out << ">  MI threshold method " << p.thresholdMethod << std::endl;
-      out << ">  AP-MI null model file " << p.nullModelFile << std::endl;
-      out << ">  AP-MI null model format " << p.nullModelFormat << std::endl;
-      out << ">  AP-MI kernel schema " << p.nullModelKernelSchema << std::endl;
-      out << ">  AP-MI estimator " << p.nullModelEstimator << std::endl;
-      out << ">  AP-MI tail model " << p.nullModelTailModel << std::endl;
-      out << ">  AP-MI calibrator schema " << p.nullModelCalibratorSchema
-          << std::endl;
-      out << ">  AP-MI calibrator SHA256 " << p.nullModelCalibratorSha256
-          << std::endl;
-      out << ">  AP-MI null model m " << p.nullModelM << std::endl;
-      out << ">  AP-MI null model Npar " << p.nullModelNparLimit << std::endl;
-      out << ">  AP-MI supported p range [" << p.nullModelSupportedPMin
-          << "," << p.nullModelSupportedPMax << "]" << std::endl;
-      if (p.nullModelHasValidatedPMin)
-         out << ">  AP-MI validated p min " << p.nullModelValidatedPMin
-             << std::endl;
-      if (p.nullModelHasValidatedPMin)
-         out << ">  AP-MI validated p max " << p.nullModelValidatedPMax
-             << std::endl;
-      else
-         out << ">  AP-MI validated p min none" << std::endl;
-      out << ">  AP-MI cutoff tail extrapolated "
-          << (p.nullModelTailExtrapolated ? "yes" : "no") << std::endl;
-      out << ">  AP-MI generator SHA256 " << p.nullModelGeneratorSha256
-          << std::endl;
-      out << ">  AP-MI fit values SHA256 " << p.nullModelFitValuesSha256
-          << std::endl;
-      out << ">  AP-MI validation values SHA256 "
-          << p.nullModelValidationValuesSha256 << std::endl;
+      out << ">  AP-MI calibration status experimental-not-uniformly-confirmed" << std::endl;
+      out << ">  AP-MI kernel schema sjaracne-apmi-v1" << std::endl;
+      out << ">  AP-MI rank policy unique-ordinal-ranks" << std::endl;
+      out << ">  AP-MI PCHIP primary SHA256 " << p.pchipPrimarySha256 << std::endl;
+      out << ">  AP-MI PCHIP data SHA256 " << p.pchipDataSha256 << std::endl;
+      out << ">  AP-MI PCHIP summary SHA256 " << p.pchipSummarySha256 << std::endl;
+      out << ">  AP-MI actual m " << p.pchipActualM << std::endl;
+      out << ">  AP-MI Npar " << p.nparLimit << std::endl;
+      out << ">  AP-MI computable p range [1e-7,0.05]" << std::endl;
+      out << ">  AP-MI main assessed p range [0.0005,0.05]" << std::endl;
+      out << ">  AP-MI rare-tail acknowledged " << (p.allowRareTail ? "yes" : "no") << std::endl;
+      out << ">  AP-MI off-grid m " << (p.pchipActualM % 50 != 0 ? "yes" : "no") << std::endl;
+      const std::streamsize savedPrecision = out.precision();
+      const std::ios::fmtflags savedFlags = out.flags();
+      out << ">  MI requested p binary64 " << std::setprecision(17) << p.pvalue << std::endl;
+      out << ">  MI threshold binary64 " << std::setprecision(17) << p.threshold << std::endl;
+      out << ">  MI threshold hex " << std::hexfloat << p.threshold << std::endl;
+      out.flags(savedFlags);
+      out.precision(savedPrecision);
    }
    out << ">  DPI tolerance   " << p.eps        << std::endl;
    //out << ">  Correction      " << p.correction << std::endl;
