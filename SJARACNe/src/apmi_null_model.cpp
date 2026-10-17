@@ -10,7 +10,6 @@ namespace
 {
 const double MINIMUM_P = 1e-7;
 const double MAXIMUM_P = 0.05;
-const double MAIN_ASSESSED_MINIMUM_P = 0.0005;
 const double SCOPE_BOUNDARY_P = 0.0001;
 const int MODERATE_KNOTS = 22;
 
@@ -111,7 +110,7 @@ double mLogCutoff(int probabilityIndex, int interval, double x)
 
 namespace Apmi
 {
-double pchipCutoff(int m, double p, int nparLimit, bool allowRareTail)
+double pchipCutoff(int m, double p, int nparLimit)
 {
    if (m < 50 || m > 10000)
       throw std::string("AP-MI PCHIP requires an integer effective sample size m in [50,10000].");
@@ -119,8 +118,6 @@ double pchipCutoff(int m, double p, int nparLimit, bool allowRareTail)
       throw std::string("AP-MI PCHIP is calibrated only for npar=40.");
    if (!std::isfinite(p) || p < MINIMUM_P || p > MAXIMUM_P)
       throw std::string("AP-MI PCHIP requires finite p in [1e-7,0.05].");
-   if (p < MAIN_ASSESSED_MINIMUM_P && !allowRareTail)
-      throw std::string("AP-MI PCHIP below p=0.0005 requires explicit rare-tail opt-in (-R; Python allow_rare_tail=True); accuracy is less supported.");
 
    // Descending P; p=0.0001 is a literal shared knot of separate scopes.
    const int first = p >= SCOPE_BOUNDARY_P ? 0 : MODERATE_KNOTS - 1;

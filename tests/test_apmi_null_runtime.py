@@ -35,9 +35,9 @@ def find_sjaracne_executable():
 SJARACNE_EXE = find_sjaracne_executable()
 
 
-def python_cutoff(m, p, *, allow_rare_tail=False):
+def python_cutoff(m, p):
     module = importlib.import_module("SJARACNe.apmi_cutoff")
-    return module.get_mi_cutoff(m, p, npar=40, allow_rare_tail=allow_rare_tail)
+    return module.get_mi_cutoff(m, p, npar=40)
 
 
 @unittest.skipUnless(SJARACNE_EXE, "sjaracne.exe is not built for this OS")
@@ -104,7 +104,8 @@ class TestApmiNullRuntime(unittest.TestCase):
         for key in ("AP-MI PCHIP data SHA256", "AP-MI PCHIP summary SHA256"):
             self.assertRegex(self.header_value(header, key), r"^[a-f0-9]{64}$")
         self.assertEqual(self.header_value(header, "AP-MI actual m"), "100")
-        self.assertEqual(self.header_value(header, "AP-MI rare-tail acknowledged"), "no")
+        self.assertEqual(self.header_value(header, "AP-MI outside principal p range"), "no")
+        self.assertEqual(self.header_value(header, "AP-MI extreme-tail p"), "no")
         self.assertEqual(self.header_value(header, "AP-MI off-grid m"), "no")
         actual = float(self.header_value(header, "MI threshold binary64"))
         self.assertEqual(actual.hex(), python_cutoff(100, 0.001).hex())
@@ -129,28 +130,28 @@ class TestApmiNullRuntime(unittest.TestCase):
         for m, p in cases:
             with self.subTest(m=m, p=p):
                 arguments = ["-M", "pchip", "-p", format(p, ".17g")]
-                if p < 0.0005:
-                    arguments.append("-R")
                 result = self.run_sjaracne(*arguments, expression=self.write_expression(m))
                 self.assert_success(result)
                 header = self.header()
                 actual = float(self.header_value(header, "MI threshold binary64"))
-                expected = python_cutoff(m, p, allow_rare_tail=p < 0.0005)
+                expected = python_cutoff(m, p)
                 if m in (50, 100, 10000):
                     self.assertEqual(actual.hex(), expected.hex())
                 else:
                     self.assertAlmostEqual(actual, expected, places=15)
                 self.assertEqual(float.fromhex(self.header_value(header, "MI threshold hex")), actual)
 
-    def test_rare_tail_requires_explicit_acknowledgement(self):
-        for p in ("0.0001", "0.000499999999", "1e-7"):
+    def test_rare_tail_is_computable_without_acknowledgement_flag(self):
+        for p in ("0.0001", "0.000499999999", "1e-5", "1e-7"):
             with self.subTest(p=p):
-                self.assert_failure(self.run_sjaracne("-M", "pchip", "-p", p), "-R")
-                acknowledged = self.run_sjaracne("-M", "pchip", "-p", p, "-R")
-                self.assert_success(acknowledged)
-                self.assertEqual(self.header_value(self.header(), "AP-MI rare-tail acknowledged"), "yes")
-                self.assertRegex(acknowledged.stdout + acknowledged.stderr,
-                                 r"(?i)experimental|uncertain|rare|not.*validated")
+                result = self.run_sjaracne("-M", "pchip", "-p", p)
+                self.assert_success(result)
+                header = self.header()
+                self.assertEqual(self.header_value(header, "AP-MI outside principal p range"), "yes")
+                self.assertEqual(self.header_value(header, "AP-MI extreme-tail p"),
+                                 "yes" if float(p) <= 1e-5 else "no")
+                self.assertNotIn("AP-MI rare-tail acknowledged", header)
+                self.assertRegex(result.stdout + result.stderr, r"(?i)outside.*principal")
 
     def test_exact_moderate_boundary_does_not_require_acknowledgement(self):
         self.assert_success(self.run_sjaracne("-M", "pchip", "-p", "0.0005"))
@@ -172,7 +173,7 @@ class TestApmiNullRuntime(unittest.TestCase):
     def test_bad_probabilities_are_rejected_without_legacy_fallback(self):
         for p in ("0", "-0.001", "0.05000001", "1e-8", "nan", "inf", "nonsense"):
             with self.subTest(p=p):
-                result = self.run_sjaracne("-M", "pchip", "-p", p, "-R")
+                result = self.run_sjaracne("-M", "pchip", "-p", p)
                 self.assert_failure(result)
                 self.assertNotIn("using the legacy affine", result.stdout.lower())
 
@@ -190,15 +191,19 @@ class TestApmiNullRuntime(unittest.TestCase):
         self.assert_failure(self.run_sjaracne("-M", "pchip", "-p", "0.001", "-j",
                                               str(self.workdir / "old.adj")), "adjacency")
 
-    def test_rare_acknowledgement_without_model_is_rejected_when_active(self):
-        self.assert_failure(self.run_sjaracne("-R", "-p", "0.001"), "pchip")
+    def test_removed_rare_acknowledgement_flag_is_an_unknown_option(self):
+        for arguments in (("-R", "-p", "0.001"),
+                          ("-M", "pchip", "-R", "-p", "1e-7"),
+                          ("-M", "pchip", "-R", "-t", "0")):
+            with self.subTest(arguments=arguments):
+                self.assert_failure(self.run_sjaracne(*arguments), "unknown", "-R")
 
-    def test_explicit_threshold_including_zero_overrides_model_and_rare_flag(self):
+    def test_explicit_threshold_including_zero_overrides_model(self):
         for threshold in ("0", "0.14783093032516142"):
             with self.subTest(threshold=threshold):
                 explicit = self.run_sjaracne("-t", threshold, "-p", "1e-7", output="explicit.adj")
                 overridden = self.run_sjaracne("-M", str(self.workdir / "missing-gpd.model"),
-                                               "-R", "-p", "1e-7", "-t", threshold,
+                                               "-p", "1e-7", "-t", threshold,
                                                output="overridden.adj")
                 self.assert_success(explicit)
                 self.assert_success(overridden)
@@ -213,7 +218,7 @@ class TestApmiNullRuntime(unittest.TestCase):
         self.assert_success(default)
         for model in ("pchip", str(self.workdir / "missing-gpd.model")):
             with self.subTest(model=model):
-                explicit = self.run_sjaracne("-M", model, "-R", "-p", "1",
+                explicit = self.run_sjaracne("-M", model, "-p", "1",
                                              expression=expression, npar=20,
                                              output="preserve.adj")
                 self.assert_success(explicit)
@@ -224,7 +229,7 @@ class TestApmiNullRuntime(unittest.TestCase):
     def test_inactive_model_does_not_reject_legacy_sampling(self):
         for options in (("-p", "1"), ("-p", "0.001", "-t", "0")):
             with self.subTest(options=options):
-                result = self.run_sjaracne("-M", "pchip", "-R", "-r", "1", *options)
+                result = self.run_sjaracne("-M", "pchip", "-r", "1", *options)
                 self.assert_success(result)
                 self.assertNotIn("AP-MI PCHIP primary SHA256", self.header())
 
@@ -254,14 +259,14 @@ class TestApmiNullWorkflowWiring(unittest.TestCase):
         spec.loader.exec_module(module)
         return module
 
-    def render_wrapper(self, *extra):
+    def render_wrapper(self, *extra, hub_name="hubs.txt"):
         module = self.load_wrapper()
         commands = []
         module.run_shell_command_call = commands.append
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             arguments = ["sjaracne", "local", "-e", str(root / "input.exp"),
-                         "-g", str(root / "hubs.txt"), "-o", str(root / "output"),
+                         "-g", str(root / hub_name), "-o", str(root / "output"),
                          "-tmp", str(root / "tmp"), *extra]
             with mock.patch.object(os.sys, "argv", arguments):
                 module.main()
@@ -273,14 +278,16 @@ class TestApmiNullWorkflowWiring(unittest.TestCase):
         workflow = (PROJECT_ROOT / "SJARACNe" / "cwl" / "sjaracne_workflow.cwl").read_text()
         command = (PROJECT_ROOT / "SJARACNe" / "cwl" / "sjaracne.cwl").read_text()
         self.assertIn("apmi_null_model: apmi_null_model", workflow)
-        self.assertIn("allow_rare_tail: allow_rare_tail", workflow)
-        self.assertIn("default: 1e-7", workflow)
+        self.assertNotIn("allow_rare_tail", workflow)
+        self.assertNotIn("allow_rare_tail", command)
+        bootstrap_input = workflow.split("  p_value_bootstrap:", 1)[1].split("  apmi_null_model:", 1)[0]
+        self.assertIn("type: double?", bootstrap_input)
+        self.assertNotIn("default:", bootstrap_input)
         model_input = command.split("  apmi_null_model:", 1)[1].split("  p_value:", 1)[0]
         self.assertIn("type: string?", model_input)
         self.assertNotIn("type: File", model_input)
         self.assertIn("prefix: -M", model_input)
-        self.assertIn("prefix: -R", command)
-        self.assertRegex(command, r"allow_rare_tail:\s*\n\s*type: boolean")
+        self.assertNotIn("prefix: -R", command)
 
     def test_wrapper_forwards_pchip_without_file_staging(self):
         rendered = self.render_wrapper("-M", "pchip", "-pb", "0.001")
@@ -288,17 +295,46 @@ class TestApmiNullWorkflowWiring(unittest.TestCase):
         self.assertNotIn("apmi_null_model:\n  class: File", rendered)
         self.assertIn("p_value_bootstrap: 0.001", rendered)
 
-    def test_wrapper_forwards_explicit_rare_tail_acknowledgement(self):
-        rendered = self.render_wrapper("-M", "pchip", "--allow-rare-tail")
-        self.assertRegex(rendered, r"(?mi)^allow_rare_tail:\s*true\s*$")
+    def test_wrapper_accepts_explicit_rare_p_without_extra_flag(self):
+        rendered = self.render_wrapper("-M", "pchip", "-pb", "1e-7")
         self.assertRegex(rendered, r"(?mi)^p_value_bootstrap:\s*1e-0?7\s*$")
+        self.assertNotIn("allow_rare_tail", rendered)
+
+    def test_wrapper_requires_explicit_pchip_probability_before_launch(self):
+        module = self.load_wrapper()
+        commands = []
+        module.run_shell_command_call = commands.append
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            arguments = ["sjaracne", "local", "-e", str(root / "input.exp"),
+                         "-g", str(root / "hubs.txt"), "-o", str(root / "output"),
+                         "-tmp", str(root / "tmp"), "-M", "pchip"]
+            with mock.patch.object(os.sys, "argv", arguments), self.assertRaises(SystemExit):
+                module.main()
+        self.assertEqual(commands, [])
+
+    def test_wrapper_accepts_explicit_preserve_all_probability(self):
+        rendered = self.render_wrapper("-M", "pchip", "-pb", "1")
+        self.assertRegex(rendered, r"(?mi)^p_value_bootstrap:\s*1(?:\.0)?\s*$")
+
+    def test_wrapper_does_not_select_probability_from_tf_or_sig_filename(self):
+        for hub_name in ("TF_hubs.txt", "SIG_hubs.txt"):
+            with self.subTest(hub_name=hub_name):
+                legacy = self.render_wrapper(hub_name=hub_name)
+                self.assertRegex(legacy, r"(?mi)^p_value_bootstrap:\s*1e-0?7\s*$")
+                explicit = self.render_wrapper("-M", "pchip", "-pb", "0.007", hub_name=hub_name)
+                self.assertRegex(explicit, r"(?mi)^p_value_bootstrap:\s*0\.007\s*$")
+
+    def test_wrapper_rejects_removed_acknowledgement_option(self):
+        with self.assertRaises(SystemExit):
+            self.render_wrapper("-M", "pchip", "-pb", "1e-7", "--allow-rare-tail")
 
     def test_wrapper_legacy_default_p_and_sampling_are_unchanged(self):
         rendered = self.render_wrapper()
         self.assertRegex(rendered, r"(?mi)^p_value_bootstrap:\s*1e-0?7\s*$")
         self.assertIn('subsample_spec: "80%"', rendered)
         self.assertNotIn("apmi_null_model:", rendered)
-        self.assertNotRegex(rendered, r"(?mi)^allow_rare_tail:\s*true\s*$")
+        self.assertNotIn("allow_rare_tail", rendered)
 
     def test_wrapper_rejects_old_model_paths_and_unknown_selectors(self):
         for model in ("old-gpd.model", "unknown"):

@@ -34,12 +34,6 @@ inputs:
       position: 4
       prefix: -M
     doc: Optional bundled model name pchip; experimental, requires Npar 40
-  allow_rare_tail:
-    type: boolean
-    default: false
-    inputBinding:
-      prefix: -R
-    doc: Explicit acknowledgment for weakly measured PCHIP probabilities below 0.0005
   p_value:
     type: double
     inputBinding:

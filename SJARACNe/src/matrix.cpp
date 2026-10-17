@@ -588,7 +588,8 @@ void Matrix::write(const Microarray_Set& data, const std::vector<int>& ids,
       out << ">  AP-MI Npar " << p.nparLimit << std::endl;
       out << ">  AP-MI computable p range [1e-7,0.05]" << std::endl;
       out << ">  AP-MI main assessed p range [0.0005,0.05]" << std::endl;
-      out << ">  AP-MI rare-tail acknowledged " << (p.allowRareTail ? "yes" : "no") << std::endl;
+      out << ">  AP-MI outside principal p range " << (p.pvalue < 0.0005 ? "yes" : "no") << std::endl;
+      out << ">  AP-MI extreme-tail p " << (p.pvalue <= 1e-5 ? "yes" : "no") << std::endl;
       out << ">  AP-MI off-grid m " << (p.pchipActualM % 50 != 0 ? "yes" : "no") << std::endl;
       const std::streamsize savedPrecision = out.precision();
       const std::ios::fmtflags savedFlags = out.flags();

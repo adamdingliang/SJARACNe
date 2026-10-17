@@ -105,9 +105,6 @@ void checkParameter(Parameter &p)
       throw std::string("Option '-M' now accepts only the bundled 'pchip' model. "
                         "Historical GPD model files are not runtime models in this version.");
 
-   if (p.allowRareTail && p.nullModelFile.empty() && !p.thresholdSpecified && p.pvalue != 1.0)
-      throw std::string("Rare-tail acknowledgment '-R' requires '-M pchip'.");
-
    if (p.eps < 0.0 || p.eps > 1.0)
       throw std::string("DPI tolerance '-e' must be within [0,1]!");
 

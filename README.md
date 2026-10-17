@@ -152,10 +152,12 @@ retired. Benchmark results are not a new default-fraction recommendation.
 
 Use `-M pchip` / `--apmi-null-model pchip` to replace the legacy affine
 p-to-MI conversion **for that run** with the bundled empirical PCHIP surface.
-Existing defaults remain unchanged: no `-M` means legacy affine, workflow
-`-pb` remains `1e-7`, and native `-p 1` preserves all MI. PCHIP requires
-`Npar=40`, an actual selected sample count `m=50..10000`, and ordinarily
-`p=0.0005..0.05`. Set `-pb` explicitly when opting in:
+No `-M` means legacy affine, with its unchanged workflow `-pb` default of
+`1e-7`. **With `-M pchip`, the workflow requires an explicit `-pb`; it does
+not inherit that default or choose a TF/SIG value.** Direct CWL jobs must
+likewise supply `p_value_bootstrap`. Native `-p 1` still preserves all MI.
+PCHIP requires `Npar=40`, an actual selected sample count `m=50..10000`,
+and a probability in the computable range `1e-7..0.05`:
 
 ```bash
 sjaracne local -e expression.exp -g hubs.txt -n 100 \
@@ -181,10 +183,14 @@ PCHIP is **experimental**, not a uniformly validated probability guarantee.
 The independent-rank study had 6599/6600 moderate observed-rate checks within
 10%, but simultaneous intervals confirmed only 784/800 core cases, with 16
 unresolved. Off-grid sample counts such as `m=80` are interpolated and were
-not tested in the 50-step broad-grid study. Rare probabilities down to `1e-7`
-require `--allow-rare-tail` (native `-R`; Python `allow_rare_tail=True`) and
-emit a warning: ten million validation draws cannot establish 10% accuracy
-at `1e-7`. No biological FDR control is claimed.
+not tested in the 50-step broad-grid study. All computable probabilities are
+accepted without a separate acknowledgment flag. Requests below `0.0005`
+warn that they are outside the principal assessment range; this is **not a
+demonstrated failure boundary**. Requests at or below `1e-5` additionally warn
+about limited extreme-tail Monte Carlo precision: ten million validation draws
+expect only 100, 10 and 1 exceedances at `1e-5`, `1e-6` and `1e-7`. This warning
+does not reject the request or establish a calibrated accuracy guarantee.
+No biological FDR control is claimed.
 The null assumes exchangeable observations and unique ordinal ranks; the
 calibration is not an independent validation of zero-inflated or heavily tied
 expression data.
@@ -196,7 +202,7 @@ native `-t`, including zero, overrides the p-value conversion.
 
 The model and native coefficients are bundled with SJARACNe; there is no
 runtime dependency on the benchmark repository. Network headers retain source
-hashes, actual `m`, rare-tail/off-grid status and decimal/hex binary64 cutoffs.
+hashes, actual `m`, principal-range/extreme-tail/off-grid status and decimal/hex binary64 cutoffs.
 Literal training-size/probability knots retain their exact stored binary64
 values. Between knots, library/compiler arithmetic can differ from the study's
 NumPy/SciPy implementation by a few ULPs (15 in the recorded port check).
@@ -213,7 +219,8 @@ not installed as a runtime option.
 **Note:** for testing purpose, the number of resampled networks (legacy option ```-n```) is set to 2, the consensus p-value threshold
 ```-pc``` is set to 1.0 in the following examples. ```-n 100``` and ```-pc 1e-5``` are recommended for real 
 applications. Note that there is no / at the end of the -o option but there is a / at the end of the -tmp option.
-The default ```P-value``` for sjaracne is ```1e-7```. The minimum P-value accepted with the ```-pb argument is 1e-10```.
+Without `-M pchip`, the workflow's legacy `-pb` default remains `1e-7`.
+PCHIP requires an explicit `-pb` and accepts `1e-7..0.05` (or explicit `1` to preserve all MI).
 
 ### Running on a single machine (Linux/OSX) 
 ```sjaracne local -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt -n 2 -o ./results/SJARACNE_out.final -pc 1.0 -tmp ./results/tmp/```

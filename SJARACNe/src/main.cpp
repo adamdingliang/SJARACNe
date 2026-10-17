@@ -19,7 +19,7 @@
 
 //------------------------------------------------------------------------------------
 
-const int NUM_OPTIONS = 23;
+const int NUM_OPTIONS = 22;
 
 const char *option[NUM_OPTIONS] =
 {
@@ -41,7 +41,7 @@ const char *option[NUM_OPTIONS] =
 "-l <file>          File containing a list of probes annotated as transcription\n"
 "                   factors in the input dataset, default: NONE [***]",
 "-M pchip           Opt in to the bundled experimental AP-MI PCHIP cutoff;\n"
-"                   requires -N 40, m=50..10000 and p=0.0005..0.05 by default",
+"                   requires -N 40, m=50..10000 and p=1e-7..0.05; no tail flag",
 "-N <npar_limit>    Maximum allowed value of npar, default: 20",
 "-S <Seed>	    Initial seed for random number generator, default: 1",
 "-n <level>         Array measurement noise level, default: 0",
@@ -49,8 +49,6 @@ const char *option[NUM_OPTIONS] =
 "-p <p-value>       P-value for MI threshold (e.g., 1e-7), default: 1 [**]",
 "-r <sample_number> Legacy full-size bootstrap with replacement; retained only\n"
 "                   for reproducibility, default: 0 (disabled)",
-"-R                 Acknowledge weakly measured experimental PCHIP tails\n"
-"                   down to p=1e-7; requires -M pchip, no accuracy guarantee",
 "-s <file>          File containing a list of probes for which a subnetwork will\n"
 "                   be constructed, default: NONE",
 "-t <threshold>     MI threshold, default: 0",
@@ -156,7 +154,6 @@ Parameter parseParameter(int argc, char *argv[])
       case 'o': p.outfile    = ARGF(); break;            // output file
       case 'p': p.pvalue     = parseFiniteNumericOption("-p", ARGF()); break; // p-value
       case 'r': p.sample     = std::atoi(ARGF()); break; // bootstrap sample number
-      case 'R': p.allowRareTail = true; break;
       case 's': p.subnetfile = ARGF();                   // subset of probes
                 if (p.subnetfile == "")
                    throw std::string("Option '-s' requires a subnetwork file.");
@@ -216,7 +213,7 @@ void findEstimatorMatchedThreshold(int n, Parameter& p)
 {
    if (std::string(adaptivePartitionKernelSchema()) != "sjaracne-apmi-v1")
       throw std::string("Bundled PCHIP data do not match the active AP-MI kernel schema.");
-   p.threshold = Apmi::pchipCutoff(n, p.pvalue, p.nparLimit, p.allowRareTail);
+   p.threshold = Apmi::pchipCutoff(n, p.pvalue, p.nparLimit);
    p.thresholdMethod = "experimental PCHIP empirical cutoff";
    p.pchipPrimarySha256 = Apmi::pchipPrimarySha256();
    p.pchipDataSha256 = Apmi::pchipDataSha256();
@@ -229,8 +226,13 @@ void findEstimatorMatchedThreshold(int n, Parameter& p)
                 << " is off the tested 50-step grid; this is unvalidated interpolation."
                 << std::endl;
    if (p.pvalue < 0.0005)
-      std::cout << "[THRESHOLD] WARNING: rare-tail use explicitly acknowledged; "
-                   "10M validation draws cannot establish 10% accuracy at p=1e-7."
+      std::cout << "[THRESHOLD] WARNING: p is outside the principal assessment range "
+                   "[0.0005,0.05]; this boundary is not a demonstrated failure threshold."
+                << std::endl;
+   if (p.pvalue <= 1e-5)
+      std::cout << "[THRESHOLD] WARNING: extreme-tail Monte Carlo precision is limited; "
+                   "10M validation draws expect only 100, 10 and 1 exceedances at "
+                   "p=1e-5,1e-6,1e-7. Interpolation does not guarantee 10% accuracy."
                 << std::endl;
 }
 

@@ -84,14 +84,14 @@ class TestStandaloneApmiCutoff(unittest.TestCase):
             warnings.simplefilter("ignore")
             for i, m in enumerate(data["M"]):
                 for j, p in enumerate(data["P"]):
-                    value = get_mi_cutoff(m, p, allow_rare_tail=p < 0.0005)
+                    value = get_mi_cutoff(m, p)
                     self.assertEqual(value.hex(), data["OBSERVED"][j][i].hex(), (m, p))
 
     def test_frozen_benchmark_golden_snapshots(self):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             for m, p, hexadecimal in GOLDEN:
-                actual = get_mi_cutoff(m, p, allow_rare_tail=p < 0.0005)
+                actual = get_mi_cutoff(m, p)
                 expected = float.fromhex(hexadecimal)
                 self.assertLessEqual(abs(bits(actual) - bits(expected)), 8, (m, p, actual.hex(), hexadecimal))
 
@@ -111,28 +111,54 @@ class TestStandaloneApmiCutoff(unittest.TestCase):
     def test_strict_probability_and_npar(self):
         for p in (True, 0, -0.001, 0.05001, 0.1, 1e-8, float("nan"), float("inf"), "0.001"):
             with self.assertRaises(ValueError, msg=str(p)):
-                get_mi_cutoff(100, p, allow_rare_tail=True)
+                get_mi_cutoff(100, p)
         for npar in (20, 39, 41, True, 40.0, "40"):
             with self.assertRaises(ValueError, msg=str(npar)):
                 get_mi_cutoff(100, 0.001, npar=npar)
 
-    def test_rare_diagnostics_require_explicit_boolean_opt_in(self):
-        for p in (0.0002, 0.0001, 1e-7):
-            with self.assertRaisesRegex(ValueError, "allow_rare_tail=True"):
-                get_mi_cutoff(100, p)
-        for flag in (1, None, "yes"):
-            with self.assertRaises(ValueError):
-                get_mi_cutoff(100, 0.001, allow_rare_tail=flag)
+    def test_full_probability_range_requires_no_acknowledgment_flag(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            for p in (0.0004, 0.0002, 0.0001, 1e-5, 1e-6, 1e-7):
+                self.assertGreater(get_mi_cutoff(100, p), 0)
+
+    def test_probability_required_and_removed_flag_rejected(self):
+        with self.assertRaises(TypeError):
+            get_mi_cutoff(100)
+        with self.assertRaises(TypeError):
+            get_mi_cutoff(100, 0.001, allow_rare_tail=True)
 
     def test_experimental_off_grid_and_rare_warnings(self):
         with warnings.catch_warnings(record=True) as recorded:
             warnings.simplefilter("always")
-            get_mi_cutoff(644, 0.0001, allow_rare_tail=True)
+            get_mi_cutoff(644, 0.0001)
         messages = [str(item.message) for item in recorded]
         self.assertEqual(len(messages), 3)
         self.assertTrue(any("not uniformly validated" in message for message in messages))
         self.assertTrue(any("off-grid m" in message for message in messages))
-        self.assertTrue(any("weakly measured diagnostics" in message for message in messages))
+        self.assertTrue(any("outside the principal assessment range" in message for message in messages))
+        self.assertFalse(any("Extreme-tail Monte Carlo precision" in message for message in messages))
+
+    def test_probability_0004_has_range_warning_not_extreme_tail_warning(self):
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always")
+            value = get_mi_cutoff(100, 0.0004)
+        self.assertGreater(value, 0)
+        messages = [str(item.message) for item in recorded]
+        self.assertEqual(len(messages), 2)
+        self.assertTrue(any("outside the principal assessment range" in message for message in messages))
+        self.assertFalse(any("Extreme-tail Monte Carlo precision" in message for message in messages))
+
+    def test_extreme_tail_warning_at_and_below_1e5(self):
+        for p in (1e-5, 1e-6, 1e-7):
+            with warnings.catch_warnings(record=True) as recorded:
+                warnings.simplefilter("always")
+                value = get_mi_cutoff(100, p)
+            self.assertGreater(value, 0)
+            messages = [str(item.message) for item in recorded]
+            self.assertEqual(len(messages), 3)
+            self.assertTrue(any("outside the principal assessment range" in message for message in messages))
+            self.assertTrue(any("Extreme-tail Monte Carlo precision" in message and "100, 10 and 1" in message for message in messages))
 
     def test_pchip_linear_plateau_and_no_extrapolation(self):
         self.assertEqual(cutoff._pchip_value([0, 1], [0, 2], 0.25), 0.5)

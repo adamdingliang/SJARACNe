@@ -118,13 +118,15 @@ def _predict(data, m, p):
     return value
 
 
-def get_mi_cutoff(m, p, npar=40, allow_rare_tail=False):
+def get_mi_cutoff(m, p, npar=40):
     """Return the experimental frozen PCHIP MI cutoff for actual sample count m.
 
-    m must be an integer in [50,10000], npar must be 40, and p must lie in
-    [0.0005,0.05] by default. Explicit allow_rare_tail=True permits diagnostic
-    requests down to 1e-7; it does not certify rare-tail accuracy. Off-grid m
-    and the incomplete uniform-calibration evidence are warned explicitly.
+    m must be an integer in [50,10000], npar must be 40, and the required p
+    must lie in [1e-7,0.05]. This full computational range needs no additional
+    acknowledgment flag. The principal assessment range [0.0005,0.05] is an
+    evidence/reporting distinction, not a computational failure boundary.
+    Off-grid m, extreme-tail Monte Carlo precision and incomplete uniform
+    calibration are warned explicitly.
     No legacy/GPD fallback, extrapolation or clipping is performed.
     """
     if isinstance(m, bool) or not isinstance(m, Integral) or not 50 <= int(m) <= 10000:
@@ -133,17 +135,16 @@ def get_mi_cutoff(m, p, npar=40, allow_rare_tail=False):
         raise ValueError("The frozen AP-MI PCHIP surface requires npar=40.")
     if isinstance(p, bool) or not isinstance(p, Real) or not math.isfinite(float(p)) or not 1e-7 <= float(p) <= 0.05:
         raise ValueError("p must be finite and within [1e-7,0.05].")
-    if not isinstance(allow_rare_tail, bool):
-        raise ValueError("allow_rare_tail must be explicitly True or False.")
     m, p = int(m), float(p)
-    if p < 0.0005 and not allow_rare_tail:
-        raise ValueError("p below 0.0005 requires allow_rare_tail=True; those predictions are diagnostic only.")
     data = _load_data()
     warnings.warn("The frozen AP-MI PCHIP surface is experimental and not uniformly validated; it is not a biological false-positive guarantee.",
                   RuntimeWarning, stacklevel=2)
     if m % 50:
         warnings.warn("This off-grid m was not directly confirmed in the broad-grid study.", RuntimeWarning, stacklevel=2)
     if p < 0.0005:
-        warnings.warn("This p is below the proposed moderate-p domain; rare-tail predictions are weakly measured diagnostics, not 10%-accuracy guarantees.",
+        warnings.warn("This p is outside the principal assessment range [0.0005,0.05]; this is an evidence/reporting distinction, not a computational failure boundary.",
+                      RuntimeWarning, stacklevel=2)
+    if p <= 1e-5:
+        warnings.warn("Extreme-tail Monte Carlo precision is limited: 10M validation draws expect 100, 10 and 1 exceedances at p=1e-5, 1e-6 and 1e-7. A returned cutoff does not establish 10%-accuracy tail calibration.",
                       RuntimeWarning, stacklevel=2)
     return _predict(data, m, p)
