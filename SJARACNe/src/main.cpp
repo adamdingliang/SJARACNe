@@ -4,18 +4,22 @@
 // Modifications by S.V. Rice, 2017; this version assumes adaptive_partitioning
 //------------------------------------------------------------------------------------
 
+#include <cerrno>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <iomanip>
 #include <sstream>
+#include "apmi.h"
+#include "apmi_null_model.h"
 #include "matrix.h"
 #include "parseargs.h"
 
 //------------------------------------------------------------------------------------
 
-const int NUM_OPTIONS = 21;
+const int NUM_OPTIONS = 22;
 
 const char *option[NUM_OPTIONS] =
 {
@@ -36,6 +40,8 @@ const char *option[NUM_OPTIONS] =
 "                   default: determined by program",
 "-l <file>          File containing a list of probes annotated as transcription\n"
 "                   factors in the input dataset, default: NONE [***]",
+"-M pchip           Opt in to the bundled experimental AP-MI PCHIP cutoff;\n"
+"                   requires -N 40, m=50..10000 and p=1e-7..0.05; no tail flag",
 "-N <npar_limit>    Maximum allowed value of npar, default: 20",
 "-S <Seed>	    Initial seed for random number generator, default: 1",
 "-n <level>         Array measurement noise level, default: 0",
@@ -96,6 +102,23 @@ void writeUsage(const char *progname)
 
 //------------------------------------------------------------------------------------
 
+double parseFiniteNumericOption(const char *optionName, const char *argument)
+{
+   const std::string text = argument == NULL ? "" : argument;
+   if (text.empty())
+      throw std::string("Option '") + optionName + "' requires a finite numeric value.";
+
+   errno = 0;
+   char *end = NULL;
+   const double value = std::strtod(text.c_str(), &end);
+   if (errno == ERANGE || end == text.c_str() || *end != '\0' || !std::isfinite(value))
+      throw std::string("Option '") + optionName + "' requires a finite numeric value, not '" +
+            text + "'.";
+   return value;
+}
+
+//------------------------------------------------------------------------------------
+
 Parameter parseParameter(int argc, char *argv[])
 {
    Parameter p; // initializes parameters to default values
@@ -121,17 +144,23 @@ Parameter parseParameter(int argc, char *argv[])
       case 'j': p.adjfile    = ARGF(); break;            // adjacency matrix file
       case 'k': p.sigma      = std::atof(ARGF()); break; // gaussian kernel width
       case 'l': p.annotfile  = ARGF(); break;            // TF annotation file
+      case 'M': p.nullModelFile = ARGF();                 // AP-MI null model
+                if (p.nullModelFile == "")
+                   throw std::string("Option '-M' requires the bundled model name 'pchip'.");
+                break;
       case 'N': p.nparLimit  = std::atoi(ARGF()); break; // max npar value
       case 'S': p.seed       = std::atoi(ARGF()); break; // seed
       case 'n': p.correction = std::atof(ARGF()); break; // correction for noise
       case 'o': p.outfile    = ARGF(); break;            // output file
-      case 'p': p.pvalue     = std::atof(ARGF()); break; // p-value
+      case 'p': p.pvalue     = parseFiniteNumericOption("-p", ARGF()); break; // p-value
       case 'r': p.sample     = std::atoi(ARGF()); break; // bootstrap sample number
       case 's': p.subnetfile = ARGF();                   // subset of probes
                 if (p.subnetfile == "")
                    throw std::string("Option '-s' requires a subnetwork file.");
                 break;
-      case 't': p.threshold  = std::atof(ARGF()); break; // mi threshold
+      case 't': p.threshold  = parseFiniteNumericOption("-t", ARGF()); // mi threshold
+                p.thresholdSpecified = true;
+                break;
       case 'u': p.subsampleSpec = ARGF();                // unique subsample
                 if (p.subsampleSpec == "")
                    throw std::string("Option '-u' requires an exact count or "
@@ -152,7 +181,7 @@ Parameter parseParameter(int argc, char *argv[])
 
 //------------------------------------------------------------------------------------
 
-void findThreshold(int n, Parameter& p)
+void findLegacyThreshold(int n, Parameter& p)
 {
    std::string filename = p.home_dir + "config_threshold.txt";
 
@@ -176,6 +205,35 @@ void findThreshold(int n, Parameter& p)
    p.threshold = (alpha - std::log(p.pvalue)) / (-beta - gamma * n);
 
    infile.close();
+}
+
+//------------------------------------------------------------------------------------
+
+void findEstimatorMatchedThreshold(int n, Parameter& p)
+{
+   if (std::string(adaptivePartitionKernelSchema()) != "sjaracne-apmi-v1")
+      throw std::string("Bundled PCHIP data do not match the active AP-MI kernel schema.");
+   p.threshold = Apmi::pchipCutoff(n, p.pvalue, p.nparLimit);
+   p.thresholdMethod = "experimental PCHIP empirical cutoff";
+   p.pchipPrimarySha256 = Apmi::pchipPrimarySha256();
+   p.pchipDataSha256 = Apmi::pchipDataSha256();
+   p.pchipSummarySha256 = Apmi::pchipSummarySha256();
+   p.pchipActualM = n;
+   std::cout << "[THRESHOLD] WARNING: PCHIP is experimental; uniform +/-10% "
+                "null-rate accuracy and biological FDR are not established." << std::endl;
+   if (n % 50 != 0)
+      std::cout << "[THRESHOLD] WARNING: m=" << n
+                << " is off the tested 50-step grid; this is unvalidated interpolation."
+                << std::endl;
+   if (p.pvalue < 0.0005)
+      std::cout << "[THRESHOLD] WARNING: p is outside the principal assessment range "
+                   "[0.0005,0.05]; this boundary is not a demonstrated failure threshold."
+                << std::endl;
+   if (p.pvalue <= 1e-5)
+      std::cout << "[THRESHOLD] WARNING: extreme-tail Monte Carlo precision is limited; "
+                   "10M validation draws expect only 100, 10 and 1 exceedances at "
+                   "p=1e-5,1e-6,1e-7. Interpolation does not guarantee 10% accuracy."
+                << std::endl;
 }
 
 //------------------------------------------------------------------------------------
@@ -252,13 +310,38 @@ void runStandard(int argc, char *argv[])
              << " (" << data.Get_Num_Active_Markers() << " active)"
              << ", Array No: " << nsample << std::endl;
 
-   if (p.threshold == 0.0 && p.pvalue != 1.0)
+   if (p.thresholdSpecified)
    {
-      findThreshold(nsample, p);
+      p.thresholdMethod = "explicit -t";
+      if (!p.nullModelFile.empty())
+         std::cout << "[THRESHOLD] '-M' is ignored because an explicit '-t' "
+                      "threshold was supplied."
+                   << std::endl;
+   }
+   else if (p.pvalue != 1.0)
+   {
+      if (!p.nullModelFile.empty())
+         findEstimatorMatchedThreshold(nsample, p);
+      else
+      {
+         std::cout << "[THRESHOLD] WARNING: no estimator-matched model was "
+                      "supplied with '-M'; using the legacy affine threshold "
+                      "calibration for backward compatibility."
+                   << std::endl;
+         findLegacyThreshold(nsample, p);
+         p.thresholdMethod = "legacy affine calibration";
+      }
 
       std::cout << "MI threshold determined for p=" << p.pvalue << ": " << p.threshold
                 << std::endl;
+      if (!p.pchipPrimarySha256.empty())
+         std::cout << "[THRESHOLD] PCHIP cutoff binary64=" << std::setprecision(17)
+                   << p.threshold << std::setprecision(6) << std::endl;
    }
+   else if (!p.nullModelFile.empty())
+      std::cout << "[THRESHOLD] '-M' was supplied but p=1 preserves all MI values; "
+                   "the model is not loaded."
+                << std::endl;
 
    std::vector<int> ids;
 

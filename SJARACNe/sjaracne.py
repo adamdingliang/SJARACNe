@@ -38,8 +38,12 @@ def main():
                                help='Path to a file containing a list of symbols to be considered as hub genes.')
     parent_parser.add_argument('-pc', '--p-value-consensus', metavar='FLOAT', default=1e-5,
                                help='P-value threshold to select edges in building consensus network.')
-    parent_parser.add_argument('-pb', '--p-value-bootstrap', metavar='FLOAT', default=1e-7,
-                               help='P-value threshold to filter mutual information in each resampled network.')
+    parent_parser.add_argument('-pb', '--p-value-bootstrap', metavar='FLOAT', default=None,
+                               help='Per-resample MI probability: required explicitly with -M pchip; legacy default: 1e-7.')
+    parent_parser.add_argument(
+        '-M', '--apmi-null-model', choices=['pchip'],
+        help='Opt in to bundled experimental PCHIP MI cutoffs; requires depth 40. Defaults remain legacy affine.',
+    )
     parent_parser.add_argument('-d', '--depth', metavar='INT', default=40, help='maximum partitioning depth.')
     parent_parser.add_argument('-c', '--config-dir', metavar='DIR', help='Directory containing ARACNe configuration '
                                                                          'files. Use default configs if not provided.')
@@ -76,6 +80,21 @@ def main():
         sys.exit(0)
 
     args = parser.parse_args()
+    if args.apmi_null_model == 'pchip':
+        if args.p_value_bootstrap is None:
+            parser.error('-M pchip requires an explicit -pb / --p-value-bootstrap; no PCHIP probability default is chosen')
+        try:
+            requested_p = float(args.p_value_bootstrap)
+            requested_depth = int(args.depth)
+        except (TypeError, ValueError):
+            parser.error('PCHIP requires numeric p-value and depth')
+        if requested_p != 1.0:
+            if requested_depth != 40:
+                parser.error('PCHIP requires --depth 40')
+            if not 1e-7 <= requested_p <= 0.05:
+                parser.error('PCHIP requires p in [1e-7,0.05], or p=1 to preserve all MI')
+    if args.p_value_bootstrap is None:
+        args.p_value_bootstrap = 1e-7
     logging.basicConfig(level=logging.INFO)
 
     # to make executable and config findable
@@ -115,6 +134,8 @@ def main():
                                                    args.p_value_consensus, args.p_value_bootstrap, args.depth,
                                                    config_dir, args.bootstrap_num, json.dumps(subsample_spec),
                                                    output_dir_name)
+        if args.apmi_null_model is not None:
+            contents += '\napmi_null_model: {}'.format(json.dumps(args.apmi_null_model))
         logging.info(contents)
         fp_yml.write(contents)
         fp_yml.flush()
