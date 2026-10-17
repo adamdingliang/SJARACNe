@@ -28,65 +28,67 @@ inputs:
       position: 3
       prefix: -s
     doc: File containing a list of probes for which a subnetwork will be constructed
-  p_value:
-    type: float
+  apmi_null_model:
+    type: string?
     inputBinding:
       position: 4
-      valueFrom: |
-        ${
-          return inputs.p_value.toFixed(10); // Format to 10 decimal places (1e-10)
-        }
+      prefix: -M
+    doc: Optional bundled model name pchip; experimental, requires Npar 40
+  p_value:
+    type: double
+    inputBinding:
+      position: 5
       prefix: -p
   tolerance:
     type: int
     default: 0
     inputBinding:
-      position: 5
+      position: 6
       prefix: -e
     doc: DPI tolerance
   algorithm:
     type: string
     default: adaptive_partitioning
     inputBinding:
-      position: 6
+      position: 7
       prefix: -a
     doc: algorithm
   sample_number:
     type: int?
     inputBinding:
-      position: 7
+      position: 8
       prefix: -r
     doc: Deprecated legacy full-size bootstrap with replacement; use subsample_spec for new analyses
   subsample_spec:
     type: string?
     inputBinding:
-      position: 7
+      position: 8
       prefix: -u
     doc: Fixed-size sampling without replacement as an exact count or explicit percentage, for example 80 or 80%
   aracne_config_dir:
     type: Directory
     inputBinding:
-      position: 8
+      position: 9
       prefix: -H
     doc: Directory containing ARACNe configuration files, default is current working directory
   npar_limit:
     type: int
     default: 20
     inputBinding:
-      position: 9
+      position: 10
       prefix: -N
     doc: Maximum allowed value of npar
   output_file_name:
     type: string
     inputBinding:
-      position: 10
+      position: 11
       prefix: -o
     doc: Output file name (optional)
   seed:
     type: int
     default: 1
     inputBinding:
-      position: 11
+      position: 12
       prefix: -S
     doc: Initial seed for random number generator
 
