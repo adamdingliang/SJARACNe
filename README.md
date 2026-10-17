@@ -177,7 +177,12 @@ sig_cutoff = get_mi_cutoff(m=80, p=0.0005)     # approximately 0.164452
 Native equivalent: `sjaracne.exe -i expression.exp -s hubs.txt -N 40 -u 80 -M pchip -p 0.001`.
 Both TF and SIG use the same function; network identity does not choose a
 different default. These probabilities are provisional BRCA100 operating
-points, not universal biological recommendations.
+points, not universal biological recommendations; they have not been
+revalidated as optimal settings under PCHIP.
+
+The PCHIP surface interpolates empirical MI quantiles from independent
+rank-permutation null simulations evaluated with the shared AP-MI estimator.
+It does not fit a parametric tail distribution.
 
 PCHIP is **experimental**, not a uniformly validated probability guarantee.
 The independent-rank study had 6599/6600 moderate observed-rate checks within
@@ -210,10 +215,6 @@ Numerical closeness does not prove identical exceedance counts near MI ties;
 the published null-rate summaries describe the original benchmark callable.
 See the [process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m)
 and [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md).
-The earlier GPD calibrator and exact-size models are retained only as
-[exploratory benchmark history](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_gpd_exploratory),
-not installed as a runtime option.
-
 
 ## Examples to create a transcription factor network
 **Note:** for testing purpose, the number of resampled networks (legacy option ```-n```) is set to 2, the consensus p-value threshold
