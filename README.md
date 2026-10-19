@@ -52,7 +52,7 @@ $ python setup.py install
 ```
 
 The examples below use this source installation of `develop`; the PyPI release
-may not include the latest subsampling and PCHIP options.
+may not include the latest subsampling, PCHIP or minimum-recurrence options.
 
 ### Install optional packages depends on runtime platform
 SJARACNe workflow is implemented in [Common Workflow Language](https://www.commonwl.org/). 
@@ -102,6 +102,8 @@ The main output of SJARACNe is a network file, which is a tab delimited text fil
 target, mutual information, Pearson and Spearman correlations coefficients, regression line slope and p-value. SJARACNe
 also outputs two meta information files: parameter_info_.txt and bootstrap_info_.txt, which store SJARACNe
 input parameters and resampling metadata, respectively. `bootstrap_info_.txt` is retained as a legacy filename.
+The network's regression p-value is not a consensus-edge probability;
+recurrence selection is recorded in the metadata.
 
 ### Experimental PCHIP MI cutoffs (opt-in)
 
@@ -168,20 +170,22 @@ Parameters used below:
 | `--subsample-size 80` | Use 80 distinct samples per network, sampled without replacement. Alternatively, use `--subsample-fraction 0.8` for 80% (the default); do not combine both options. |
 | `-M pchip` | Opt in to PCHIP MI cutoffs; omit it to retain legacy affine conversion. |
 | `-pb` | Requested per-resample MI null-tail probability; required explicitly with PCHIP. Without PCHIP, the default is `1e-7`. |
-| `-pc` | Consensus edge-selection p-value cutoff (default: `1e-5`); separate from `-pb`. |
+| `-k 6` / `--min-recurrence 6` | Retain ordered edges present in at least six input networks (inclusive; the default). Must be between 1 and the number of networks. |
+| `-pc` | Explicitly select the deprecated legacy normal-approximation consensus filter instead of recurrence; cannot be combined with `-k`. Separate from `-pb`. |
 | `-o`, `-tmp` | Final output directory and temporary working directory, respectively; both are required. |
 | `-j` | LSF mode only: path to the scheduler configuration JSON. |
 
 ### Quick local smoke test
 
-This uses only two resampled networks and a permissive consensus cutoff for
-testing: `-n 2 -pc 1`, not scientific-analysis settings. It uses the default
+This uses only two resampled networks and explicitly retains edges seen in at
+least one: `-n 2 -k 1`, not scientific-analysis settings. Default `-k 6` requires
+at least six networks. The smoke test uses the default
 80% subsampling and legacy affine MI cutoffs (`-pb 1e-7`).
 
 ```bash
 sjaracne local \
   -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt \
-  -n 2 -pc 1 \
+  -n 2 -k 1 \
   -o ./results/tf_smoke -tmp ./results/tmp_smoke/
 ```
 
@@ -189,20 +193,24 @@ sjaracne local \
 
 These BRCA100 examples use 100 resampled networks of 80 samples each. The TF
 `-pb 0.001` and SIG `-pb 0.0005` values are exploratory choices, **not automatic
-defaults or universally optimal settings**. Both use the current default
-consensus cutoff, `-pc 1e-5`.
+defaults or universally optimal settings**. Both use the default consensus rule,
+`-k 6`: an edge must appear in at least 6 of the 100 input networks. This is an
+engineering policy, not a p-value or FDR guarantee; report both K and the number
+of networks. See the current PCHIP K6
+[process](https://github.com/adamdingliang/sjaracne_benchmark/blob/d39103d44b03e6c7244417bea37aa9034db7ecc2/benchmarks/brca100_pchip_recurrence/README.md)
+and [results with NetBID2 QC](https://github.com/adamdingliang/sjaracne_benchmark/blob/d39103d44b03e6c7244417bea37aa9034db7ecc2/benchmarks/brca100_pchip_recurrence/results_2026-10-18/RESULTS.md).
 
 ```bash
 # TF network
 sjaracne local \
   -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt \
-  -n 100 --subsample-size 80 -M pchip -pb 0.001 -pc 1e-5 \
+  -n 100 --subsample-size 80 -M pchip -pb 0.001 -k 6 \
   -o ./results/tf_pchip -tmp ./results/tmp_tf_pchip/
 
 # SIG network
 sjaracne local \
   -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_SIG.txt \
-  -n 100 --subsample-size 80 -M pchip -pb 0.0005 -pc 1e-5 \
+  -n 100 --subsample-size 80 -M pchip -pb 0.0005 -k 6 \
   -o ./results/sig_pchip -tmp ./results/tmp_sig_pchip/
 ```
 
@@ -214,8 +222,21 @@ with the same PCHIP settings as the local example:
 ```bash
 sjaracne lsf -j ./SJARACNe/config/config_cwlexec.json \
   -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt \
-  -n 100 --subsample-size 80 -M pchip -pb 0.001 -pc 1e-5 \
+  -n 100 --subsample-size 80 -M pchip -pb 0.001 -k 6 \
   -o ./results/tf_lsf -tmp ./results/tmp_tf_lsf/
+```
+
+### Explicit legacy consensus mode
+
+For retrospective comparisons, replace `-k 6` with an explicit `-pc`, such as
+`-pc 1e-5`. Do not pass both. This example retains PCHIP for MI cutoffs while
+using the old consensus-probability filter:
+
+```bash
+sjaracne local \
+  -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt \
+  -n 100 --subsample-size 80 -M pchip -pb 0.001 -pc 1e-5 \
+  -o ./results/tf_pchip_legacy_consensus -tmp ./results/tmp_tf_pchip_legacy/
 ```
 
 

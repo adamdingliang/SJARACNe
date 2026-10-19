@@ -5,11 +5,38 @@ import os
 import argparse
 import math
 import logging
+import numbers
 import numpy as np
 import pathlib
 import re
 from scipy import stats
 import pandas as pd
+
+
+DEFAULT_MIN_RECURRENCE = 6
+_UNSET = object()
+
+
+def minimum_recurrence(value):
+    """Parse a positive integer recurrence threshold for argparse."""
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        raise argparse.ArgumentTypeError('minimum recurrence must be an integer')
+    if parsed < 1:
+        raise argparse.ArgumentTypeError('minimum recurrence must be at least 1')
+    return parsed
+
+
+def consensus_probability(value):
+    """Parse the deprecated legacy consensus probability threshold."""
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        raise argparse.ArgumentTypeError('consensus p-value must be a number')
+    if not math.isfinite(parsed) or not 0.0 < parsed <= 1.0:
+        raise argparse.ArgumentTypeError('consensus p-value must be within (0, 1]')
+    return parsed
 
 
 def main():
@@ -18,7 +45,21 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                                      description=head_description)
     parser.add_argument('-a', '--adjmat-dir', metavar='STR', required=True, help='directory with adjacent matrix')
-    parser.add_argument('-p', '--p-value', metavar='STR', required=True, help='P value threshold')
+    selection_group = parser.add_mutually_exclusive_group()
+    selection_group.add_argument(
+        '-k', '--min-recurrence', metavar='INT', type=minimum_recurrence,
+        help=(
+            'minimum number of distinct bootstrap networks containing an edge; '
+            'default: 6'
+        ),
+    )
+    selection_group.add_argument(
+        '-p', '--p-value', metavar='FLOAT', type=consensus_probability,
+        help=(
+            'deprecated legacy normal-approximation p-value threshold; use '
+            '--min-recurrence instead'
+        ),
+    )
     parser.add_argument('-e', '--exp-mat', metavar='STR', required=True, help='expression matrix file')
     parser.add_argument('-o', '--out-dir', metavar='STR', required=True, help='output directory')
     parser.add_argument('-s', '--subnet', metavar='STR', help='file with gene symbols of interest to build a subnet')
@@ -29,24 +70,73 @@ def main():
 
     logging.basicConfig(level=logging.INFO)
     logging.info('Create an initial consensus network ...')
-    network = create_consensus_network(args.adjmat_dir, args.p_value, args.out_dir)
+    selection = {}
+    if args.min_recurrence is not None:
+        selection['min_recurrence'] = args.min_recurrence
+    elif args.p_value is not None:
+        logging.warning(
+            'Legacy consensus p-value filtering uses a normal approximation; '
+            'prefer --min-recurrence.'
+        )
+        selection['p_value'] = args.p_value
+    network = create_consensus_network(
+        args.adjmat_dir,
+        out_dir=args.out_dir,
+        **selection,
+    )
     logging.info('Done')
     logging.info('Create an enhanced consensus network ...')
     create_enhanced_consensus_network(args.exp_mat, network, args.out_dir, args.subnet)
     logging.info('All done')
 
 
-def create_consensus_network(adjmat_dir, p_value, out_dir):
+def create_consensus_network(
+    adjmat_dir,
+    p_value=_UNSET,
+    out_dir=None,
+    *,
+    min_recurrence=None,
+):
     """ Create a consensus network based on SJARACNe bootstrap networks
     Args:
         adjmat_dir: directory with adjacent matrix
-        p_value: P value threshold
+        p_value: deprecated legacy normal-approximation p-value threshold. An
+            explicit None retains the historical Bonferroni behavior.
         out_dir: output directory
+        min_recurrence: minimum number of distinct bootstrap networks that
+            must contain an ordered edge. When neither selection mode is
+            supplied, defaults to 6.
     Returns:
         none
     """
-    if not os.path.isdir(out_dir):
-        os.mkdir(out_dir)
+    legacy_probability_mode = p_value is not _UNSET
+    if legacy_probability_mode and min_recurrence is not None:
+        raise ValueError('p_value and min_recurrence are mutually exclusive')
+
+    if not legacy_probability_mode and min_recurrence is None:
+        min_recurrence = DEFAULT_MIN_RECURRENCE
+
+    if min_recurrence is not None:
+        if (
+            isinstance(min_recurrence, bool)
+            or not isinstance(min_recurrence, numbers.Integral)
+        ):
+            raise ValueError('minimum recurrence must be an integer')
+        min_recurrence = int(min_recurrence)
+        if min_recurrence < 1:
+            raise ValueError('minimum recurrence must be at least 1')
+
+    if legacy_probability_mode and p_value is not None:
+        try:
+            parsed_p_value = float(p_value)
+        except (TypeError, ValueError):
+            raise ValueError('consensus p-value must be a number')
+        if not math.isfinite(parsed_p_value) or not 0.0 < parsed_p_value <= 1.0:
+            raise ValueError('consensus p-value must be within (0, 1]')
+        p_value = parsed_p_value
+
+    if out_dir is None:
+        raise ValueError('out_dir is required')
 
     total_edge_in_runs = []
     bootstrap_run_num = 0
@@ -117,46 +207,84 @@ def create_consensus_network(adjmat_dir, p_value, out_dir):
             "No bootstrap adjacency files found in '{}'.".format(adjmat_dir)
         )
 
+    if min_recurrence is not None and min_recurrence > bootstrap_run_num:
+        raise ValueError(
+            'minimum recurrence {} exceeds the number of bootstrap networks {}'
+            .format(min_recurrence, bootstrap_run_num)
+        )
+
+    # Do not leave an output directory behind when input or recurrence
+    # validation fails.
+    if not os.path.isdir(out_dir):
+        os.mkdir(out_dir)
+
     edge_count = len(total_edge_number)
-    mu = 0.0
-    sigma = 0.0
-    # Computing mu and sigma across all bootstrap files
-    if edge_count > 0:
-        for i in range(0, bootstrap_run_num):
-            prob = float(total_edge_in_runs[i]) / float(edge_count)
-            mu += prob
-            sigma += prob * (1 - prob)
-    sigma = np.sqrt(sigma)
+    p_threshold = None
+    mu = None
+    sigma = None
 
-    if edge_count > 0:
-        bonferroni_alpha = 0.05 / edge_count
-        bonferroni_alpha_text = str(bonferroni_alpha)
+    if legacy_probability_mode:
+        mu = 0.0
+        variance = 0.0
+        # Preserve the historical normal approximation for explicit legacy use.
+        if edge_count > 0:
+            for edge_total in total_edge_in_runs:
+                prob = float(edge_total) / float(edge_count)
+                mu += prob
+                variance += prob * (1 - prob)
+        sigma = np.sqrt(variance)
+
+        if edge_count > 0:
+            bonferroni_alpha = 0.05 / edge_count
+            bonferroni_alpha_text = str(bonferroni_alpha)
+        else:
+            bonferroni_alpha = None
+            bonferroni_alpha_text = 'N/A (no edges tested)'
+
+        p_threshold = bonferroni_alpha if p_value is None else p_value
+
+        with open(pathlib.PurePath(out_dir).joinpath('bootstrap_info_.txt'), 'w') as f_info:
+            f_info.write('Total edge tested: {}\n'.format(str(edge_count)))
+            f_info.write(
+                'Bonferroni corrected (0.05) alpha: {}\n'.format(
+                    bonferroni_alpha_text
+                )
+            )
+            f_info.write('mu: {}\n'.format(str(mu)))
+            f_info.write('sigma: {}\n'.format(str(sigma)))
     else:
-        bonferroni_alpha = None
-        bonferroni_alpha_text = 'N/A (no edges tested)'
-
-    # Writing out the summary of all bootstrap files into bootstrap_info.txt file
-    with open(pathlib.PurePath(out_dir).joinpath('bootstrap_info_.txt'), 'w') as f_info:
-        f_info.write('Total edge tested: {}\n'.format(str(edge_count)))
-        f_info.write('Bonferroni corrected (0.05) alpha: {}\n'.format(bonferroni_alpha_text))
-        f_info.write('mu: {}\n'.format(str(mu)))
-        f_info.write('sigma: {}\n'.format(str(sigma)))
-
-    # Setting p_threshold to the given value, if no given value, set to Bonferroni corrected value
-    p_threshold = bonferroni_alpha
-    if p_value is not None:
-        p_threshold = float(p_value)
+        recurrence_fraction = float(min_recurrence) / float(bootstrap_run_num)
+        with open(pathlib.PurePath(out_dir).joinpath('bootstrap_info_.txt'), 'w') as f_info:
+            f_info.write('Total edge tested: {}\n'.format(str(edge_count)))
+            f_info.write('Consensus selection: minimum recurrence\n')
+            f_info.write('Bootstrap networks: {}\n'.format(bootstrap_run_num))
+            f_info.write('Minimum recurrence: {}\n'.format(min_recurrence))
+            f_info.write(
+                'Minimum recurrence fraction: {}\n'.format(
+                    '{:.12g}'.format(recurrence_fraction)
+                )
+            )
 
     # Writing out the parameters that the bootstrap networks are constructed with plus other
     # parameters that is used to create consensus network
     parameters += '>  Bootstrap No: {}\n'.format(str(bootstrap_run_num))
+    if min_recurrence is not None:
+        parameters += '>  Consensus selection minimum recurrence\n'
+        parameters += '>  Minimum recurrence {} of {}\n'.format(
+            min_recurrence,
+            bootstrap_run_num,
+        )
+        parameters += '>  Minimum recurrence fraction {}\n'.format(
+            '{:.12g}'.format(float(min_recurrence) / float(bootstrap_run_num))
+        )
     parameters += '>  Source: sjaracne2\n'
     out_network_path = pathlib.PurePath(out_dir).joinpath('consensus_network_3col_.txt')
     parameters += '>  Output network: {}\n'.format(out_network_path)
     with open(pathlib.PurePath(out_dir).joinpath('parameter_info_.txt'), 'w') as parameter_file:
         parameter_file.write(parameters)
 
-    # Writing out the consensus network preserving edges with statistically significant support
+    # Write the consensus network using the selected recurrence or legacy
+    # probability rule.
     with open(out_network_path, 'w') as f_consensus_network:
         header = 'source\ttarget\tMI\n'
         f_consensus_network.write(header)
@@ -166,14 +294,18 @@ def create_consensus_network(adjmat_dir, p_value, out_dir):
             # Extract first two gene involving an edge from the key (edge)
             gene1, gene2 = key
 
-            # Compute the z score of normal distribution
-            z = float(total_edge_number[key] - mu) / float(sigma) if sigma != 0 else 100
+            if min_recurrence is not None:
+                retain_edge = total_edge_number[key] >= min_recurrence
+            else:
+                # Explicit legacy mode: retain the historical normal-tail gate.
+                z = (
+                    float(total_edge_number[key] - mu) / float(sigma)
+                    if sigma != 0
+                    else 100
+                )
+                retain_edge = uprob(z) < p_threshold
 
-            # Compute p-value corresponding to the z score
-            pval = uprob(z)
-
-            # Decision making if the edge has enough support or not and therefore if it has to be remained or removed
-            if pval < p_threshold:
+            if retain_edge:
                 # Computing MI corresponding to an edge remaining in the network
                 mi = '{0:.4f}'.format(float(total_mi[key]) / float(total_edge_number[key]))
                 f_consensus_network.write('{}\t{}\t{}\n'.format(gene1, gene2, mi))
@@ -195,7 +327,7 @@ def create_enhanced_consensus_network(exp_mat, network, out_dir, subnet=None):
 
     # Build output file name based on input network file path
     network_file_name = os.path.basename(network)
-    input_net_name_tokens = re.split("_|\.", network_file_name)
+    input_net_name_tokens = re.split(r"_|\.", network_file_name)
     out_file_name = ("_".join(input_net_name_tokens[0:2]) + "_ncol_" +
                      "_".join(input_net_name_tokens[3:len(input_net_name_tokens) - 1]))
     header = ("source", "target", "source.symbol", "target.symbol", "MI", "pearson",
