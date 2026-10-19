@@ -52,7 +52,7 @@ $ python setup.py install
 ```
 
 The examples below use this source installation of `develop`; the PyPI release
-may not include the latest subsampling and PCHIP options.
+may not include the latest subsampling, PCHIP or minimum-recurrence options.
 
 ### Install optional packages depends on runtime platform
 SJARACNe workflow is implemented in [Common Workflow Language](https://www.commonwl.org/). 
@@ -102,6 +102,8 @@ The main output of SJARACNe is a network file, which is a tab delimited text fil
 target, mutual information, Pearson and Spearman correlations coefficients, regression line slope and p-value. SJARACNe
 also outputs two meta information files: parameter_info_.txt and bootstrap_info_.txt, which store SJARACNe
 input parameters and resampling metadata, respectively. `bootstrap_info_.txt` is retained as a legacy filename.
+The network's regression p-value is not a consensus-edge probability;
+recurrence selection is recorded in the metadata.
 
 ### Experimental PCHIP MI cutoffs (opt-in)
 
@@ -194,9 +196,9 @@ These BRCA100 examples use 100 resampled networks of 80 samples each. The TF
 defaults or universally optimal settings**. Both use the default consensus rule,
 `-k 6`: an edge must appear in at least 6 of the 100 input networks. This is an
 engineering policy, not a p-value or FDR guarantee; report both K and the number
-of networks. Historical evidence is in the
-[benchmark process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/brca100_consensus_recurrence_sweep)
-and [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/brca100_consensus_recurrence_sweep/results_2026-08-20/RESULTS.md).
+of networks. See the current PCHIP K6
+[process](https://github.com/adamdingliang/sjaracne_benchmark/blob/d39103d44b03e6c7244417bea37aa9034db7ecc2/benchmarks/brca100_pchip_recurrence/README.md)
+and [results with NetBID2 QC](https://github.com/adamdingliang/sjaracne_benchmark/blob/d39103d44b03e6c7244417bea37aa9034db7ecc2/benchmarks/brca100_pchip_recurrence/results_2026-10-18/RESULTS.md).
 
 ```bash
 # TF network
