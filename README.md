@@ -146,41 +146,11 @@ different default. These probabilities are provisional BRCA100 operating
 points, not universal biological recommendations; they have not been
 revalidated as optimal settings under PCHIP.
 
-The PCHIP surface interpolates empirical MI quantiles from independent
-rank-permutation null simulations evaluated with the shared AP-MI estimator.
-It does not fit a parametric tail distribution.
-
-PCHIP is **experimental**, not a uniformly validated probability guarantee.
-The independent-rank study had 6599/6600 moderate observed-rate checks within
-10%, but simultaneous intervals confirmed only 784/800 core cases, with 16
-unresolved. Off-grid sample counts such as `m=80` are interpolated and were
-not tested in the 50-step broad-grid study. All computable probabilities are
-accepted without a separate acknowledgment flag. Requests below `0.0005`
-warn that they are outside the principal assessment range; this is **not a
-demonstrated failure boundary**. Requests at or below `1e-5` additionally warn
-about limited extreme-tail Monte Carlo precision: ten million validation draws
-expect only 100, 10 and 1 exceedances at `1e-5`, `1e-6` and `1e-7`. This warning
-does not reject the request or establish a calibrated accuracy guarantee.
-No biological FDR control is claimed.
-The null assumes exchangeable observations and unique ordinal ranks; the
-calibration is not an independent validation of zero-inflated or heavily tied
-expression data.
-
-Unsupported inputs, crossed cutoff knots and estimator mismatches fail rather
-than extrapolating or silently falling back. Legacy with-replacement `-r` and
-adjacency replay `-j` are not supported when PCHIP is active. An explicit
-native `-t`, including zero, overrides the p-value conversion.
-
-The model and native coefficients are bundled with SJARACNe; there is no
-runtime dependency on the benchmark repository. Network headers retain source
-hashes, actual `m`, principal-range/extreme-tail/off-grid status and decimal/hex binary64 cutoffs.
-Literal training-size/probability knots retain their exact stored binary64
-values. Between knots, library/compiler arithmetic can differ from the study's
-NumPy/SciPy implementation by a few ULPs (15 in the recorded port check).
-Numerical closeness does not prove identical exceedance counts near MI ties;
-the published null-rate summaries describe the original benchmark callable.
-See the [process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m)
-and [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md).
+PCHIP remains **experimental**; null calibration does not establish uniform
+accuracy or biological FDR. See the
+[process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m)
+and [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md)
+for calibration, runtime policy, provenance and limitations.
 
 ## Examples
 
