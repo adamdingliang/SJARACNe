@@ -408,6 +408,114 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
         workflow = self.run_wrapper()
         self.assertIn('subsample_spec: "80%"\n', workflow)
 
+    def test_wrapper_defaults_to_minimum_recurrence_six(self):
+        workflow = self.run_wrapper()
+        self.assertIn('min_recurrence: 6\n', workflow)
+        self.assertNotIn('p_value_consensus:', workflow)
+
+    def test_wrapper_serializes_recurrence_or_explicit_legacy_probability(self):
+        recurrence = self.run_wrapper('--min-recurrence', '8')
+        legacy = self.run_wrapper('--p-value-consensus', '0.01')
+        self.assertIn('min_recurrence: 8\n', recurrence)
+        self.assertNotIn('p_value_consensus:', recurrence)
+        self.assertIn('p_value_consensus: 0.01\n', legacy)
+        self.assertNotIn('min_recurrence:', legacy)
+
+        with self.assertRaises(SystemExit):
+            self.run_wrapper(
+                '--min-recurrence',
+                '6',
+                '--p-value-consensus',
+                '0.01',
+            )
+
+    def test_wrapper_preserves_explicit_brca100_bootstrap_probabilities(self):
+        tf = self.run_wrapper('--p-value-bootstrap', '1e-3')
+        sig = self.run_wrapper('--p-value-bootstrap', '5e-4')
+        self.assertIn('p_value_bootstrap: 1e-3\n', tf)
+        self.assertIn('p_value_bootstrap: 5e-4\n', sig)
+
+    def test_wrapper_keeps_mi_and_consensus_selection_independent(self):
+        for model in (None, "pchip"):
+            for consensus_probability in (None, "0.01"):
+                with self.subTest(model=model, consensus_probability=consensus_probability):
+                    arguments = ["--bootstrap-num", "6"]
+                    if model is not None:
+                        arguments += ["-M", model, "-pb", "0.001"]
+                    if consensus_probability is not None:
+                        arguments += ["--p-value-consensus", consensus_probability]
+                    workflow = self.run_wrapper(*arguments)
+                    if consensus_probability is None:
+                        self.assertIn("min_recurrence: 6\n", workflow)
+                        self.assertNotIn("p_value_consensus:", workflow)
+                    else:
+                        self.assertIn("p_value_consensus: 0.01\n", workflow)
+                        self.assertNotIn("min_recurrence:", workflow)
+                    if model is None:
+                        self.assertNotIn("apmi_null_model:", workflow)
+                        self.assertRegex(workflow, r"(?m)^p_value_bootstrap: 1e-0?7$")
+                    else:
+                        self.assertRegex(workflow, r'(?m)^apmi_null_model: "pchip"$')
+                        self.assertNotIn("class: File\n  path: pchip", workflow)
+                        self.assertIn("p_value_bootstrap: 0.001\n", workflow)
+
+    def test_wrapper_accepts_feasible_k1_with_either_mi_selection(self):
+        for model_args in ((), ("-M", "pchip", "-pb", "0.001")):
+            with self.subTest(model_args=model_args):
+                workflow = self.run_wrapper(
+                    "--bootstrap-num", "2", "--min-recurrence", "1", *model_args
+                )
+                self.assertIn("bootstrap_num: 2\n", workflow)
+                self.assertIn("min_recurrence: 1\n", workflow)
+                self.assertNotIn("p_value_consensus:", workflow)
+
+    def test_invalid_recurrence_or_network_count_fails_before_launch_or_output(self):
+        invalid_arguments = [
+            ("--min-recurrence", value)
+            for value in ("0", "-1", "1.5", "true")
+        ] + [
+            ("--bootstrap-num", value)
+            for value in ("0", "-1", "1.5")
+        ] + [
+            ("--bootstrap-num", "5"),
+            ("--bootstrap-num", "6", "--min-recurrence", "7"),
+            ("--min-recurrence", "6", "--p-value-consensus", "0.01"),
+        ]
+        for model_args in ((), ("-M", "pchip", "-pb", "0.001")):
+            for invalid in invalid_arguments:
+                with self.subTest(model_args=model_args, invalid=invalid):
+                    module = self.load_wrapper()
+                    module.run_shell_command_call = mock.Mock()
+                    with tempfile.TemporaryDirectory() as temporary:
+                        root = Path(temporary)
+                        output = root / "output"
+                        temp_dir = root / "tmp"
+                        arguments = [
+                            "sjaracne", "local", "-e", str(root / "input.exp"),
+                            "-g", str(root / "hubs.txt"), "-o", str(output),
+                            "-tmp", str(temp_dir), *model_args, *invalid,
+                        ]
+                        with mock.patch.object(os.sys, "argv", arguments):
+                            with self.assertRaises(SystemExit):
+                                module.main()
+                        module.run_shell_command_call.assert_not_called()
+                        self.assertFalse(output.exists())
+                        self.assertFalse(temp_dir.exists())
+
+    def test_wrapper_rejects_recurrence_above_bootstrap_count_early(self):
+        with self.assertRaises(SystemExit):
+            self.run_wrapper('--bootstrap-num', '5')
+        with self.assertRaises(SystemExit):
+            self.run_wrapper(
+                '--bootstrap-num', '6', '--min-recurrence', '7'
+            )
+
+        legacy = self.run_wrapper(
+            '--bootstrap-num', '5', '--p-value-consensus', '0.01'
+        )
+        self.assertIn('bootstrap_num: 5\n', legacy)
+        self.assertIn('p_value_consensus: 0.01\n', legacy)
+
     def test_wrapper_serializes_fraction_or_exact_size(self):
         fraction = self.run_wrapper("--subsample-fraction", "0.64")
         exact = self.run_wrapper("--subsample-size", "7")
@@ -428,6 +536,37 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
             "  subsample_spec:", 1
         )[0]
         self.assertNotIn("default:", sample_section)
+
+    def test_cwl_wires_both_consensus_selection_modes(self):
+        workflow = (
+            PROJECT_ROOT / "SJARACNe" / "cwl" / "sjaracne_workflow.cwl"
+        ).read_text(encoding="utf-8")
+        command = (
+            PROJECT_ROOT / "SJARACNe" / "cwl" / "create_consensus_network.cwl"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("min_recurrence:\n    type: int?", workflow)
+        self.assertIn("p_value_consensus:\n    type: float?", workflow)
+        self.assertNotIn("p_value_consensus:\n    type: float\n    default:", workflow)
+        self.assertIn("min_recurrence: min_recurrence", workflow)
+        self.assertIn("p_thresh_arg: p_value_consensus", workflow)
+        self.assertIn("min_recurrence:\n    type: int?", command)
+        self.assertIn("prefix: -k", command)
+        self.assertIn("p_thresh_arg:\n    type: float?", command)
+        self.assertIn(
+            "glob: $(inputs.output_dir)/bootstrap_info_.txt",
+            command,
+        )
+        self.assertIn(
+            "glob: $(inputs.output_dir)/parameter_info_.txt",
+            command,
+        )
+        self.assertIn("outputSource: consensus/bootstrap_info", workflow)
+        self.assertIn("outputSource: consensus/parameter_info", workflow)
+        self.assertIn(
+            "out: [out_dir, bootstrap_info, parameter_info]",
+            workflow,
+        )
 
 
 if __name__ == "__main__":

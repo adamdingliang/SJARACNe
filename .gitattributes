@@ -1,3 +1,7 @@
 # Preserve hash-pinned model bytes and the exporter's recorded source digest.
 SJARACNe/config/apmi_pchip.json -text
 tools/export_apmi_pchip.py text eol=lf
+
+# Keep the runnable LSF examples executable under Bash after Windows checkouts.
+tests/test_sjaracne_lsf_brca_data.sh text eol=lf
+tests/test_sjaracne_lsf_real_data.sh text eol=lf
