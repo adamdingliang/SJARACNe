@@ -6,6 +6,8 @@ __all__ = [
     'get_mi_cutoff', 'ch_line_ending', 'os', 'sys', 'argparse', 'main',
     'create_consensus_network', 'math', 'logging', 'np', 'pathlib', 're',
     'stats', 'pd', 'create_enhanced_consensus_network', 'uprob',
+    'numbers', 'DEFAULT_MIN_RECURRENCE', 'minimum_recurrence',
+    'consensus_probability',
 ]
 
 
