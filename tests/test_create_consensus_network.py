@@ -148,6 +148,87 @@ class TestMinimumRecurrenceConsensus(unittest.TestCase):
             "source\ttarget\tMI\nA\tB\t0.5000\nA\tC\t0.2000\n",
         )
 
+    def test_explicit_k5_k6_and_k7_select_inclusive_support_boundaries(self):
+        self.write_boundary_fixture()
+        expected_edges = {
+            5: "A\tB\t0.1400\nA\tC\t0.2000\nA\tD\t0.3000\n",
+            6: "A\tB\t0.1400\nA\tC\t0.2000\n",
+            7: "A\tB\t0.1400\n",
+        }
+        for recurrence, edges in expected_edges.items():
+            with self.subTest(min_recurrence=recurrence):
+                output = self.workdir / "k{}".format(recurrence)
+                cn(self.adjacency_dir, out_dir=output, min_recurrence=recurrence)
+                self.assertEqual(
+                    (output / "consensus_network_3col_.txt").read_text(encoding="utf-8"),
+                    "source\ttarget\tMI\n" + edges,
+                )
+                fraction = "{:.12g}".format(recurrence / 7.0)
+                bootstrap_info = (output / "bootstrap_info_.txt").read_text(
+                    encoding="utf-8"
+                )
+                self.assertIn("Bootstrap networks: 7\n", bootstrap_info)
+                self.assertIn("Minimum recurrence: {}\n".format(recurrence), bootstrap_info)
+                self.assertIn("Minimum recurrence fraction: {}\n".format(fraction), bootstrap_info)
+                parameters = (output / "parameter_info_.txt").read_text(encoding="utf-8")
+                self.assertIn(
+                    ">  Minimum recurrence {} of 7\n".format(recurrence), parameters
+                )
+                self.assertIn(
+                    ">  Minimum recurrence fraction {}\n".format(fraction), parameters
+                )
+
+    def test_header_only_network_counts_toward_recurrence_denominator(self):
+        (self.adjacency_dir / "run_000.adj").write_text(
+            ">  Input file test.exp\n", encoding="utf-8"
+        )
+        for run_number in range(1, 7):
+            edges = [("B", 0.5)]
+            if run_number <= 5:
+                edges.append(("C", 0.2))
+            self.write_bootstrap(run_number, edges)
+        output = self.workdir / "output"
+        cn(self.adjacency_dir, out_dir=output)
+        self.assertEqual(
+            (output / "consensus_network_3col_.txt").read_text(encoding="utf-8"),
+            "source\ttarget\tMI\nA\tB\t0.5000\n",
+        )
+        self.assertEqual(
+            (output / "bootstrap_info_.txt").read_text(encoding="utf-8"),
+            "Total edge tested: 2\n"
+            "Consensus selection: minimum recurrence\n"
+            "Bootstrap networks: 7\n"
+            "Minimum recurrence: 6\n"
+            "Minimum recurrence fraction: 0.857142857143\n",
+        )
+        parameters = (output / "parameter_info_.txt").read_text(encoding="utf-8")
+        self.assertIn(">  Minimum recurrence 6 of 7\n", parameters)
+        self.assertIn(">  Minimum recurrence fraction 0.857142857143\n", parameters)
+
+    def test_default_and_explicit_recurrence_reject_missing_networks(self):
+        for name, selection in (("default", {}), ("explicit", {"min_recurrence": 1})):
+            with self.subTest(selection=name):
+                output = self.workdir / name
+                with self.assertRaisesRegex(ValueError, "No bootstrap adjacency files found"):
+                    cn(self.adjacency_dir, out_dir=output, **selection)
+                self.assertFalse(output.exists())
+
+    def test_recurrence_counts_directions_separately_and_averages_each_run_once(self):
+        (self.adjacency_dir / "run_001.adj").write_text(
+            ">  Input file test.exp\n"
+            "A\tB\t0.5\tB\t0.5\nA\tB\t0.5\nB\tA\t0.9\n",
+            encoding="utf-8",
+        )
+        self.write_bootstrap(2, [("B", 0.7)])
+        output = self.workdir / "output"
+        with self.assertLogs(level="WARNING") as logs:
+            cn(self.adjacency_dir, out_dir=output, min_recurrence=2)
+        self.assertIn("Ignored 2 duplicate edge occurrence(s)", "\n".join(logs.output))
+        self.assertEqual(
+            (output / "consensus_network_3col_.txt").read_text(encoding="utf-8"),
+            "source\ttarget\tMI\nA\tB\t0.6000\n",
+        )
+
     def test_duplicate_occurrences_do_not_satisfy_recurrence(self):
         (self.adjacency_dir / "run_001.adj").write_text(
             ">  Input file test.exp\nA\tB\t0.5\tB\t0.5\nA\tB\t0.5\n",
@@ -164,7 +245,7 @@ class TestMinimumRecurrenceConsensus(unittest.TestCase):
 
     def test_invalid_or_impossible_recurrence_fails_closed(self):
         self.write_bootstrap(1, [("B", 0.5)])
-        invalid_values = (0, -1, 1.5, True, "1")
+        invalid_values = (0, -1, 1.5, 6.0, True, False, "1")
         for index, value in enumerate(invalid_values):
             output = self.workdir / "invalid_{}".format(index)
             with self.subTest(value=value):
@@ -441,6 +522,41 @@ class TestEmptyConsensusNetwork(unittest.TestCase):
         self.assertFalse(
             (self.output_dir / "consensus_network_3col_.txt").exists()
         )
+
+    def test_default_k6_empty_networks_produce_headers_and_recurrence_metadata(self):
+        for run_number in range(6):
+            self.write_empty_bootstrap("run_{}.adj".format(run_number))
+
+        with mock.patch.object(
+            CONSENSUS_MODULE,
+            "uprob",
+            side_effect=AssertionError("K mode must not calculate a probability"),
+        ):
+            network = cn(self.adjacency_dir, out_dir=self.output_dir)
+        ecn(self.expression, network, self.output_dir)
+
+        self.assertEqual(
+            (self.output_dir / "consensus_network_3col_.txt").read_text(encoding="utf-8"),
+            "source\ttarget\tMI\n",
+        )
+        self.assertEqual(
+            (self.output_dir / "consensus_network_ncol_.txt").read_text(encoding="utf-8"),
+            "source\ttarget\tsource.symbol\ttarget.symbol\tMI\tpearson\t"
+            "spearman\tslope\tp-value\n",
+        )
+        self.assertEqual(
+            (self.output_dir / "bootstrap_info_.txt").read_text(encoding="utf-8"),
+            "Total edge tested: 0\n"
+            "Consensus selection: minimum recurrence\n"
+            "Bootstrap networks: 6\n"
+            "Minimum recurrence: 6\n"
+            "Minimum recurrence fraction: 1\n",
+        )
+        parameters = (self.output_dir / "parameter_info_.txt").read_text(encoding="utf-8")
+        self.assertIn(">  Bootstrap No: 6\n", parameters)
+        self.assertIn(">  Consensus selection minimum recurrence\n", parameters)
+        self.assertIn(">  Minimum recurrence 6 of 6\n", parameters)
+        self.assertIn(">  Minimum recurrence fraction 1\n", parameters)
 
 if __name__ == '__main__':
     unittest.main()

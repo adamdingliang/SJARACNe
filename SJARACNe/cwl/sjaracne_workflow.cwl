@@ -6,6 +6,7 @@ class: Workflow
 requirements:
   - class: ScatterFeatureRequirement
   - class: InlineJavascriptRequirement
+  - class: StepInputExpressionRequirement
 
 inputs:
   exp_file:
@@ -21,12 +22,11 @@ inputs:
     type: float?
     label: Deprecated legacy normal-approximation P-value threshold in building consensus network
   p_value_bootstrap:
-    type: float
-    default: 1e-7
-    label: P-value threshold in building individual resampled networks
+    type: double?
+    label: Explicitly required with PCHIP; omitted legacy probability resolves to 1e-7
   apmi_null_model:
-    type: File?
-    label: Optional exact-m and exact-depth estimator-matched AP-MI null-tail model
+    type: string?
+    label: Optional bundled experimental AP-MI PCHIP model name pchip
   depth:
     type: int
     default: 40
@@ -102,7 +102,18 @@ steps:
       exp_file: ch_ending_exp/out_file
       probe_file_tf: ch_ending_probe/out_file
       probe_file_subnetwork: ch_ending_probe/out_file
-      p_value: p_value_bootstrap
+      p_value:
+        source: p_value_bootstrap
+        valueFrom: |
+          ${
+            if (self === null || typeof self === 'undefined') {
+              if (inputs.apmi_null_model === 'pchip') {
+                throw new Error('PCHIP requires explicit p_value_bootstrap; no PCHIP probability default is chosen');
+              }
+              return 1e-7;
+            }
+            return self;
+          }
       apmi_null_model: apmi_null_model
       aracne_config_dir: aracne_config_dir
       npar_limit: depth

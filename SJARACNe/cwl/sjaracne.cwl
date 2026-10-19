@@ -29,19 +29,15 @@ inputs:
       prefix: -s
     doc: File containing a list of probes for which a subnetwork will be constructed
   apmi_null_model:
-    type: File?
+    type: string?
     inputBinding:
       position: 4
       prefix: -M
-    doc: Optional exact-m, exact-Npar estimator-matched AP-MI GPD-tail model
+    doc: Optional bundled model name pchip; experimental, requires Npar 40
   p_value:
-    type: float
+    type: double
     inputBinding:
       position: 5
-      valueFrom: |
-        ${
-          return inputs.p_value.toFixed(10); // Format to 10 decimal places (1e-10)
-        }
       prefix: -p
   tolerance:
     type: int

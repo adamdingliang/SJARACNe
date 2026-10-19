@@ -10,7 +10,9 @@ for single-cell RNA-seq data analysis.
 Check out scMINER to learn how to use SJARACNe for analyzing single-cell RNA-seq data.
 
 ## Download
-```git clone https://github.com/jyyulab/SJARACNe  # Clone the repo```
+```bash
+git clone --branch develop https://github.com/adamdingliang/SJARACNe.git
+```
 
 
 ## Prerequisites
@@ -43,11 +45,14 @@ There are two options to install SJARACNe and its dependencies:
 
 ### (Option 2) Install from source
 ```bash
-$ git clone https://github.com/jyyulab/SJARACNe
+$ git clone --branch develop https://github.com/adamdingliang/SJARACNe.git
 $ cd SJARACNe
 $ python setup.py build     # build SJARACNe binary
 $ python setup.py install
 ```
+
+The examples below use this source installation of `develop`; the PyPI release
+may not include the latest subsampling and PCHIP options.
 
 ### Install optional packages depends on runtime platform
 SJARACNe workflow is implemented in [Common Workflow Language](https://www.commonwl.org/). 
@@ -98,109 +103,139 @@ target, mutual information, Pearson and Spearman correlations coefficients, regr
 also outputs two meta information files: parameter_info_.txt and bootstrap_info_.txt, which store SJARACNe
 input parameters and resampling metadata, respectively. `bootstrap_info_.txt` is retained as a legacy filename.
 
-### Consensus edge recurrence
+### Experimental PCHIP MI cutoffs (opt-in)
 
-By default, the consensus step retains an ordered edge when it appears in at
-least six distinct resampled networks (`-k 6`). The comparison is inclusive,
-so an edge with support exactly six is retained. Each run records the selected
-minimum recurrence, the number of input networks, and their ratio in
-`bootstrap_info_.txt` and `parameter_info_.txt`.
+Use `-M pchip` / `--apmi-null-model pchip` to replace the legacy affine
+p-to-MI conversion **for that run** with the bundled empirical PCHIP surface.
+No `-M` means legacy affine, with its unchanged workflow `-pb` default of
+`1e-7`. **With `-M pchip`, the workflow requires an explicit `-pb`; it does
+not inherit that default or choose a TF/SIG value.** Direct CWL jobs must
+likewise supply `p_value_bootstrap`. Native `-p 1` still preserves all MI.
+PCHIP requires `Npar=40`, an actual selected sample count `m=50..10000`,
+and a probability in the computable range `1e-7..0.05`.
 
-Use `-k` / `--min-recurrence` to choose another positive integer. The requested
-value cannot exceed `-n` / `--bootstrap-num`; workflows with fewer than six
-networks must therefore set a feasible value explicitly, such as `-k 1` for a
-two-network smoke test. The historical normal-approximation consensus filter
-remains available through explicit `-pc` / `--p-value-consensus`, but it is
-deprecated and cannot be combined with `-k`.
+See the [TF and SIG workflow examples](#full-local-runs-with-pchip) below.
 
-The default `K=6` is a density-favoring engineering setting for the standard
-100-network workflow, not a p-value, FDR guarantee, or universal biological
-optimum. See the [compact BRCA100 consensus-recurrence analysis](benchmarks/brca100_consensus_recurrence_sweep/)
-for its matched design, exact-tail comparison, topology evidence, provenance,
-and limitations. Record both `K` and the number of input networks when
-reporting a result, and reconsider the setting when the number of networks
-changes.
+The same callable is available without running inference or importing SciPy.
+Here `m` is the selected sample count and `p` is the requested MI null-tail probability:
 
-### Repeated subsampling of observations
+```python
+from SJARACNe import get_mi_cutoff
 
-The standard CWL/Python workflow now builds each input network from a fixed-size
-subset sampled **without replacement**. By default, each network uses
-`m = ceil(0.8 * N)` distinct observations, where `N` is the number of eligible
-observations after any conditional selection. Thus, BRCA100 uses 80 of its 100
-samples. The MI significance threshold and optional noise-correction variance are
-calculated using the actual sampled `m`.
-
-For every seed, SJARACNe draws a uniform fixed-size subset with a partial
-Fisher-Yates shuffle, keeps the selected columns in their original order, and
-recomputes ranks on that subset before adaptive-partitioning MI. Because an
-observation can occur at most once, resampling no longer creates duplicated
-joint expression points that can spuriously drive adaptive partitions.
-
-Use `--subsample-fraction` to choose another fraction or `--subsample-size` to
-set an exact count. For example:
-
-```bash
-sjaracne local -e expression.exp -g hubs.txt -n 100 \
-  --subsample-fraction 0.8 -o results -tmp tmp
-
-sjaracne local -e expression.exp -g hubs.txt -n 100 \
-  --subsample-size 80 -o results -tmp tmp
+tf_cutoff = get_mi_cutoff(m=80, p=0.001)       # approximately 0.147831
+sig_cutoff = get_mi_cutoff(m=80, p=0.0005)     # approximately 0.164452
 ```
 
-At the native executable level, `-u 80%` and `-u 80` request the corresponding
-without-replacement samples. Native runs use all observations when `-u` is
-omitted. The old `-r` full-size bootstrap-with-replacement path remains available
-only to reproduce legacy analyses; `-r` and `-u` cannot be combined.
-
-In a manual CWL job, `subsample_spec` is a string, so quote both percentages and
-exact counts (for example, `subsample_spec: "80%"` or `subsample_spec: "80"`).
-The low-level `sjaracne.cwl` no longer supplies its historical implicit `-r 1`;
-callers must choose `subsample_spec`, explicitly request legacy `sample_number`,
-or omit both to analyze all observations. Legacy workflow names such as
-`bootstrap_num` and the `TF_run_*.adj` filenames are retained for compatibility.
-
-The 80% default is a pragmatic starting point, not a universal optimum. For an
-important dataset, compare a small sensitivity range (for example, 64%, 80%, and
-90%) and recalibrate any sample-size-dependent MI threshold for each choice.
-
-### Estimator-matched AP-MI significance models
-
-SJARACNe can optionally replace the inherited affine ARACNe p-value conversion
-with a null calibrated against its exact C++ adaptive-partitioning estimator.
-Pass an accepted model with `-M` / `--apmi-null-model`. Models are exact in the
-sample count `m` and AP depth `-N`; a mismatch is rejected rather than
-interpolated. For example, the packaged BRCA100-sized model uses `m=80` and
-`Npar=40`:
+For one native inference run, without the workflow's repeated resampling or
+consensus steps:
 
 ```bash
-sjaracne local -e expression.exp -g hubs.txt -n 100 \
-  --subsample-size 80 -M SJARACNe/config/apmi_null/apmi_null_m00080_npar040.model \
-  -o results -tmp tmp
+./SJARACNe/bin/sjaracne.exe -i ./tests/inputs/BRCA100.exp \
+  -s ./tests/inputs/BRCA100_TF.txt -l ./tests/inputs/BRCA100_TF.txt \
+  -N 40 -e 0 -u 80 -M pchip -p 0.001 -o brca100_tf_run.adj
 ```
 
-The workflow p-value default remains `1e-7`. At that depth, the cutoff comes
-from a fitted extreme tail and is beyond direct Monte Carlo validation; each
-network records this extrapolation and the full model provenance in its header.
-See [the calibration design, sweep results, and held-out BRCA100
-validation](benchmarks/apmi_null_calibration/README.md). Without a model,
-SJARACNe retains the historical affine calibration for backward compatibility
-and prints a warning. An explicit native `-t` cutoff still bypasses either
-p-value model.
+Native flags differ from workflow flags: `-i` is the expression file, `-s`
+selects source genes, and `-l` supplies regulator annotations for DPI.
+`-N 40` sets the AP-MI Npar limit, `-e 0` enables zero-tolerance DPI, `-u 80` selects
+80 distinct samples, `-p 0.001` requests the MI null-tail probability, and `-o`
+names the adjacency output file.
 
+Both TF and SIG use the same function; network identity does not choose a
+different default. These probabilities are provisional BRCA100 operating
+points, not universal biological recommendations; they have not been
+revalidated as optimal settings under PCHIP.
 
-## Examples to create a transcription factor network
-**Note:** for testing purposes, the number of resampled networks (legacy option
-`-n`) is set to 2 and the recurrence requirement is explicitly set to `-k 1`.
-The default `K=6` requires at least six networks. These are smoke-test commands,
-not recommended production settings. Note that there is no `/` at the end of
-the `-o` option but there is a `/` at the end of the `-tmp` option. The default
-per-subsample p-value (`-pb`) remains `1e-7` for compatibility.
+PCHIP remains **experimental**; null calibration does not establish uniform
+accuracy or biological FDR. See the
+[process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m)
+and [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md)
+for calibration, runtime policy, provenance and limitations.
 
-### Running on a single machine (Linux/OSX) 
-```sjaracne local -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt -n 2 -k 1 -o ./results/SJARACNE_out.final -tmp ./results/tmp/```
+## Examples
+
+Run these commands from the repository root after installing `develop`.
+Use an output directory without a trailing slash and a temporary directory
+ending in `/`. Local runs are parallel by default; add `--serial` if needed.
+
+Parameters used below:
+
+| Parameter | Meaning |
+| --- | --- |
+| `-e` | Input expression matrix. |
+| `-g` | Hub/source IDs matching the expression matrix's first column; use the TF or SIG list for the desired network. |
+| `-n 100` | Generate 100 resampled networks (the default). |
+| `--subsample-size 80` | Use 80 distinct samples per network, sampled without replacement. Alternatively, use `--subsample-fraction 0.8` for 80% (the default); do not combine both options. |
+| `-M pchip` | Opt in to PCHIP MI cutoffs; omit it to retain legacy affine conversion. |
+| `-pb` | Requested per-resample MI null-tail probability; required explicitly with PCHIP. Without PCHIP, the default is `1e-7`. |
+| `-k 6` / `--min-recurrence 6` | Retain ordered edges present in at least six input networks (inclusive; the default). Must be between 1 and the number of networks. |
+| `-pc` | Explicitly select the deprecated legacy normal-approximation consensus filter instead of recurrence; cannot be combined with `-k`. Separate from `-pb`. |
+| `-o`, `-tmp` | Final output directory and temporary working directory, respectively; both are required. |
+| `-j` | LSF mode only: path to the scheduler configuration JSON. |
+
+### Quick local smoke test
+
+This uses only two resampled networks and explicitly retains edges seen in at
+least one: `-n 2 -k 1`, not scientific-analysis settings. Default `-k 6` requires
+at least six networks. The smoke test uses the default
+80% subsampling and legacy affine MI cutoffs (`-pb 1e-7`).
+
+```bash
+sjaracne local \
+  -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt \
+  -n 2 -k 1 \
+  -o ./results/tf_smoke -tmp ./results/tmp_smoke/
+```
+
+### Full local runs with PCHIP
+
+These BRCA100 examples use 100 resampled networks of 80 samples each. The TF
+`-pb 0.001` and SIG `-pb 0.0005` values are exploratory choices, **not automatic
+defaults or universally optimal settings**. Both use the default consensus rule,
+`-k 6`: an edge must appear in at least 6 of the 100 input networks. This is an
+engineering policy, not a p-value or FDR guarantee; report both K and the number
+of networks. Historical evidence is in the
+[benchmark process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/brca100_consensus_recurrence_sweep)
+and [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/brca100_consensus_recurrence_sweep/results_2026-08-20/RESULTS.md).
+
+```bash
+# TF network
+sjaracne local \
+  -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt \
+  -n 100 --subsample-size 80 -M pchip -pb 0.001 -k 6 \
+  -o ./results/tf_pchip -tmp ./results/tmp_tf_pchip/
+
+# SIG network
+sjaracne local \
+  -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_SIG.txt \
+  -n 100 --subsample-size 80 -M pchip -pb 0.0005 -k 6 \
+  -o ./results/sig_pchip -tmp ./results/tmp_sig_pchip/
+```
 
 ### Running on an IBM LSF cluster
-```sjaracne lsf -j ./SJARACNe/config/config_cwlexec.json -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt -n 2 -k 1 -o ./results/SJARACNE_out.final```
+
+After configuring the LSF queue and resource settings, this runs the TF workflow
+with the same PCHIP settings as the local example:
+
+```bash
+sjaracne lsf -j ./SJARACNe/config/config_cwlexec.json \
+  -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt \
+  -n 100 --subsample-size 80 -M pchip -pb 0.001 -k 6 \
+  -o ./results/tf_lsf -tmp ./results/tmp_tf_lsf/
+```
+
+### Explicit legacy consensus mode
+
+For retrospective comparisons, replace `-k 6` with an explicit `-pc`, such as
+`-pc 1e-5`. Do not pass both. This example retains PCHIP for MI cutoffs while
+using the old consensus-probability filter:
+
+```bash
+sjaracne local \
+  -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt \
+  -n 100 --subsample-size 80 -M pchip -pb 0.001 -pc 1e-5 \
+  -o ./results/tf_pchip_legacy_consensus -tmp ./results/tmp_tf_pchip_legacy/
+```
 
 
 ## Reference

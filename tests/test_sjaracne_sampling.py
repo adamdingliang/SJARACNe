@@ -435,6 +435,73 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
         self.assertIn('p_value_bootstrap: 1e-3\n', tf)
         self.assertIn('p_value_bootstrap: 5e-4\n', sig)
 
+    def test_wrapper_keeps_mi_and_consensus_selection_independent(self):
+        for model in (None, "pchip"):
+            for consensus_probability in (None, "0.01"):
+                with self.subTest(model=model, consensus_probability=consensus_probability):
+                    arguments = ["--bootstrap-num", "6"]
+                    if model is not None:
+                        arguments += ["-M", model, "-pb", "0.001"]
+                    if consensus_probability is not None:
+                        arguments += ["--p-value-consensus", consensus_probability]
+                    workflow = self.run_wrapper(*arguments)
+                    if consensus_probability is None:
+                        self.assertIn("min_recurrence: 6\n", workflow)
+                        self.assertNotIn("p_value_consensus:", workflow)
+                    else:
+                        self.assertIn("p_value_consensus: 0.01\n", workflow)
+                        self.assertNotIn("min_recurrence:", workflow)
+                    if model is None:
+                        self.assertNotIn("apmi_null_model:", workflow)
+                        self.assertRegex(workflow, r"(?m)^p_value_bootstrap: 1e-0?7$")
+                    else:
+                        self.assertRegex(workflow, r'(?m)^apmi_null_model: "pchip"$')
+                        self.assertNotIn("class: File\n  path: pchip", workflow)
+                        self.assertIn("p_value_bootstrap: 0.001\n", workflow)
+
+    def test_wrapper_accepts_feasible_k1_with_either_mi_selection(self):
+        for model_args in ((), ("-M", "pchip", "-pb", "0.001")):
+            with self.subTest(model_args=model_args):
+                workflow = self.run_wrapper(
+                    "--bootstrap-num", "2", "--min-recurrence", "1", *model_args
+                )
+                self.assertIn("bootstrap_num: 2\n", workflow)
+                self.assertIn("min_recurrence: 1\n", workflow)
+                self.assertNotIn("p_value_consensus:", workflow)
+
+    def test_invalid_recurrence_or_network_count_fails_before_launch_or_output(self):
+        invalid_arguments = [
+            ("--min-recurrence", value)
+            for value in ("0", "-1", "1.5", "true")
+        ] + [
+            ("--bootstrap-num", value)
+            for value in ("0", "-1", "1.5")
+        ] + [
+            ("--bootstrap-num", "5"),
+            ("--bootstrap-num", "6", "--min-recurrence", "7"),
+            ("--min-recurrence", "6", "--p-value-consensus", "0.01"),
+        ]
+        for model_args in ((), ("-M", "pchip", "-pb", "0.001")):
+            for invalid in invalid_arguments:
+                with self.subTest(model_args=model_args, invalid=invalid):
+                    module = self.load_wrapper()
+                    module.run_shell_command_call = mock.Mock()
+                    with tempfile.TemporaryDirectory() as temporary:
+                        root = Path(temporary)
+                        output = root / "output"
+                        temp_dir = root / "tmp"
+                        arguments = [
+                            "sjaracne", "local", "-e", str(root / "input.exp"),
+                            "-g", str(root / "hubs.txt"), "-o", str(output),
+                            "-tmp", str(temp_dir), *model_args, *invalid,
+                        ]
+                        with mock.patch.object(os.sys, "argv", arguments):
+                            with self.assertRaises(SystemExit):
+                                module.main()
+                        module.run_shell_command_call.assert_not_called()
+                        self.assertFalse(output.exists())
+                        self.assertFalse(temp_dir.exists())
+
     def test_wrapper_rejects_recurrence_above_bootstrap_count_early(self):
         with self.assertRaises(SystemExit):
             self.run_wrapper('--bootstrap-num', '5')
