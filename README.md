@@ -10,7 +10,9 @@ for single-cell RNA-seq data analysis.
 Check out scMINER to learn how to use SJARACNe for analyzing single-cell RNA-seq data.
 
 ## Download
-```git clone https://github.com/jyyulab/SJARACNe  # Clone the repo```
+```bash
+git clone --branch develop https://github.com/adamdingliang/SJARACNe.git
+```
 
 
 ## Prerequisites
@@ -43,11 +45,14 @@ There are two options to install SJARACNe and its dependencies:
 
 ### (Option 2) Install from source
 ```bash
-$ git clone https://github.com/jyyulab/SJARACNe
+$ git clone --branch develop https://github.com/adamdingliang/SJARACNe.git
 $ cd SJARACNe
 $ python setup.py build     # build SJARACNe binary
 $ python setup.py install
 ```
+
+The examples below use this source installation of `develop`; the PyPI release
+may not include the latest subsampling and PCHIP options.
 
 ### Install optional packages depends on runtime platform
 SJARACNe workflow is implemented in [Common Workflow Language](https://www.commonwl.org/). 
@@ -98,56 +103,6 @@ target, mutual information, Pearson and Spearman correlations coefficients, regr
 also outputs two meta information files: parameter_info_.txt and bootstrap_info_.txt, which store SJARACNe
 input parameters and resampling metadata, respectively. `bootstrap_info_.txt` is retained as a legacy filename.
 
-### Repeated subsampling of observations
-
-The standard CWL/Python workflow now builds each input network from a fixed-size
-subset sampled **without replacement**. By default, each network uses
-`m = ceil(0.8 * N)` distinct observations, where `N` is the number of eligible
-observations after any conditional selection. Thus, BRCA100 uses 80 of its 100
-samples. The MI significance threshold and optional noise-correction variance are
-calculated using the actual sampled `m`.
-
-For every seed, SJARACNe draws a uniform fixed-size subset with a partial
-Fisher-Yates shuffle, keeps the selected columns in their original order, and
-recomputes ranks on that subset before adaptive-partitioning MI. Because an
-observation can occur at most once, resampling no longer creates duplicated
-joint expression points that can spuriously drive adaptive partitions.
-
-Use `--subsample-fraction` to choose another fraction or `--subsample-size` to
-set an exact count. For example:
-
-```bash
-sjaracne local -e expression.exp -g hubs.txt -n 100 \
-  --subsample-fraction 0.8 -o results -tmp tmp
-
-sjaracne local -e expression.exp -g hubs.txt -n 100 \
-  --subsample-size 80 -o results -tmp tmp
-```
-
-At the native executable level, `-u 80%` and `-u 80` request the corresponding
-without-replacement samples. Native runs use all observations when `-u` is
-omitted. The old `-r` full-size bootstrap-with-replacement path remains available
-only to reproduce legacy analyses; `-r` and `-u` cannot be combined.
-
-In a manual CWL job, `subsample_spec` is a string, so quote both percentages and
-exact counts (for example, `subsample_spec: "80%"` or `subsample_spec: "80"`).
-The low-level `sjaracne.cwl` no longer supplies its historical implicit `-r 1`;
-callers must choose `subsample_spec`, explicitly request legacy `sample_number`,
-or omit both to analyze all observations. Legacy workflow names such as
-`bootstrap_num` and the `TF_run_*.adj` filenames are retained for compatibility.
-
-The 80% default is a pragmatic starting point, not a universal optimum. For an
-important dataset, compare a small sensitivity range (for example, 64%, 80%, and
-90%) and recalibrate any sample-size-dependent MI threshold for each choice.
-Dataset-level benchmark processes, results and data provenance, including the
-simulated DREAM5 Network 1 comparison, are maintained separately in
-[sjaracne_benchmark](https://github.com/adamdingliang/sjaracne_benchmark)
-(currently private). Historical implementation-performance evidence and its
-reusable benchmarking tools are maintained there as well. SJARACNe does not
-require that repository to build, run or test. Small engine correctness fixtures
-remain here under `tests/fixtures/`; the root `benchmarks/` directory has been
-retired. Benchmark results are not a new default-fraction recommendation.
-
 ### Experimental PCHIP MI cutoffs (opt-in)
 
 Use `-M pchip` / `--apmi-null-model pchip` to replace the legacy affine
@@ -157,15 +112,12 @@ No `-M` means legacy affine, with its unchanged workflow `-pb` default of
 not inherit that default or choose a TF/SIG value.** Direct CWL jobs must
 likewise supply `p_value_bootstrap`. Native `-p 1` still preserves all MI.
 PCHIP requires `Npar=40`, an actual selected sample count `m=50..10000`,
-and a probability in the computable range `1e-7..0.05`:
+and a probability in the computable range `1e-7..0.05`.
 
-```bash
-sjaracne local -e expression.exp -g hubs.txt -n 100 \
-  --subsample-size 80 -M pchip -pb 0.001 \
-  -o results -tmp tmp
-```
+See the [TF and SIG workflow examples](#full-local-runs-with-pchip) below.
 
-The same callable is available without running inference or importing SciPy:
+The same callable is available without running inference or importing SciPy.
+Here `m` is the selected sample count and `p` is the requested MI null-tail probability:
 
 ```python
 from SJARACNe import get_mi_cutoff
@@ -174,7 +126,21 @@ tf_cutoff = get_mi_cutoff(m=80, p=0.001)       # approximately 0.147831
 sig_cutoff = get_mi_cutoff(m=80, p=0.0005)     # approximately 0.164452
 ```
 
-Native equivalent: `sjaracne.exe -i expression.exp -s hubs.txt -N 40 -u 80 -M pchip -p 0.001`.
+For one native inference run, without the workflow's repeated resampling or
+consensus steps:
+
+```bash
+./SJARACNe/bin/sjaracne.exe -i ./tests/inputs/BRCA100.exp \
+  -s ./tests/inputs/BRCA100_TF.txt -l ./tests/inputs/BRCA100_TF.txt \
+  -N 40 -e 0 -u 80 -M pchip -p 0.001 -o brca100_tf_run.adj
+```
+
+Native flags differ from workflow flags: `-i` is the expression file, `-s`
+selects source genes, and `-l` supplies regulator annotations for DPI.
+`-N 40` sets the AP-MI Npar limit, `-e 0` enables zero-tolerance DPI, `-u 80` selects
+80 distinct samples, `-p 0.001` requests the MI null-tail probability, and `-o`
+names the adjacency output file.
+
 Both TF and SIG use the same function; network identity does not choose a
 different default. These probabilities are provisional BRCA100 operating
 points, not universal biological recommendations; they have not been
@@ -216,18 +182,71 @@ the published null-rate summaries describe the original benchmark callable.
 See the [process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m)
 and [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md).
 
-## Examples to create a transcription factor network
-**Note:** for testing purpose, the number of resampled networks (legacy option ```-n```) is set to 2, the consensus p-value threshold
-```-pc``` is set to 1.0 in the following examples. ```-n 100``` and ```-pc 1e-5``` are recommended for real 
-applications. Note that there is no / at the end of the -o option but there is a / at the end of the -tmp option.
-Without `-M pchip`, the workflow's legacy `-pb` default remains `1e-7`.
-PCHIP requires an explicit `-pb` and accepts `1e-7..0.05` (or explicit `1` to preserve all MI).
+## Examples
 
-### Running on a single machine (Linux/OSX) 
-```sjaracne local -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt -n 2 -o ./results/SJARACNE_out.final -pc 1.0 -tmp ./results/tmp/```
+Run these commands from the repository root after installing `develop`.
+Use an output directory without a trailing slash and a temporary directory
+ending in `/`. Local runs are parallel by default; add `--serial` if needed.
+
+Parameters used below:
+
+| Parameter | Meaning |
+| --- | --- |
+| `-e` | Input expression matrix. |
+| `-g` | Hub/source IDs matching the expression matrix's first column; use the TF or SIG list for the desired network. |
+| `-n 100` | Generate 100 resampled networks (the default). |
+| `--subsample-size 80` | Use 80 distinct samples per network, sampled without replacement. Alternatively, use `--subsample-fraction 0.8` for 80% (the default); do not combine both options. |
+| `-M pchip` | Opt in to PCHIP MI cutoffs; omit it to retain legacy affine conversion. |
+| `-pb` | Requested per-resample MI null-tail probability; required explicitly with PCHIP. Without PCHIP, the default is `1e-7`. |
+| `-pc` | Consensus edge-selection p-value cutoff (default: `1e-5`); separate from `-pb`. |
+| `-o`, `-tmp` | Final output directory and temporary working directory, respectively; both are required. |
+| `-j` | LSF mode only: path to the scheduler configuration JSON. |
+
+### Quick local smoke test
+
+This uses only two resampled networks and a permissive consensus cutoff for
+testing: `-n 2 -pc 1`, not scientific-analysis settings. It uses the default
+80% subsampling and legacy affine MI cutoffs (`-pb 1e-7`).
+
+```bash
+sjaracne local \
+  -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt \
+  -n 2 -pc 1 \
+  -o ./results/tf_smoke -tmp ./results/tmp_smoke/
+```
+
+### Full local runs with PCHIP
+
+These BRCA100 examples use 100 resampled networks of 80 samples each. The TF
+`-pb 0.001` and SIG `-pb 0.0005` values are exploratory choices, **not automatic
+defaults or universally optimal settings**. Both use the current default
+consensus cutoff, `-pc 1e-5`.
+
+```bash
+# TF network
+sjaracne local \
+  -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt \
+  -n 100 --subsample-size 80 -M pchip -pb 0.001 -pc 1e-5 \
+  -o ./results/tf_pchip -tmp ./results/tmp_tf_pchip/
+
+# SIG network
+sjaracne local \
+  -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_SIG.txt \
+  -n 100 --subsample-size 80 -M pchip -pb 0.0005 -pc 1e-5 \
+  -o ./results/sig_pchip -tmp ./results/tmp_sig_pchip/
+```
 
 ### Running on an IBM LSF cluster
-```sjaracne lsf -j ./SJARACNe/config/config_cwlexec.json -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt -n 2 -o ./results/SJARACNE_out.final -pc 1.0```
+
+After configuring the LSF queue and resource settings, this runs the TF workflow
+with the same PCHIP settings as the local example:
+
+```bash
+sjaracne lsf -j ./SJARACNe/config/config_cwlexec.json \
+  -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt \
+  -n 100 --subsample-size 80 -M pchip -pb 0.001 -pc 1e-5 \
+  -o ./results/tf_lsf -tmp ./results/tmp_tf_lsf/
+```
 
 
 ## Reference
