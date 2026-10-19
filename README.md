@@ -214,6 +214,11 @@ sjaracne local \
   -o ./results/sig_pchip -tmp ./results/tmp_sig_pchip/
 ```
 
+The [historical 13-point MI-threshold sweep](https://github.com/adamdingliang/sjaracne_benchmark/blob/c763a2617216db71f28ef7b99c72492f35b1bd87/benchmarks/brca100_pr67_threshold_sweep/COMBINED_RESULTS.md)
+and [fresh 200-network PCHIP inference report](https://github.com/adamdingliang/sjaracne_benchmark/blob/d39103d44b03e6c7244417bea37aa9034db7ecc2/benchmarks/brca100_pchip_refresh/results_2026-10-17/RESULTS.md)
+document the starting probabilities and original inference provenance. Their
+older consensus results are comparison context, not PCHIP + K6 outcomes.
+
 ### Running on an IBM LSF cluster
 
 After configuring the LSF queue and resource settings, this runs the TF workflow
