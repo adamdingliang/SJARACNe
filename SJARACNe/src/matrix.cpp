@@ -120,6 +120,15 @@ static AdjacencyRow::iterator findAdjacencyEdge(AdjacencyRow& row, int target)
    return edge != row.end() && edge->target == target ? edge : row.end();
 }
 
+static AdjacencyRow::const_iterator findAdjacencyEdge(const AdjacencyRow& row,
+                                                      int target)
+{
+   AdjacencyRow::const_iterator edge =
+      std::lower_bound(row.begin(), row.end(), target, AdjacencyTargetLess());
+
+   return edge != row.end() && edge->target == target ? edge : row.end();
+}
+
 class DpiNeighborIndex
 {
 public:
@@ -701,7 +710,7 @@ double Matrix::getNodeMI(int geneId1, int geneId2)
 
 //------------------------------------------------------------------------------------
 
-static bool protectedByTFLogic(Transfac &transfac,
+static bool protectedByTFLogic(const Transfac& transfac,
                                int geneId1, int geneId2, int geneId3)
 {
    bool isA = (transfac.find(geneId1) != transfac.end());
@@ -907,6 +916,332 @@ void Matrix::reduce(double epsilon, const std::vector<int>& ids, Transfac& trans
 
    std::time(&t2);
    std::cout << "DPI running time is: " << std::difftime(t2, t1) << "\n";
+}
+
+//------------------------------------------------------------------------------------
+
+struct DpiWitnessRowStatistics
+{
+   explicit DpiWitnessRowStatistics(int source)
+      : sourceIndex(source), preEdges(0), witnessesGe1(0), witnessesGe2(0),
+        witnessesGe3(0), witnessesGe5(0), witnessesGe10(0) { }
+
+   int sourceIndex;
+   std::uint64_t preEdges;
+   std::uint64_t witnessesGe1;
+   std::uint64_t witnessesGe2;
+   std::uint64_t witnessesGe3;
+   std::uint64_t witnessesGe5;
+   std::uint64_t witnessesGe10;
+};
+
+static double getNodeMIReadOnly(const Matrix& matrix, int geneId1, int geneId2)
+{
+   if (geneId1 >= 0 &&
+       static_cast<std::size_t>(geneId1) < matrix.nmv.size() &&
+       !matrix.nmv[geneId1].empty())
+   {
+      const AdjacencyRow& row = matrix.nmv[geneId1];
+      AdjacencyRow::const_iterator edge = findAdjacencyEdge(row, geneId2);
+      return edge == row.end() ? 0.0 : edge->mutinfo;
+   }
+
+   if (geneId2 >= 0 &&
+       static_cast<std::size_t>(geneId2) < matrix.nmv.size() &&
+       !matrix.nmv[geneId2].empty())
+   {
+      const AdjacencyRow& row = matrix.nmv[geneId2];
+      AdjacencyRow::const_iterator edge = findAdjacencyEdge(row, geneId1);
+      return edge == row.end() ? 0.0 : edge->mutinfo;
+   }
+
+   return -1.0;
+}
+
+static bool isQualifyingDpiWitness(
+   int geneId3, double valueBC, int strongerCount, double minMI,
+   int row_idx, int geneId1, const std::vector<int>& neighborPosition,
+   const Transfac& transfac)
+{
+   if (geneId3 < 0 ||
+       static_cast<std::size_t>(geneId3) >= neighborPosition.size())
+      return false;
+
+   const int position = neighborPosition[geneId3];
+
+   return position >= 0 && position < strongerCount && valueBC > minMI &&
+          (transfac.empty() ||
+           !protectedByTFLogic(transfac, row_idx, geneId1, geneId3));
+}
+
+static int countQualifyingDpiWitnesses(
+   const Matrix& matrix, int row_idx, int geneId1, double minMI,
+   int strongerCount, const std::vector<ArrayValuePair>& miVector,
+   const DpiNeighborIndex& neighborIndex,
+   const std::vector<int>& neighborPosition, const Transfac& transfac)
+{
+   const int countLimit = 10;
+   int witnessCount = 0;
+   const std::size_t effectiveDegree = neighborIndex.effectiveDegree(geneId1);
+
+   if (static_cast<std::size_t>(strongerCount) <= effectiveDegree)
+   {
+      // This is the same directional lookup used by getNodeMI(B,C): prefer B's
+      // direct row and otherwise fall back to C -> B.  The marked K=1 edge is
+      // deliberately not consulted; all original MI values remain available.
+      for (int j = 0; j < strongerCount && witnessCount < countLimit; ++j)
+      {
+         const int geneId3 = miVector[j].arrayId;
+         const double valueBC = getNodeMIReadOnly(matrix, geneId1, geneId3);
+
+         if (isQualifyingDpiWitness(geneId3, valueBC, strongerCount, minMI,
+                                    row_idx, geneId1, neighborPosition,
+                                    transfac))
+            ++witnessCount;
+      }
+   }
+   else if (neighborIndex.hasDirectRow(geneId1))
+   {
+      const AdjacencyRow& directRow = neighborIndex.directRow(geneId1);
+
+      for (AdjacencyRow::const_iterator edge = directRow.begin();
+           edge != directRow.end() && witnessCount < countLimit; ++edge)
+         if (isQualifyingDpiWitness(edge->target, edge->mutinfo,
+                                    strongerCount, minMI, row_idx, geneId1,
+                                    neighborPosition, transfac))
+            ++witnessCount;
+   }
+   else
+   {
+      const std::vector<ArrayValuePair>& incomingRow =
+         neighborIndex.incomingRow(geneId1);
+
+      for (std::vector<ArrayValuePair>::const_iterator edge = incomingRow.begin();
+           edge != incomingRow.end() && witnessCount < countLimit; ++edge)
+         if (isQualifyingDpiWitness(edge->arrayId, edge->value,
+                                    strongerCount, minMI, row_idx, geneId1,
+                                    neighborPosition, transfac))
+            ++witnessCount;
+   }
+
+   return witnessCount;
+}
+
+static std::string sanitizeDpiDiagnosticValue(std::string value)
+{
+   for (std::string::iterator character = value.begin();
+        character != value.end(); ++character)
+      if (*character == '\t' || *character == '\r' || *character == '\n')
+         *character = ' ';
+
+   return value;
+}
+
+void Matrix::writeDpiWitnessDiagnostics(const Parameter& p,
+                                        const std::vector<int>& ids,
+                                        const Transfac& transfac) const
+{
+   if (p.dpiWitnessFile.empty())
+      throw std::string("Internal error: no DPI witness diagnostic file was set.");
+
+   if (!(p.eps >= 0.0 && p.eps < 1.0))
+      throw std::string("DPI witness diagnostics require a finite epsilon in [0,1).");
+
+   DpiNeighborIndex neighborIndex(*this);
+   std::vector<int> neighborPosition(neighborIndex.nodeCount(), -1);
+   std::vector<int> sourceIndices;
+
+   if (ids.empty())
+   {
+      if (nmv.size() >
+          static_cast<std::size_t>(std::numeric_limits<int>::max()))
+         throw std::string(
+            "Internal error: adjacency matrix exceeds the supported gene-ID range.");
+
+      sourceIndices.reserve(nmv.size());
+      for (std::size_t source = 0; source < nmv.size(); ++source)
+         sourceIndices.push_back(static_cast<int>(source));
+   }
+   else
+      sourceIndices = ids;
+
+   std::vector<DpiWitnessRowStatistics> rows;
+   rows.reserve(sourceIndices.size());
+   std::uint64_t totalPreEdges = 0;
+   std::uint64_t totalWitnessesGe1 = 0;
+
+   for (std::vector<int>::const_iterator source = sourceIndices.begin();
+        source != sourceIndices.end(); ++source)
+   {
+      if (*source < 0 || static_cast<std::size_t>(*source) >= nmv.size())
+         throw std::string(
+            "Internal error: diagnostic source row is outside the adjacency matrix.");
+
+      const AdjacencyRow& sourceRow = nmv[*source];
+      DpiWitnessRowStatistics statistics(*source);
+      statistics.preEdges = sourceRow.size();
+
+      std::vector<ArrayValuePair> miVector;
+      miVector.reserve(sourceRow.size());
+      for (AdjacencyRow::const_iterator edge = sourceRow.begin();
+           edge != sourceRow.end(); ++edge)
+         miVector.push_back(ArrayValuePair(edge->target, edge->mutinfo));
+
+      SortDecreasing_ArrayValuePair sorter;
+      std::sort(miVector.begin(), miVector.end(), sorter);
+
+      for (std::size_t position = 0; position < miVector.size(); ++position)
+         neighborPosition[miVector[position].arrayId] =
+            static_cast<int>(position);
+
+      std::uint64_t markedPrunedEdges = 0;
+
+      for (std::size_t position = 0; position < miVector.size(); ++position)
+      {
+         const int geneId1 = miVector[position].arrayId;
+         const double valueAB = miVector[position].value;
+         const double minMI = valueAB / (1.0 - p.eps);
+         const int strongerCount = strongerNeighborCount(
+            miVector, static_cast<int>(position), minMI);
+         int witnessCount = 0;
+
+         if (strongerCount > 0)
+            witnessCount = countQualifyingDpiWitnesses(
+               *this, *source, geneId1, minMI, strongerCount, miVector,
+               neighborIndex, neighborPosition, transfac);
+
+         const AdjacencyRow::const_iterator originalEdge =
+            findAdjacencyEdge(sourceRow, geneId1);
+
+         if (originalEdge == sourceRow.end())
+            throw std::string(
+               "Internal error: diagnostic could not recover a source edge.");
+
+         const bool markedPruned = originalEdge->intermediate >= 0;
+         if (markedPruned)
+            ++markedPrunedEdges;
+
+         if ((witnessCount >= 1) != markedPruned)
+         {
+            std::ostringstream message;
+            message << "Internal DPI witness mismatch for source " << *source
+                    << " and target " << geneId1 << ": diagnostic found "
+                    << witnessCount << " witness(es), but K=1 pruning marked="
+                    << (markedPruned ? 1 : 0) << ".";
+            throw message.str();
+         }
+
+         if (witnessCount >= 1) ++statistics.witnessesGe1;
+         if (witnessCount >= 2) ++statistics.witnessesGe2;
+         if (witnessCount >= 3) ++statistics.witnessesGe3;
+         if (witnessCount >= 5) ++statistics.witnessesGe5;
+         if (witnessCount >= 10) ++statistics.witnessesGe10;
+      }
+
+      for (std::size_t position = 0; position < miVector.size(); ++position)
+         neighborPosition[miVector[position].arrayId] = -1;
+
+      if (statistics.witnessesGe1 != markedPrunedEdges)
+         throw std::string(
+            "Internal DPI witness mismatch in per-source K=1 accounting.");
+
+      totalPreEdges += statistics.preEdges;
+      totalWitnessesGe1 += statistics.witnessesGe1;
+      rows.push_back(statistics);
+   }
+
+   const DpiEdgeStatistics dpiStatistics = dpiEdgeStatistics(ids);
+   if (totalPreEdges != dpiStatistics.preEdges ||
+       totalWitnessesGe1 != dpiStatistics.prunedEdges)
+      throw std::string(
+         "Internal DPI witness mismatch in aggregate K=1 accounting.");
+
+   std::ofstream out(p.dpiWitnessFile.c_str());
+   if (!out.is_open())
+      throw "Unable to open " + p.dpiWitnessFile;
+
+   out << "# schema\tsjaracne.dpi_witness_threshold_counts.v1\n"
+       << "# graph_state\tunchanged pre-DPI edges after native K=1 marking\n"
+       << "# count_unit\tsource-target edges\n"
+       << "# count_semantics\tedges having at least the indicated number of "
+          "distinct eligible intermediates\n"
+       << "# source_index_basis\tzero-based expression-row index\n"
+       << "# dpi_epsilon\t"
+       << std::setprecision(std::numeric_limits<double>::max_digits10)
+       << p.eps << "\n"
+       << "# source_mode\t" << (ids.empty() ? "all rows" : "selected rows")
+       << "\n"
+       << "# source_count\t" << rows.size() << "\n"
+       << "# annotated_gene_count\t" << transfac.size() << "\n"
+       << "# input_file\t" << sanitizeDpiDiagnosticValue(p.infile) << "\n"
+       << "# input_adjacency_file\t"
+       << sanitizeDpiDiagnosticValue(p.adjfile) << "\n"
+       << "# network_output_file\t"
+       << sanitizeDpiDiagnosticValue(p.outfile) << "\n"
+       << "# subnetwork_file\t"
+       << sanitizeDpiDiagnosticValue(p.subnetfile) << "\n"
+       << "# annotation_file\t"
+       << sanitizeDpiDiagnosticValue(p.annotfile) << "\n"
+       << "# k1_pruned_edges\t" << dpiStatistics.prunedEdges << "\n"
+       << "source_index\tpre_edges\twitnesses_ge_1\twitnesses_ge_2\t"
+          "witnesses_ge_3\twitnesses_ge_5\twitnesses_ge_10\n";
+
+   for (std::vector<DpiWitnessRowStatistics>::const_iterator row = rows.begin();
+        row != rows.end(); ++row)
+      out << row->sourceIndex << "\t" << row->preEdges << "\t"
+          << row->witnessesGe1 << "\t" << row->witnessesGe2 << "\t"
+          << row->witnessesGe3 << "\t" << row->witnessesGe5 << "\t"
+          << row->witnessesGe10 << "\n";
+
+   out.close();
+   if (out.fail())
+      throw "Unable to write " + p.dpiWitnessFile;
+
+   std::cout << "[DPI_WITNESS] file=" << p.dpiWitnessFile
+             << " sources=" << rows.size()
+             << " pre_edges=" << totalPreEdges
+             << " witnesses_ge_1=" << totalWitnessesGe1 << std::endl;
+}
+
+//------------------------------------------------------------------------------------
+
+DpiEdgeStatistics Matrix::dpiEdgeStatistics(const std::vector<int>& ids) const
+{
+   DpiEdgeStatistics statistics;
+
+   if (ids.empty())
+   {
+      for (AdjacencyRows::const_iterator row = nmv.begin(); row != nmv.end(); ++row)
+         for (AdjacencyRow::const_iterator edge = row->begin(); edge != row->end();
+              ++edge)
+         {
+            ++statistics.preEdges;
+            if (edge->intermediate >= 0)
+               ++statistics.prunedEdges;
+            else
+               ++statistics.postEdges;
+         }
+   }
+   else
+      for (std::vector<int>::const_iterator id = ids.begin(); id != ids.end(); ++id)
+      {
+         if (*id < 0 || static_cast<std::size_t>(*id) >= nmv.size())
+            throw std::string(
+               "Internal error: selected source row is outside the adjacency matrix.");
+
+         const AdjacencyRow& row = nmv[*id];
+         for (AdjacencyRow::const_iterator edge = row.begin(); edge != row.end();
+              ++edge)
+         {
+            ++statistics.preEdges;
+            if (edge->intermediate >= 0)
+               ++statistics.prunedEdges;
+            else
+               ++statistics.postEdges;
+         }
+      }
+
+   return statistics;
 }
 
 //------------------------------------------------------------------------------------

@@ -143,6 +143,11 @@ selects source genes, and `-l` supplies regulator annotations for DPI.
 80 distinct samples, `-p 0.001` requests the MI null-tail probability, and `-o`
 names the adjacency output file.
 
+Native-only `-W dpi_witnesses.tsv` adds a per-source DPI witness-count diagnostic
+without changing the pruning rule; it requires active DPI and at least two
+available source rows. See the [historical hub-list/DPI analysis](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/brca100_hub_size_dpi_analysis/README.md)
+for its scope and provenance; those measured pruning rates predate PCHIP.
+
 Both TF and SIG use the same function; network identity does not choose a
 different default. These probabilities are provisional BRCA100 operating
 points, not universal biological recommendations; they have not been

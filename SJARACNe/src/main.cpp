@@ -19,7 +19,7 @@
 
 //------------------------------------------------------------------------------------
 
-const int NUM_OPTIONS = 22;
+const int NUM_OPTIONS = 23;
 
 const char *option[NUM_OPTIONS] =
 {
@@ -54,7 +54,9 @@ const char *option[NUM_OPTIONS] =
 "-t <threshold>     MI threshold, default: 0",
 "-u <count|percent> Fixed-size subsampling without replacement, e.g. 80 or 80%;\n"
 "                   default: disabled in the native command",
-"-v <verbose>       on|off, default: off"
+"-v <verbose>       on|off, default: off",
+"-W <file>          Benchmark diagnostic: per-source counts of pre-DPI edges\n"
+"                   with at least 1, 2, 3, 5, or 10 qualifying witnesses"
 };
 
 const int NUM_USAGE_NOTES = 4;
@@ -119,6 +121,32 @@ double parseFiniteNumericOption(const char *optionName, const char *argument)
 
 //------------------------------------------------------------------------------------
 
+static void validateDpiWitnessOutputPath(const Parameter& p)
+{
+   if (p.dpiWitnessFile.empty())
+      return;
+
+   const std::string *protectedPaths[] =
+   {
+      &p.infile, &p.outfile, &p.adjfile, &p.subnetfile, &p.annotfile,
+      &p.nullModelFile
+   };
+   const char *protectedNames[] =
+   {
+      "input expression file", "network output file", "input adjacency file",
+      "subnetwork file", "annotation file", "AP-MI null-model file"
+   };
+
+   for (std::size_t i = 0; i < sizeof(protectedPaths) / sizeof(protectedPaths[0]);
+        ++i)
+      if (!protectedPaths[i]->empty() &&
+          p.dpiWitnessFile == *protectedPaths[i])
+         throw std::string("DPI witness diagnostic '-W' must not overwrite the ") +
+               protectedNames[i] + ".";
+}
+
+//------------------------------------------------------------------------------------
+
 Parameter parseParameter(int argc, char *argv[])
 {
    Parameter p; // initializes parameters to default values
@@ -134,7 +162,8 @@ Parameter parseParameter(int argc, char *argv[])
                 p.controlId  = temp.substr(1);
                 p.percent    = std::atof(ARGF());
             break;
-      case 'e': p.eps        = std::atof(ARGF()); break; // DPI tolerance
+      case 'e': p.eps        = parseFiniteNumericOption("-e", ARGF()); // DPI tolerance
+                break;
       case 'f': p.mean       = std::atof(ARGF());        // mean
                 p.cv         = std::atof(ARGF());        // coefficient of variance
                 break;
@@ -167,6 +196,10 @@ Parameter parseParameter(int argc, char *argv[])
                                      "percentage such as 80%.");
                 break;
       case 'v': p.verbose    = ARGF(); break;            // verbose
+      case 'W': p.dpiWitnessFile = ARGF();               // DPI witness diagnostic
+                if (p.dpiWitnessFile == "")
+                   throw std::string("Option '-W' requires an output file.");
+                break;
       default : throw std::string("unknown parameter ") + ARGC();
    }
    ARGEND;
@@ -471,12 +504,15 @@ void runStandard(int argc, char *argv[])
                             p.nparLimit, ids, arrays);
    }
 
+   bool dpiApplied = false;
+
    if (p.eps != 1.0)
    {
       if (matrix.hasEnoughSourceRowsForDpi())
       {
          std::cout << "[NETWORK] Applying DPI ..." << std::endl;
          matrix.reduce(p.eps, ids, transfac);
+         dpiApplied = true;
       }
       else
          std::cout << "[NETWORK] Skipping DPI: fewer than two source rows are "
@@ -487,7 +523,24 @@ void runStandard(int argc, char *argv[])
    if (p.outfile == "")
       createOutfileName(p);
 
+   if (!p.dpiWitnessFile.empty())
+   {
+      if (!dpiApplied)
+         throw std::string("DPI witness diagnostic '-W' requires DPI to be "
+                           "applied, but this network has fewer than two source "
+                           "rows.");
+
+      validateDpiWitnessOutputPath(p);
+      matrix.writeDpiWitnessDiagnostics(p, ids, transfac);
+   }
+
+   const DpiEdgeStatistics dpiStatistics = matrix.dpiEdgeStatistics(ids);
    matrix.write(data, ids, p);
+
+   std::cout << "[DPI_STATS] pre_edges=" << dpiStatistics.preEdges
+             << " pruned_edges=" << dpiStatistics.prunedEdges
+             << " post_edges=" << dpiStatistics.postEdges
+             << " dpi_applied=" << (dpiApplied ? 1 : 0) << std::endl;
 }
 
 //------------------------------------------------------------------------------------
