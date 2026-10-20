@@ -24,6 +24,17 @@
 #include <sstream>
 #include <stdexcept>
 #include <iostream>
+#include <fcntl.h>
+#include <sys/stat.h>
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 #include "apmi.h"
 #include "matrix.h"
 #include "util.h"
@@ -1037,6 +1048,280 @@ static std::string sanitizeDpiDiagnosticValue(std::string value)
    return value;
 }
 
+namespace
+{
+
+struct DpiWitnessFileIdentity
+{
+#ifdef _WIN32
+   DWORD volume, indexHigh, indexLow;
+#else
+   dev_t device;
+   ino_t inode;
+#endif
+
+   bool operator==(const DpiWitnessFileIdentity& other) const
+   {
+#ifdef _WIN32
+      return volume == other.volume && indexHigh == other.indexHigh &&
+             indexLow == other.indexLow;
+#else
+      return device == other.device && inode == other.inode;
+#endif
+   }
+};
+
+#ifdef _WIN32
+static bool dpiWitnessHandleIdentity(HANDLE handle,
+                                     DpiWitnessFileIdentity& identity)
+{
+   BY_HANDLE_FILE_INFORMATION information;
+   if (GetFileType(handle) != FILE_TYPE_DISK ||
+       !GetFileInformationByHandle(handle, &information) ||
+       (information.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+      return false;
+
+   identity.volume = information.dwVolumeSerialNumber;
+   identity.indexHigh = information.nFileIndexHigh;
+   identity.indexLow = information.nFileIndexLow;
+   return true;
+}
+#endif
+
+static bool dpiWitnessDescriptorIdentity(int descriptor,
+                                         DpiWitnessFileIdentity& identity)
+{
+#ifdef _WIN32
+   return dpiWitnessHandleIdentity(
+      reinterpret_cast<HANDLE>(_get_osfhandle(descriptor)), identity);
+#else
+   struct stat information;
+   if (fstat(descriptor, &information) != 0 || !S_ISREG(information.st_mode))
+      return false;
+
+   identity.device = information.st_dev;
+   identity.inode = information.st_ino;
+   return true;
+#endif
+}
+
+static bool dpiWitnessPathIdentity(const std::string& path,
+                                   DpiWitnessFileIdentity& identity)
+{
+#ifdef _WIN32
+   const HANDLE handle = CreateFileA(
+      path.c_str(), FILE_READ_ATTRIBUTES,
+      FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+      OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+   if (handle == INVALID_HANDLE_VALUE)
+   {
+      const DWORD error = GetLastError();
+      if (error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND)
+         return false;
+      throw "Unable to inspect " + path;
+   }
+
+   const bool regular = dpiWitnessHandleIdentity(handle, identity);
+   CloseHandle(handle);
+   if (!regular)
+      throw "Unable to inspect " + path;
+#else
+   struct stat information;
+   if (stat(path.c_str(), &information) != 0)
+   {
+      if (errno == ENOENT || errno == ENOTDIR)
+         return false;
+      throw "Unable to inspect " + path;
+   }
+
+   identity.device = information.st_dev;
+   identity.inode = information.st_ino;
+#endif
+   return true;
+}
+
+static void removeCreatedDpiWitnessFile(const std::string& path,
+                                       const DpiWitnessFileIdentity& identity)
+{
+   // Only remove our newly created directory entry, never a pre-existing file
+   // or a replacement symlink. A changed entry is left alone on failure.
+#ifdef _WIN32
+   const HANDLE handle = CreateFileA(
+      path.c_str(), FILE_READ_ATTRIBUTES,
+      FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+      OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS,
+      NULL);
+   if (handle == INVALID_HANDLE_VALUE)
+      return;
+   BY_HANDLE_FILE_INFORMATION information;
+   DpiWitnessFileIdentity current;
+   const bool owned = GetFileInformationByHandle(handle, &information) &&
+      (information.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) == 0 &&
+      dpiWitnessHandleIdentity(handle, current) && current == identity;
+   CloseHandle(handle);
+   if (owned)
+      DeleteFileA(path.c_str());
+#else
+   struct stat information;
+   if (lstat(path.c_str(), &information) == 0 &&
+       S_ISREG(information.st_mode) && information.st_dev == identity.device &&
+       information.st_ino == identity.inode)
+      unlink(path.c_str());
+#endif
+}
+
+class DpiWitnessOutputFile
+{
+public:
+   explicit DpiWitnessOutputFile(const std::string& filename)
+      : path(filename), descriptor(-1), created(false), hasIdentity(false),
+        completed(false)
+   {
+      // Do not truncate, and do not create through an existing final symlink.
+      // A dangling final symlink is allowed to fail safely rather than create
+      // an unvalidated target. Existing FIFOs must not block on POSIX.
+#ifdef _WIN32
+      descriptor = _open(path.c_str(),
+         _O_WRONLY | _O_CREAT | _O_EXCL | _O_TEXT | _O_NOINHERIT,
+         _S_IREAD | _S_IWRITE);
+#else
+      do
+         descriptor = open(path.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0666);
+      while (descriptor < 0 && errno == EINTR);
+#endif
+      created = descriptor >= 0;
+      if (descriptor < 0 && errno == EEXIST)
+      {
+#ifdef _WIN32
+         descriptor = _open(path.c_str(), _O_WRONLY | _O_TEXT | _O_NOINHERIT);
+#else
+         do
+            descriptor = open(path.c_str(), O_WRONLY | O_NONBLOCK);
+         while (descriptor < 0 && errno == EINTR);
+#endif
+      }
+      if (descriptor < 0)
+         throw "Unable to open " + path;
+   }
+
+   ~DpiWitnessOutputFile()
+   {
+      if (descriptor >= 0)
+      {
+#ifdef _WIN32
+         _close(descriptor);
+#else
+         close(descriptor);
+#endif
+      }
+      if (created && hasIdentity && !completed)
+         removeCreatedDpiWitnessFile(path, identity);
+   }
+
+   void write(const std::string& contents)
+   {
+      // The descriptor whose identity was checked is the only write target;
+      // never reopen the pathname between validation and truncation.
+#ifdef _WIN32
+      if (_chsize_s(descriptor, 0) != 0 || _lseek(descriptor, 0, SEEK_SET) < 0)
+#else
+      if (ftruncate(descriptor, 0) != 0 || lseek(descriptor, 0, SEEK_SET) < 0)
+#endif
+         throw "Unable to write " + path;
+
+      std::size_t written = 0;
+      while (written < contents.size())
+      {
+         const std::size_t count = std::min<std::size_t>(
+            contents.size() - written,
+            static_cast<std::size_t>(std::numeric_limits<int>::max()));
+#ifdef _WIN32
+         const int result = _write(descriptor, contents.data() + written,
+                                   static_cast<unsigned int>(count));
+#else
+         const ssize_t result = ::write(descriptor, contents.data() + written,
+                                         count);
+#endif
+         if (result < 0 && errno == EINTR)
+            continue;
+         if (result <= 0)
+            throw "Unable to write " + path;
+         written += static_cast<std::size_t>(result);
+      }
+
+#ifdef _WIN32
+      const int result = _close(descriptor);
+#else
+      const int result = close(descriptor);
+#endif
+      descriptor = -1;
+      if (result != 0)
+         throw "Unable to write " + path;
+      completed = true;
+   }
+
+   const std::string& path;
+   int descriptor;
+   bool created, hasIdentity, completed;
+   DpiWitnessFileIdentity identity;
+
+private:
+   DpiWitnessOutputFile(const DpiWitnessOutputFile&);
+   DpiWitnessOutputFile& operator=(const DpiWitnessOutputFile&);
+};
+
+static void writeDpiWitnessOutput(const Parameter& p, const std::string& contents)
+{
+   const std::string legacyThresholdFile =
+      !p.thresholdSpecified && p.pvalue != 1.0 && p.nullModelFile.empty()
+         ? p.home_dir + "config_threshold.txt" : "";
+   const std::string *protectedPaths[] =
+   {
+      &p.infile, &p.outfile, &p.adjfile, &p.subnetfile, &p.annotfile,
+      &p.nullModelFile, &legacyThresholdFile
+   };
+   const char *protectedNames[] =
+   {
+      "input expression file", "network output file", "input adjacency file",
+      "subnetwork file", "annotation file", "AP-MI null-model file",
+      "legacy threshold configuration file"
+   };
+   const std::size_t protectedCount =
+      sizeof(protectedPaths) / sizeof(protectedPaths[0]);
+
+   // Preserve the existing exact-name errors, including the reserved -M model
+   // token, which need not itself name a file in the bundled-model mode.
+   for (std::size_t i = 0; i < protectedCount; ++i)
+      if (!protectedPaths[i]->empty() && p.dpiWitnessFile == *protectedPaths[i])
+         throw std::string("DPI witness diagnostic '-W' must not overwrite the ") +
+               protectedNames[i] + ".";
+
+   DpiWitnessOutputFile output(p.dpiWitnessFile);
+   if (!dpiWitnessDescriptorIdentity(output.descriptor, output.identity))
+      throw std::string("DPI witness diagnostic '-W' requires a regular output file.");
+   output.hasIdentity = true;
+
+   // Check after opening: creating -W also makes initially absent aliases of
+   // the network output resolvable (including parent and final symlinks).
+   for (std::size_t i = 0; i < protectedCount; ++i)
+   {
+      // -M names the bundled model, not a consumed filesystem input. Its
+      // reserved exact-name guard above is retained only for compatibility.
+      if (protectedPaths[i] == &p.nullModelFile)
+         continue;
+      DpiWitnessFileIdentity protectedIdentity;
+      if (!protectedPaths[i]->empty() &&
+          dpiWitnessPathIdentity(*protectedPaths[i], protectedIdentity) &&
+          output.identity == protectedIdentity)
+         throw std::string("DPI witness diagnostic '-W' must not overwrite the ") +
+               protectedNames[i] + ".";
+   }
+
+   output.write(contents);
+}
+
+} // namespace
+
 void Matrix::writeDpiWitnessDiagnostics(const Parameter& p,
                                         const std::vector<int>& ids,
                                         const Transfac& transfac) const
@@ -1156,9 +1441,7 @@ void Matrix::writeDpiWitnessDiagnostics(const Parameter& p,
       throw std::string(
          "Internal DPI witness mismatch in aggregate K=1 accounting.");
 
-   std::ofstream out(p.dpiWitnessFile.c_str());
-   if (!out.is_open())
-      throw "Unable to open " + p.dpiWitnessFile;
+   std::ostringstream out;
 
    out << "# schema\tsjaracne.dpi_witness_threshold_counts.v1\n"
        << "# graph_state\tunchanged pre-DPI edges after native K=1 marking\n"
@@ -1193,9 +1476,9 @@ void Matrix::writeDpiWitnessDiagnostics(const Parameter& p,
           << row->witnessesGe3 << "\t" << row->witnessesGe5 << "\t"
           << row->witnessesGe10 << "\n";
 
-   out.close();
    if (out.fail())
       throw "Unable to write " + p.dpiWitnessFile;
+   writeDpiWitnessOutput(p, out.str());
 
    std::cout << "[DPI_WITNESS] file=" << p.dpiWitnessFile
              << " sources=" << rows.size()

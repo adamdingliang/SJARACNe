@@ -121,32 +121,6 @@ double parseFiniteNumericOption(const char *optionName, const char *argument)
 
 //------------------------------------------------------------------------------------
 
-static void validateDpiWitnessOutputPath(const Parameter& p)
-{
-   if (p.dpiWitnessFile.empty())
-      return;
-
-   const std::string *protectedPaths[] =
-   {
-      &p.infile, &p.outfile, &p.adjfile, &p.subnetfile, &p.annotfile,
-      &p.nullModelFile
-   };
-   const char *protectedNames[] =
-   {
-      "input expression file", "network output file", "input adjacency file",
-      "subnetwork file", "annotation file", "AP-MI null-model file"
-   };
-
-   for (std::size_t i = 0; i < sizeof(protectedPaths) / sizeof(protectedPaths[0]);
-        ++i)
-      if (!protectedPaths[i]->empty() &&
-          p.dpiWitnessFile == *protectedPaths[i])
-         throw std::string("DPI witness diagnostic '-W' must not overwrite the ") +
-               protectedNames[i] + ".";
-}
-
-//------------------------------------------------------------------------------------
-
 Parameter parseParameter(int argc, char *argv[])
 {
    Parameter p; // initializes parameters to default values
@@ -530,7 +504,6 @@ void runStandard(int argc, char *argv[])
                            "applied, but this network has fewer than two source "
                            "rows.");
 
-      validateDpiWitnessOutputPath(p);
       matrix.writeDpiWitnessDiagnostics(p, ids, transfac);
    }
 

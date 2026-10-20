@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import csv
+import errno
 import os
 import random
 import re
@@ -56,10 +57,12 @@ class TestAdjacencyInput(unittest.TestCase):
         threshold=None,
         witness_file=None,
         extra_args=None,
+        pvalue="1",
+        output_file="output.adj",
     ):
         adjacency = self.workdir / "input.adj"
         adjacency.write_text(adjacency_body, encoding="utf-8")
-        output = self.workdir / "output.adj"
+        output = self.workdir / output_file if output_file is not None else None
         command = [
             SJARACNE_EXE,
             "-i",
@@ -67,12 +70,13 @@ class TestAdjacencyInput(unittest.TestCase):
             "-j",
             str(adjacency),
             "-p",
-            "1",
+            str(pvalue),
             "-e",
             epsilon,
-            "-o",
-            str(output),
         ]
+
+        if output is not None:
+            command.extend(["-o", str(output)])
 
         if hubs is not None:
             hub_file = self.workdir / "hubs.txt"
@@ -167,6 +171,72 @@ class TestAdjacencyInput(unittest.TestCase):
             **kwargs,
         )
         return result, output, witness_file
+
+    def prepare_witness_collision_inputs(self):
+        adjacency = "A\tB\t0.2\tC\t0.8\nB\tC\t0.7\n"
+        for name, body in (
+            ("input.adj", adjacency),
+            ("hubs.txt", "A\n"),
+            ("tf_genes.txt", "A\n"),
+        ):
+            (self.workdir / name).write_text(body, encoding="utf-8")
+        return adjacency
+
+    def assert_witness_collision(
+        self, witness_file, description, *, expected_error=None, **kwargs
+    ):
+        # Snapshot every existing file, not only the particular collision target.
+        paths = list(self.workdir.rglob("*"))
+        original_files = {path: path.read_bytes() for path in paths if path.is_file()}
+        original_links = {
+            path: os.readlink(path) for path in paths if path.is_symlink()
+        }
+        output_file = kwargs.get("output_file", "output.adj")
+        output = self.workdir / output_file if output_file is not None else None
+        output_existed = output is not None and output.exists()
+
+        result, _ = self.run_sjaracne(
+            "A\tB\t0.2\tC\t0.8\nB\tC\t0.7\n",
+            hubs="A\n",
+            tf_genes="A\n",
+            witness_file=witness_file,
+            **kwargs,
+        )
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        collision_error = f"must not overwrite the {description}"
+        self.assertTrue(
+            collision_error in result.stderr
+            or (expected_error is not None and expected_error in result.stderr),
+            result.stderr,
+        )
+        self.assertNotIn("[DPI_STATS]", result.stdout + result.stderr)
+        for path, expected in original_files.items():
+            self.assertEqual(path.read_bytes(), expected, str(path))
+        for path, target in original_links.items():
+            self.assertTrue(path.is_symlink(), str(path))
+            self.assertEqual(os.readlink(path), target, str(path))
+        if output is not None and not output_existed:
+            self.assertFalse(output.exists())
+
+    def create_collision_link(self, link, target, *, symbolic, directory=False):
+        try:
+            if symbolic:
+                link.symlink_to(target, target_is_directory=directory)
+            else:
+                os.link(target, link)
+        except NotImplementedError as error:
+            self.skipTest(f"filesystem link capability unavailable: {error}")
+        except OSError as error:
+            unsupported = {
+                errno.EACCES, errno.EPERM, errno.ENOSYS, errno.ENOTSUP,
+                errno.EOPNOTSUPP,
+            }
+            if error.errno in unsupported or getattr(error, "winerror", None) in (
+                1, 50, 1314,
+            ):
+                self.skipTest(f"filesystem link capability unavailable: {error}")
+            raise
 
     def test_requested_hub_missing_as_source_row_fails_cleanly(self):
         result, output = self.run_sjaracne("A\tB\t0.5\n", hubs="C\n")
@@ -636,6 +706,7 @@ class TestAdjacencyInput(unittest.TestCase):
         self.assertIn("requires active DPI", result.stderr)
         self.assertFalse(output.exists())
         self.assertFalse(witness_file.exists())
+        self.assertNotIn("[DPI_STATS]", result.stdout + result.stderr)
 
     def test_dpi_witness_diagnostic_rejects_skipped_dpi(self):
         witness_file = self.workdir / "skipped.tsv"
@@ -649,6 +720,7 @@ class TestAdjacencyInput(unittest.TestCase):
         self.assertIn("fewer than two source rows", result.stderr)
         self.assertFalse(output.exists())
         self.assertFalse(witness_file.exists())
+        self.assertNotIn("[DPI_STATS]", result.stdout + result.stderr)
 
     def test_dpi_witness_diagnostic_cannot_overwrite_network(self):
         output_path = self.workdir / "output.adj"
@@ -661,6 +733,207 @@ class TestAdjacencyInput(unittest.TestCase):
         self.assertIn("must not overwrite the network output file", result.stderr)
         self.assertEqual(output, output_path)
         self.assertFalse(output.exists())
+        self.assertNotIn("[DPI_STATS]", result.stdout + result.stderr)
+
+    def test_dpi_witness_relative_expression_alias_preserves_input_bytes(self):
+        self.prepare_witness_collision_inputs()
+        self.assert_witness_collision("small.exp", "input expression file")
+
+    def test_dpi_witness_can_replace_unrelated_existing_diagnostic(self):
+        adjacency = self.prepare_witness_collision_inputs()
+        baseline, baseline_output = self.run_sjaracne(adjacency)
+        self.assertEqual(baseline.returncode, 0, baseline.stdout + baseline.stderr)
+        baseline_bytes = baseline_output.read_bytes()
+        expression_bytes = self.expression.read_bytes()
+        witness_file = self.workdir / "existing_diagnostic.tsv"
+        witness_file.write_bytes(b"obsolete diagnostic\r\n")
+
+        result, output = self.run_sjaracne(adjacency, witness_file=witness_file.name)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.expression.read_bytes(), expression_bytes)
+        self.assertEqual(output.read_bytes(), baseline_bytes)
+        self.assertEqual(self.dpi_statistics(result.stdout), self.dpi_statistics(baseline.stdout))
+        self.assertEqual(
+            self.witness_provenance(witness_file)["schema"],
+            "sjaracne.dpi_witness_threshold_counts.v1",
+        )
+        self.assertIn(
+            "source_index\tpre_edges\twitnesses_ge_1\twitnesses_ge_2\t"
+            "witnesses_ge_3\twitnesses_ge_5\twitnesses_ge_10",
+            witness_file.read_text(encoding="utf-8").splitlines(),
+        )
+        self.assertEqual(sum(row["witnesses_ge_1"] for row in self.witness_rows(witness_file)), 1)
+
+    def test_dpi_witness_rejects_relative_and_parent_input_aliases(self):
+        self.prepare_witness_collision_inputs()
+        (self.workdir / "spelling").mkdir()
+        for name, option, description in (
+            ("small.exp", "-i", "input expression file"),
+            ("input.adj", "-j", "input adjacency file"),
+            ("hubs.txt", "-s", "subnetwork file"),
+            ("tf_genes.txt", "-l", "annotation file"),
+        ):
+            cases = (
+                (name, None),
+                (str(self.workdir / "spelling" / ".." / name), None),
+                (self.workdir / name, [option, f"spelling/../{name}"]),
+            )
+            for witness_file, extra_args in cases:
+                with self.subTest(input=name, witness=str(witness_file), input_args=extra_args):
+                    self.assert_witness_collision(
+                        witness_file, description, extra_args=extra_args
+                    )
+
+    def assert_existing_file_link_collisions(self, *, symbolic):
+        self.prepare_witness_collision_inputs()
+        (self.workdir / "output.adj").write_bytes(b"existing network\r\n")
+        protected = (
+            ("small.exp", "-i", "input expression file"),
+            ("input.adj", "-j", "input adjacency file"),
+            ("hubs.txt", "-s", "subnetwork file"),
+            ("tf_genes.txt", "-l", "annotation file"),
+            ("output.adj", "-o", "network output file"),
+        )
+        # Probe capability before starting any executable run in this test.
+        for name, _, _ in protected:
+            self.create_collision_link(
+                self.workdir / f"alias-{name}", self.workdir / name,
+                symbolic=symbolic,
+            )
+        for name, option, description in protected:
+            original = self.workdir / name
+            alias = self.workdir / f"alias-{name}"
+            with self.subTest(input=name, direction="witness-is-link"):
+                self.assert_witness_collision(alias, description)
+            with self.subTest(input=name, direction="protected-path-is-link"):
+                if option == "-o":
+                    self.assert_witness_collision(original, description, output_file=alias)
+                else:
+                    self.assert_witness_collision(
+                        original, description, extra_args=[option, str(alias)]
+                    )
+
+    def test_dpi_witness_rejects_existing_symlink_input_and_output_aliases(self):
+        self.assert_existing_file_link_collisions(symbolic=True)
+
+    def test_dpi_witness_rejects_existing_hardlink_input_and_output_aliases(self):
+        self.assert_existing_file_link_collisions(symbolic=False)
+
+    def test_dpi_witness_rejects_existing_and_new_network_path_aliases(self):
+        self.prepare_witness_collision_inputs()
+        (self.workdir / "spelling").mkdir()
+        for existing in (False, True):
+            for direction in ("witness-relative", "witness-parent", "output-relative"):
+                with self.subTest(existing=existing, direction=direction):
+                    name = f"network-{existing}-{direction}.adj"
+                    target = self.workdir / name
+                    if existing:
+                        target.write_bytes(b"existing network\r\n")
+                    if direction == "witness-relative":
+                        witness, output_file = name, target
+                    elif direction == "witness-parent":
+                        witness = self.workdir / "spelling" / ".." / name
+                        output_file = target
+                    else:
+                        witness, output_file = target, f"spelling/../{name}"
+                    self.assert_witness_collision(
+                        witness, "network output file", output_file=output_file
+                    )
+                    if not existing:
+                        self.assertFalse(target.exists())
+
+    def test_dpi_witness_rejects_network_parent_directory_symlink_aliases(self):
+        self.prepare_witness_collision_inputs()
+        real_directory = self.workdir / "real-outputs"
+        real_directory.mkdir()
+        alias_directory = self.workdir / "linked-outputs"
+        self.create_collision_link(
+            alias_directory, real_directory, symbolic=True, directory=True
+        )
+        for existing in (False, True):
+            for witness_is_link in (False, True):
+                with self.subTest(existing=existing, witness_is_link=witness_is_link):
+                    name = f"network-{existing}-{witness_is_link}.adj"
+                    target = real_directory / name
+                    alias = alias_directory / name
+                    if existing:
+                        target.write_bytes(b"existing network\r\n")
+                    witness, output = (alias, target) if witness_is_link else (target, alias)
+                    self.assert_witness_collision(
+                        witness, "network output file", output_file=output
+                    )
+                    if not existing:
+                        self.assertFalse(target.exists())
+
+    def test_dpi_witness_rejects_network_dangling_final_symlink_aliases(self):
+        self.prepare_witness_collision_inputs()
+        for witness_is_link in (False, True):
+            with self.subTest(witness_is_link=witness_is_link):
+                target = self.workdir / f"new-network-{witness_is_link}.adj"
+                alias = self.workdir / f"dangling-network-{witness_is_link}.adj"
+                self.create_collision_link(alias, target.name, symbolic=True)
+                self.assertTrue(alias.is_symlink())
+                self.assertFalse(alias.exists())
+                witness, output = (alias, target) if witness_is_link else (target, alias)
+                self.assert_witness_collision(
+                    witness, "network output file", output_file=output,
+                    # A writer may refuse to follow a dangling diagnostic symlink
+                    # without opening or creating its missing target.
+                    expected_error="Unable to open" if witness_is_link else None,
+                )
+                self.assertTrue(alias.is_symlink())
+                self.assertFalse(alias.exists())
+                self.assertFalse(target.exists())
+
+    def test_dpi_witness_rejects_automatically_named_network_aliases(self):
+        adjacency = self.prepare_witness_collision_inputs()
+        baseline, _ = self.run_sjaracne(adjacency, output_file=None)
+        self.assertEqual(baseline.returncode, 0, baseline.stdout + baseline.stderr)
+        generated_paths = [
+            path for path in self.workdir.glob("*.adj") if path.name != "input.adj"
+        ]
+        self.assertEqual(len(generated_paths), 1)
+        generated = generated_paths[0]
+        (self.workdir / "spelling").mkdir()
+        for existing in (True, False):
+            with self.subTest(existing=existing):
+                if not existing:
+                    generated.unlink()
+                self.assert_witness_collision(
+                    f"spelling/../{generated.name}", "network output file",
+                    output_file=None,
+                )
+                if not existing:
+                    self.assertFalse(generated.exists())
+
+    def test_dpi_witness_cannot_overwrite_active_legacy_threshold_configuration(self):
+        adjacency = self.prepare_witness_collision_inputs()
+        config_directory = self.workdir / "legacy"
+        config_directory.mkdir()
+        config = config_directory / "config_threshold.txt"
+        config.write_text(
+            "> regression fixture: alpha beta gamma\n0\t-100\t0\n",
+            encoding="utf-8",
+        )
+        arguments = ["-H", str(config_directory)]
+        baseline, _ = self.run_sjaracne(
+            adjacency, pvalue="0.05", extra_args=arguments,
+            output_file="legacy-baseline.adj",
+        )
+        self.assertEqual(baseline.returncode, 0, baseline.stdout + baseline.stderr)
+        self.assertIn("using the legacy affine threshold calibration", baseline.stdout)
+        self.assertIn("MI threshold determined for p=0.05", baseline.stdout)
+        for witness in (
+            config,
+            "legacy/config_threshold.txt",
+            config_directory / ".." / "legacy" / "config_threshold.txt",
+        ):
+            with self.subTest(witness=str(witness)):
+                self.assert_witness_collision(
+                    witness, "legacy threshold configuration file",
+                    pvalue="0.05", extra_args=arguments,
+                )
 
     def test_epsilon_rejects_nonfinite_malformed_and_out_of_range_values(self):
         for epsilon in (
@@ -705,22 +978,16 @@ class TestAdjacencyInput(unittest.TestCase):
                 self.assertNotIn("[DPI_STATS]", result.stdout)
 
     def test_dpi_witness_diagnostic_cannot_overwrite_inputs(self):
-        adjacency = "A\tB\t0.2\tC\t0.8\nB\tC\t0.7\n"
+        adjacency = self.prepare_witness_collision_inputs()
         protected = (
-            (self.expression, "input expression file", self.expression.read_text(encoding="utf-8")),
-            (self.workdir / "input.adj", "input adjacency file", adjacency),
-            (self.workdir / "hubs.txt", "subnetwork file", "A\n"),
-            (self.workdir / "tf_genes.txt", "annotation file", "A\n"),
+            (self.expression, "input expression file"),
+            (self.workdir / "input.adj", "input adjacency file"),
+            (self.workdir / "hubs.txt", "subnetwork file"),
+            (self.workdir / "tf_genes.txt", "annotation file"),
         )
-        for path, description, expected_content in protected:
+        for path, description in protected:
             with self.subTest(path=path.name):
-                result, output = self.run_sjaracne(
-                    adjacency, hubs="A\n", tf_genes="A\n", witness_file=path
-                )
-                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-                self.assertIn(f"must not overwrite the {description}", result.stderr)
-                self.assertEqual(path.read_text(encoding="utf-8"), expected_content)
-                self.assertFalse(output.exists())
+                self.assert_witness_collision(path, description)
 
         result, output = self.run_sjaracne(
             adjacency, witness_file="pchip", extra_args=["-M", "pchip"]
@@ -729,6 +996,7 @@ class TestAdjacencyInput(unittest.TestCase):
         self.assertIn("must not overwrite the AP-MI null-model file", result.stderr)
         self.assertFalse((self.workdir / "pchip").exists())
         self.assertFalse(output.exists())
+        self.assertNotIn("[DPI_STATS]", result.stdout + result.stderr)
 
     def test_dpi_witness_diagnostic_accounts_for_empty_rows(self):
         for hubs, expected_indices in ((None, list(range(5))), ("C\n", [2])):
