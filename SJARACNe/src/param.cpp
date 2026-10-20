@@ -105,8 +105,12 @@ void checkParameter(Parameter &p)
       throw std::string("Option '-M' now accepts only the bundled 'pchip' model. "
                         "Historical GPD model files are not runtime models in this version.");
 
-   if (p.eps < 0.0 || p.eps > 1.0)
+   if (!std::isfinite(p.eps) || p.eps < 0.0 || p.eps > 1.0)
       throw std::string("DPI tolerance '-e' must be within [0,1]!");
+
+   if (!p.dpiWitnessFile.empty() && p.eps == 1.0)
+      throw std::string("DPI witness diagnostic '-W' requires active DPI "
+                        "('-e' must be less than 1).");
 
    if (p.percent <= 0.0 || p.percent >= 1.0)
       throw std::string("Percentage microarray must be within (0,1)!");
@@ -298,6 +302,10 @@ void displayParameter(Parameter &p)
       std::cout << "[PARA] AP-MI null model: " << p.nullModelFile << std::endl;
 
    std::cout << "[PARA] DPI tolerance: " << p.eps << std::endl;
+
+   if (!p.dpiWitnessFile.empty())
+      std::cout << "[PARA] DPI witness diagnostic: " << p.dpiWitnessFile
+                << std::endl;
 
    if (p.correction > 0.0)
       std::cout << "[PARA] Correction for MI estimation (array noise level: "
