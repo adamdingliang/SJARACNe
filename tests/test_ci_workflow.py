@@ -34,7 +34,12 @@ class TestCIWorkflow(unittest.TestCase):
         self.assertIs(checkout['with']['persist-credentials'], False)
 
     def test_requires_real_runner_and_preserves_short_lived_evidence(self):
-        steps = self.workflow['jobs']['regression']['steps']
+        job = self.workflow['jobs']['regression']
+        # runner context is unavailable in job-level env. Paths are initialized
+        # by a shell step, where RUNNER_TEMP exists, before subsequent steps.
+        self.assertTrue(all('${{ runner.' not in str(value) for value in job['env'].values()))
+        steps = job['steps']
+        self.assertIn('$GITHUB_ENV', steps[0]['run'])
         runs = [step for step in steps if step.get('run', '').startswith('python tests/run_regression.py')]
         self.assertEqual(len(runs), 1)
         self.assertIn('--output-dir "$REGRESSION_OUTPUT"', runs[0]['run'])

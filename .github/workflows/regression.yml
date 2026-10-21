@@ -23,9 +23,12 @@ jobs:
       PYTHONDONTWRITEBYTECODE: '1'
       PYTHONNOUSERSITE: '1'
       PIP_DISABLE_PIP_VERSION_CHECK: '1'
-      REGRESSION_OUTPUT: ${{ runner.temp }}/sjaracne-regression-${{ github.run_id }}-${{ github.run_attempt }}
-      BOOTSTRAP_OUTPUT: ${{ runner.temp }}/sjaracne-bootstrap-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
+      - name: Set evidence locations
+        run: |
+          printf 'REGRESSION_OUTPUT=%s/sjaracne-regression-%s-%s\n' "$RUNNER_TEMP" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+          printf 'BOOTSTRAP_OUTPUT=%s/sjaracne-bootstrap-%s-%s\n' "$RUNNER_TEMP" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+
       - name: Check out tested revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
