@@ -1,4 +1,5 @@
-'''
-This file makes sure that testpy will check the main directory and find all modules in this program.
-This file is REQUIRED for Travis CI integration testing.
-'''
+"""Keep the repository root importable for direct pytest collection.
+
+The complete Linux/WSL regression entry point is tests/run_regression.py.
+This file has no pytest hooks and is not a Travis CI requirement.
+"""

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+cd "$(dirname "$0")/../.."
 
 # Run from the repository root after configuring the LSF queue and resources.
 # This five-network smoke test uses K=1, not scientific-analysis settings.

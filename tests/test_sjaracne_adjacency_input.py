@@ -5,28 +5,15 @@ import errno
 import os
 import random
 import re
-import shutil
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
-
-def find_sjaracne_executable():
-    configured = os.environ.get("SJARACNE_TEST_EXE")
-    candidates = [
-        configured,
-        Path(__file__).resolve().parents[1] / "SJARACNe" / "bin" / "sjaracne.exe",
-        shutil.which("sjaracne.exe"),
-    ]
-
-    for candidate in candidates:
-        if candidate and Path(candidate).is_file():
-            return str(Path(candidate).resolve())
-    return None
+from native_test_support import find_native_executable
 
 
-SJARACNE_EXE = find_sjaracne_executable()
+SJARACNE_EXE = find_native_executable()
 
 
 @unittest.skipUnless(SJARACNE_EXE, "sjaracne.exe is not built")

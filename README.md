@@ -250,6 +250,13 @@ sjaracne local \
 ```
 
 
+## Regression tests
+
+Run `python tests/run_regression.py` on Linux/WSL after installing this checkout.
+It builds both native programs and checks the small end-to-end workflow,
+Python tests and CWL utilities—not full BRCA100/DREAM resampling benchmarks.
+See [tests/README.md](tests/README.md) for prerequisites, coverage and logs.
+
 ## Reference
 Alireza Khatamian, Evan O. Paull, Andrea Califano* & Jiyang Yu*. SJARACNe: a scalable 
 software tool for gene network reverse engineering from big data. Bioinformatics (2018). *Corresponding authors.

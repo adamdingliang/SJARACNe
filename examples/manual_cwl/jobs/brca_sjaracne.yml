@@ -1,12 +1,12 @@
 exp_file:
   class: File
-  path: ../BRCA100.exp
+  path: ../../../tests/inputs/BRCA100.exp
 probe_file_tf:
   class: File
-  path: ../BRCA100_TF.txt
+  path: ../../../tests/inputs/BRCA100_TF.txt
 probe_file_subnetwork:
   class: File
-  path: ../BRCA100_TF.txt
+  path: ../../../tests/inputs/BRCA100_TF.txt
 p_value: 1e-07
 tolerance: 0
 algorithm: adaptive_partitioning

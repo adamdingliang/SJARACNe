@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+cd "$(dirname "$0")/../.."
 
 # Run from the repository root after configuring the LSF queue and resources.
 # Set both input variables before running; output paths may be overridden.

@@ -1,37 +1,17 @@
 #!/usr/bin/env python3
 
 import math
-import os
-import shutil
 import struct
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-
-
-def find_generator():
-    configured = os.environ.get("SJARACNE_APMI_NULL_EXE")
-    candidates = [
-        configured,
-        PROJECT_ROOT / "SJARACNe" / "bin" / "apmi_null_generator.exe",
-        shutil.which("apmi_null_generator.exe"),
-    ]
-    for candidate in candidates:
-        if not candidate or not Path(candidate).is_file():
-            continue
-        if os.name == "nt":
-            with Path(candidate).open("rb") as handle:
-                if handle.read(2) != b"MZ":
-                    continue
-        return str(candidate)
-    return None
+from native_test_support import find_native_executable
 
 
-GENERATOR = find_generator()
+GENERATOR = find_native_executable(
+    name="apmi_null_generator.exe", override_env="SJARACNE_APMI_NULL_EXE")
 
 
 @unittest.skipUnless(GENERATOR, "apmi_null_generator.exe is not built")
@@ -78,13 +58,16 @@ class TestApmiNullGenerator(unittest.TestCase):
             0.0012505213548648086,
             0.0,
         ]
-        for observed, reference in zip(self.parse_tsv(first.stdout), expected):
+        observed_values = self.parse_tsv(first.stdout)
+        self.assertEqual(len(observed_values), len(expected))
+        for observed, reference in zip(observed_values, expected):
             self.assertAlmostEqual(observed, reference, delta=1e-14)
 
     def test_binary_stream_bitwise_matches_tsv_and_has_metadata(self):
         tsv = self.run_generator(*self.COMMON)
         self.assertEqual(tsv.returncode, 0, tsv.stderr.decode(errors="replace"))
         expected = self.parse_tsv(tsv.stdout)
+        self.assertEqual(len(expected), 8)
 
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "null-mi.bin"
