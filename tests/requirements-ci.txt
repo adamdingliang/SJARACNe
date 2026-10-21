@@ -1,0 +1,6 @@
+# CI-only numerical/CWL baseline for Python 3.11, not new runtime minimums.
+# Transitive dependencies are resolved by pip and recorded in the CI artifact.
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.13.1
+cwltool==3.1.20240508115724

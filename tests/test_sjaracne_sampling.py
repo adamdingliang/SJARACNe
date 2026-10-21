@@ -4,36 +4,19 @@ import math
 import importlib.util
 import os
 import re
-import shutil
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
+from native_test_support import find_native_executable
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-def find_sjaracne_executable():
-    configured = os.environ.get("SJARACNE_TEST_EXE")
-    candidates = [
-        configured,
-        PROJECT_ROOT / "SJARACNe" / "bin" / "sjaracne.exe",
-        shutil.which("sjaracne.exe"),
-    ]
-    for candidate in candidates:
-        if not candidate or not Path(candidate).is_file():
-            continue
-        if os.name == "nt":
-            with Path(candidate).open("rb") as handle:
-                if handle.read(2) != b"MZ":
-                    continue
-        return str(candidate)
-    return None
-
-
-SJARACNE_EXE = find_sjaracne_executable()
+SJARACNE_EXE = find_native_executable()
 
 
 @unittest.skipUnless(SJARACNE_EXE, "sjaracne.exe is not built")

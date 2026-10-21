@@ -41,6 +41,32 @@ def write_recurrence_inputs(workdir):
     return expression, hubs
 
 
+def write_multihub_dpi_inputs(workdir):
+    """Six untied genes with graded shared signal and three annotated hubs.
+
+    Unlike the single-hub recurrence fixture, this supplies eligible DPI
+    triangles. Independent fixed permutations weaken the indirect relations
+    without relying on exact MI values or a compiler-specific network golden.
+    """
+    generator = random.Random(291)
+    genes = []
+    for name, weight in [('H0', 100), ('H1', 80), ('H2', 60),
+                         ('T0', 90), ('T1', 70), ('N', 0)]:
+        noise = list(range(100))
+        generator.shuffle(noise)
+        values = [weight * i + (100 - weight) * noise[i] + i / 1000.0
+                  for i in range(100)]
+        genes.append((name, values))
+    expression = workdir / 'multihub.exp'
+    lines = ['isoformId\tgeneSymbol\t' + '\t'.join('s%d' % i for i in range(100))]
+    lines.extend('\t'.join([name, 'symbol_' + name] + [str(value) for value in values])
+                 for name, values in genes)
+    expression.write_text('\n'.join(lines) + '\n', encoding='ascii')
+    hubs = workdir / 'multihub_hubs.txt'
+    hubs.write_text('H0\nH1\nH2\n', encoding='ascii')
+    return expression, hubs
+
+
 class TestSJARACNe(unittest.TestCase):
     def test_pchip_workflow_on_tiny_synthetic_input(self):
         for pvalue in ('0.001', '0.0004', '1e-7'):
@@ -170,6 +196,152 @@ class TestSJARACNe(unittest.TestCase):
         keys = [(row['source'], row['target']) for row in rows]
         self.assertEqual(keys, sorted(expected), str(path))
         self.assertEqual({key: row['MI'] for key, row in zip(keys, rows)}, expected)
+
+    def assert_multihub_workflow_output(self, output, log):
+        # A successful workflow alone is insufficient: one source row skips
+        # DPI. Require six real native pruning passes, not just nonempty
+        # output or the "Applying DPI" message.
+        statistics = [tuple(map(int, values)) for values in re.findall(
+            r'\[DPI_STATS\] pre_edges=(\d+) pruned_edges=(\d+) '
+            r'post_edges=(\d+) dpi_applied=(\d+)', log)]
+        self.assertEqual(len(statistics), 6, log)
+        for pre, pruned, post, applied in statistics:
+            self.assertEqual(applied, 1)
+            self.assertGreater(pruned, 0)
+            self.assertGreater(post, 0)
+            self.assertEqual(pre, pruned + post)
+        self.assertEqual(log.count('[THRESHOLD] PCHIP cutoff binary64='), 6)
+        self.assertNotIn('Skipping DPI', log)
+        self.assertNotIn('legacy affine threshold', log)
+        self.assertNotIn('normal approximation', log)
+        self.assertIn('Hub overlap: requested=3, matched=3, missing=0', log)
+
+        bootstrap_info = (output / 'bootstrap_info_.txt').read_text(encoding='utf-8')
+        metadata = dict(line.split(': ', 1) for line in bootstrap_info.splitlines())
+        self.assertEqual({key: value for key, value in metadata.items()
+                          if key != 'Total edge tested'}, {
+            'Consensus selection': 'minimum recurrence', 'Bootstrap networks': '6',
+            'Minimum recurrence': '6', 'Minimum recurrence fraction': '1',
+        })
+        self.assertGreater(int(metadata['Total edge tested']), 0)
+        parameters = (output / 'parameter_info_.txt').read_text(encoding='utf-8')
+        for key, value in {
+            'MI threshold method': 'experimental PCHIP empirical cutoff',
+            'MI P-value': '0.001',
+            'AP-MI actual m': '80', 'AP-MI Npar': '40', 'DPI tolerance': '0',
+            'Sampling method': 'fixed-size without replacement',
+            'Sampling request': '80%', 'Eligible observations': '100',
+            'Sampled observations': '80', 'Bootstrap No:': '6',
+            'Consensus selection': 'minimum recurrence',
+            'Minimum recurrence': '6 of 6', 'Minimum recurrence fraction': '1',
+        }.items():
+            self.assertEqual(self.header_value(parameters, key), value)
+
+        with (output / 'consensus_network_ncol_.txt').open(
+                encoding='utf-8', newline='') as handle:
+            reader = csv.DictReader(handle, delimiter='\t')
+            self.assertEqual(reader.fieldnames, [
+                'source', 'target', 'source.symbol', 'target.symbol', 'MI',
+                'pearson', 'spearman', 'slope', 'p-value',
+            ])
+            rows = list(reader)
+        self.assertTrue(rows, 'The enhanced default-K6 network must be nonempty')
+        genes = {'H0', 'H1', 'H2', 'T0', 'T1', 'N'}
+        for row in rows:
+            self.assertIn(row['source'], {'H0', 'H1', 'H2'})
+            self.assertIn(row['target'], genes)
+            self.assertNotEqual(row['source'], row['target'])
+            for endpoint in ('source', 'target'):
+                self.assertEqual(row[endpoint + '.symbol'], 'symbol_' + row[endpoint])
+            for column in ('MI', 'pearson', 'spearman', 'slope', 'p-value'):
+                self.assertTrue(math.isfinite(float(row[column])), row)
+            self.assertGreaterEqual(float(row['MI']), 0)
+            for column in ('pearson', 'spearman'):
+                self.assertLessEqual(abs(float(row[column])), 1)
+            self.assertGreaterEqual(float(row['p-value']), 0)
+            self.assertLessEqual(float(row['p-value']), 1)
+        return statistics, metadata, parameters
+
+    def test_multihub_pchip_default_k6_real_cwl_and_cli(self):
+        # Retain real CWL artifacts for a native-to-consensus audit. Defaults
+        # supply Npar=40, 80% sampling and K=6; the earlier recurrence matrix
+        # intentionally has one hub and therefore does not exercise DPI.
+        reference_networks = None
+        reference_enhanced = None
+        for execution in ('cwl-serial', 'cwl-parallel', 'cli-default-parallel'):
+            with self.subTest(execution=execution), tempfile.TemporaryDirectory() as tmpdir:
+                workdir = Path(tmpdir)
+                expression, hubs = write_multihub_dpi_inputs(workdir)
+                output = workdir / 'output'
+                if execution.startswith('cwl-'):
+                    job = {
+                        'exp_file': {'class': 'File', 'path': str(expression)},
+                        'probe_file': {'class': 'File', 'path': str(hubs)},
+                        'aracne_config_dir': {
+                            'class': 'Directory', 'path': str(PROJECT_ROOT / 'SJARACNe/config')},
+                        'bootstrap_num': 6, 'p_value_bootstrap': 0.001,
+                        'apmi_null_model': 'pchip', 'final_out_dir_name': 'results',
+                    }
+                    job_file = workdir / 'job.json'
+                    job_file.write_text(json.dumps(job), encoding='ascii')
+                    command = ['cwltool', '--leave-tmpdir', '--outdir', str(output),
+                               '--tmpdir-prefix', str(workdir / 'tmp')]
+                    if execution == 'cwl-parallel':
+                        command.append('--parallel')
+                    command.extend([str(PROJECT_ROOT / 'SJARACNe/cwl/sjaracne_workflow.cwl'),
+                                    str(job_file)])
+                else:
+                    command = [
+                        sys.executable, '-m', 'SJARACNe.sjaracne', 'local',
+                        '-e', str(expression), '-g', str(hubs), '-n', '6',
+                        '-M', 'pchip', '-pb', '0.001', '-o', str(output),
+                        '-tmp', str(workdir / 'tmp'),
+                    ]
+                result = subprocess.run(command, cwd=str(PROJECT_ROOT),
+                                        capture_output=True, text=True)
+                log = result.stdout + result.stderr
+                self.assertEqual(result.returncode, 0, log)
+                statistics, metadata, parameters = self.assert_multihub_workflow_output(output, log)
+                if execution.startswith('cwl-'):
+                    headers, networks = self.read_retained_bootstraps(workdir)
+                    self.assertEqual(sorted(post for _, _, post, _ in statistics),
+                                     sorted(map(len, networks)))
+                    support, total_mi = {}, {}
+                    for network in networks:
+                        for edge, mi in network.items():
+                            support[edge] = support.get(edge, 0) + 1
+                            total_mi[edge] = total_mi.get(edge, 0.0) + mi
+                    self.assertEqual(int(metadata['Total edge tested']), len(support))
+                    expected = {edge: '{:.4f}'.format(total_mi[edge] / count)
+                                for edge, count in support.items() if count == 6}
+                    self.assertTrue(expected)
+                    self.assert_consensus_rows(output / 'consensus_network_ncol_.txt', expected)
+                    three_column = list(workdir.rglob('consensus_network_3col_.txt'))
+                    self.assertEqual(len(three_column), 1)
+                    self.assert_consensus_rows(three_column[0], expected)
+                    for header in headers.values():
+                        for key in ('MI threshold method', 'AP-MI actual m', 'AP-MI Npar',
+                                    'MI threshold binary64', 'MI threshold hex', 'DPI tolerance',
+                                    'Sampling method', 'Sampling request',
+                                    'Eligible observations', 'Sampled observations'):
+                            self.assertEqual(self.header_value(header, key),
+                                             self.header_value(parameters, key))
+                    if reference_networks is not None:
+                        self.assertEqual(networks, reference_networks)
+                    reference_networks = networks
+                else:
+                    # Exercise the actual module entry point and actual cwltool,
+                    # with neither legacy -pc nor explicit -k / sampling flags.
+                    submitted = (output / 'sjaracne_workflow.yml').read_text(encoding='utf-8')
+                    self.assertIn('min_recurrence: 6\n', submitted)
+                    self.assertIn('subsample_spec: "80%"\n', submitted)
+                    self.assertIn('depth: 40\n', submitted)
+                    self.assertNotIn('p_value_consensus:', submitted)
+                    self.assertIn('--parallel', log)
+                enhanced = (output / 'consensus_network_ncol_.txt').read_text(encoding='utf-8')
+                if reference_enhanced is not None:
+                    self.assertEqual(enhanced, reference_enhanced)
+                reference_enhanced = enhanced
 
     def test_consensus_selection_and_null_model_real_cwl_matrix(self):
         from SJARACNe import get_mi_cutoff

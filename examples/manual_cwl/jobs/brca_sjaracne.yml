@@ -1,0 +1,19 @@
+exp_file:
+  class: File
+  path: ../../../tests/inputs/BRCA100.exp
+probe_file_tf:
+  class: File
+  path: ../../../tests/inputs/BRCA100_TF.txt
+probe_file_subnetwork:
+  class: File
+  path: ../../../tests/inputs/BRCA100_TF.txt
+p_value: 1e-07
+tolerance: 0
+algorithm: adaptive_partitioning
+subsample_spec: "80%"
+aracne_config_dir:
+  class: Directory
+  path: ../../../SJARACNe/config
+npar_limit: 40
+output_file_name: TF_run.adj
+seed: 1

@@ -3,8 +3,10 @@
 `cnn_5.txt` is the active end-to-end acceptance result. It is generated from
 five fixed-size 80% subsamples without replacement.
 
-`sjaracne_workflow.yml` is the former five-run legacy-bootstrap job. The
-remaining parameter, bootstrap, and consensus files are historical snapshots
-from a 100-run legacy bootstrap-with-replacement analysis. None of those legacy
-files is used by the current acceptance test or describes the new workflow
-default.
+The test explicitly uses legacy consensus `-pc 0.01` and affine MI cutoffs;
+it is a supported-compatibility check, not the current K=6/PCHIP workflow.
+Current-mode coverage uses tiny generated inputs in `test_sjaracne_acceptance.py`.
+
+Unused 100-run historical snapshots and absolute-path cluster job files were
+removed during test maintenance. They remain recoverable from Git history;
+`cnn_5.txt` was not regenerated or changed.

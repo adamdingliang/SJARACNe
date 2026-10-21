@@ -6,33 +6,20 @@ import importlib.util
 import math
 import os
 import re
-import shutil
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
+from native_test_support import find_native_executable
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PRIMARY_SHA256 = "8b4104be3f3ffe0a476a4dd7c8f7f6d95f00f1a51fa467c7194edf3806d427f5"
 
 
-def find_sjaracne_executable():
-    configured = os.environ.get("SJARACNE_TEST_EXE")
-    for candidate in (configured, PROJECT_ROOT / "SJARACNe" / "bin" / "sjaracne.exe",
-                      shutil.which("sjaracne.exe")):
-        if not candidate or not Path(candidate).is_file():
-            continue
-        if os.name == "nt":
-            with Path(candidate).open("rb") as handle:
-                if handle.read(2) != b"MZ":
-                    continue
-        return str(candidate)
-    return None
-
-
-SJARACNE_EXE = find_sjaracne_executable()
+SJARACNE_EXE = find_native_executable()
 
 
 def python_cutoff(m, p):

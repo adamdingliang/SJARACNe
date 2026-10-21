@@ -16,26 +16,29 @@ from SJARACNe.bin.create_consensus_network import uprob
 CONSENSUS_MODULE = importlib.import_module(
     "SJARACNe.bin.create_consensus_network"
 )
+FIXTURES = Path(__file__).resolve().parent
 
 
 class TestConsensusNetwork(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.folder = tempfile.TemporaryDirectory()
-        cn('./tests/inputs/adjmat_dir', 0.05, self.folder.name)
+        self.addClassCleanup(self.folder.cleanup)
+        # Explicit legacy probability mode remains a supported compatibility path.
+        cn(FIXTURES / 'inputs/adjmat_dir', 0.05, self.folder.name)
 
     def test_consensus_network_3col(self):
-        expected = Path('./tests/answerkey/consensus_network_3col_.txt')
+        expected = FIXTURES / 'answerkey/consensus_network_3col_.txt'
         actual = Path(self.folder.name) / 'consensus_network_3col_.txt'
         self.assertEqual(expected.read_text(encoding='utf-8'), actual.read_text(encoding='utf-8'))
         
     def test_bootstrap_info(self):
-        expected = Path('./tests/answerkey/bootstrap_info_.txt')
+        expected = FIXTURES / 'answerkey/bootstrap_info_.txt'
         actual = Path(self.folder.name) / 'bootstrap_info_.txt'
         self.assertEqual(expected.read_text(encoding='utf-8'), actual.read_text(encoding='utf-8'))
 
     def test_parameter_info(self):
-        expected = Path('./tests/answerkey/parameter_info_.txt').read_text(
+        expected = (FIXTURES / 'answerkey/parameter_info_.txt').read_text(
             encoding='utf-8'
         ).splitlines()
         output_network = Path(self.folder.name) / 'consensus_network_3col_.txt'
@@ -48,12 +51,6 @@ class TestConsensusNetwork(unittest.TestCase):
             f'>  Output network: {output_network}',
         )
         self.assertEqual(expected, actual[:-1])
-
-    '''    
-    def test_enhanced_consensus_network(self):
-        ecn('./inputs/BRCA100.exp', './answerkey/consensus_network_3col_.txt', self.folder.name + '/consensus_network_ncol_.txt')
-        self.assertTrue(filecmp.cmp('./answerkey/consensus_network_ncol_.txt', self.folder.name + '/consensus_network_ncol_.txt'))
-    '''
 
     #Testing different values on the function uprob(z-score)
     def test_uprob_100(self):

@@ -1,0 +1,8 @@
+adjmat_dir:
+  class: Directory
+  path: ../../../tests/inputs/adjmat_dir
+exp_mat:
+  class: File
+  path: ../../../tests/inputs/BRCA100.exp
+p_thresh_arg: 1e-05
+output_dir: SJARACNE_out.final

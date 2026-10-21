@@ -1,8 +1,0 @@
->  Input file      /private/var/folders/j4/1rdzby2n51bcd4vl97z6l_3c4h71qx/T/tmp3fvzb7ip/stg18c19fa0-5d46-4413-87cb-17c0de2e7c07/Tcell1170.exp
->  MI threshold    0.0469787
->  MI P-value      1e-07
->  DPI tolerance   0
->  Subnetwork file /private/var/folders/j4/1rdzby2n51bcd4vl97z6l_3c4h71qx/T/tmp3fvzb7ip/stgd454547d-e286-496b-a68e-04d23ba06eab/TcellTF.txt
->  Bootstrap No: 100
->  Source: sjaracne2
->  Output network: Tcell2/consensus_network_3col_.txt
