@@ -1,5 +1,7 @@
 # SJARACNe
 
+develop: [![Regression](https://github.com/adamdingliang/SJARACNe/actions/workflows/regression.yml/badge.svg?branch=develop&event=push)](https://github.com/adamdingliang/SJARACNe/actions/workflows/regression.yml?query=branch%3Adevelop)
+
 SJARACNe is a scalable solution of ARACNe that dramatically improves the computational 
 performance, especially on the memory usage to allow even researchers with modest 
 computational power to generate networks from thousands of samples. The algorithm uses 
