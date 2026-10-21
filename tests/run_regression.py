@@ -56,7 +56,7 @@ def build_command(jobs):
 
 def source_hashes():
     paths = [ROOT / "setup.py", ROOT / "requirements.txt", ROOT / "SJARACNe/Makefile"]
-    for folder in ("SJARACNe/src", "SJARACNe/config", "SJARACNe/cwl", "tests", "tools"):
+    for folder in ("SJARACNe/src", "SJARACNe/config", "SJARACNe/cwl", "tests", "tools", ".github/workflows"):
         paths.extend(path for path in (ROOT / folder).rglob("*")
                      if path.is_file() and "__pycache__" not in path.parts
                      and path.suffix not in (".pyc", ".pyo"))
@@ -144,6 +144,10 @@ def run(output, jobs):
                 "source_root": str(ROOT), "started_at_utc": now(), "python": sys.version,
                 "controller_sha256": sha256(__file__), "steps": [],
                 "scope": "small functional/native/CWL regression; no dataset benchmark resampling"}
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        manifest["github"] = {key: os.environ.get(key) for key in (
+            "GITHUB_REPOSITORY", "GITHUB_SHA", "GITHUB_REF", "GITHUB_EVENT_NAME",
+            "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_WORKFLOW", "RUNNER_OS")}
 
     def persist():
         (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

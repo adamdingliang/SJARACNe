@@ -1,0 +1,74 @@
+name: Small workflow regression
+
+on:
+  pull_request:
+    branches: [develop, master]
+  push:
+    branches: [develop, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    name: Small regression (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONNOUSERSITE: '1'
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+      REGRESSION_OUTPUT: ${{ runner.temp }}/sjaracne-regression-${{ github.run_id }}-${{ github.run_attempt }}
+      BOOTSTRAP_OUTPUT: ${{ runner.temp }}/sjaracne-bootstrap-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Check out tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            tests/requirements-ci.txt
+            setup.py
+
+      - name: Install system prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends g++ make nodejs bats
+
+      - name: Install pinned CI baseline and this checkout
+        run: |
+          mkdir -p "$BOOTSTRAP_OUTPUT"
+          python -m pip install --upgrade pip==25.1.1 setuptools==75.8.2 wheel==0.45.1
+          python -m pip install -r tests/requirements-ci.txt
+          python -m pip install --no-deps --no-build-isolation -e .
+          python -m pip check
+          python -m pip freeze --all > "$BOOTSTRAP_OUTPUT/pip-freeze.txt"
+          python --version > "$BOOTSTRAP_OUTPUT/python-version.txt"
+          g++ --version > "$BOOTSTRAP_OUTPUT/compiler-version.txt"
+          node --version > "$BOOTSTRAP_OUTPUT/node-version.txt"
+          bats --version > "$BOOTSTRAP_OUTPUT/bats-version.txt"
+
+      - name: Run complete small regression
+        timeout-minutes: 15
+        run: python tests/run_regression.py --jobs 4 --output-dir "$REGRESSION_OUTPUT"
+
+      - name: Preserve regression evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: small-regression-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.REGRESSION_OUTPUT }}
+            ${{ env.BOOTSTRAP_OUTPUT }}
+          retention-days: 7
+          if-no-files-found: warn

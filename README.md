@@ -256,6 +256,8 @@ Run `python tests/run_regression.py` on Linux/WSL after installing this checkout
 It builds both native programs and checks the small end-to-end workflow,
 Python tests and CWL utilities—not full BRCA100/DREAM resampling benchmarks.
 See [tests/README.md](tests/README.md) for prerequisites, coverage and logs.
+GitHub Actions uses the same small suite for PRs into and pushes to `develop`
+and `master`, once the workflow and runner are present on the branch.
 
 ## Reference
 Alireza Khatamian, Evan O. Paull, Andrea Califano* & Jiyang Yu*. SJARACNe: a scalable 

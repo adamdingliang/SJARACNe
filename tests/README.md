@@ -86,4 +86,23 @@ they require explicit manual invocation and are not local CI validation of LSF.
 
 Scientific benchmarks and large run artifacts remain in
 [`sjaracne_benchmark`](https://github.com/adamdingliang/sjaracne_benchmark).
-No GitHub Actions workflow is enabled by this cleanup.
+## GitHub Actions
+
+`.github/workflows/regression.yml` runs this same strict small regression on
+pull requests targeting `develop` or `master`, and on pushes to either branch.
+The workflow is introduced on `develop`; `master` gains it and the refreshed
+runner together through the next release merge, not by silently promoting
+scientific changes now. This does not change branch-protection requirements.
+
+The hosted baseline is standard Ubuntu 24.04 / Python 3.11, using the CI-only
+numerical/CWL pins in `requirements-ci.txt`. Runtime dependency minimums are
+unchanged. Top-level pins do not lock every transitive dependency: the resolved
+`pip freeze`, tool versions, test logs, counts and source/binary hashes are saved
+as a seven-day Actions artifact. First-party actions are pinned by commit SHA,
+permissions are read-only, and no repository secret is required.
+
+The job is bounded to 20 minutes (15 minutes for regression), cancels superseded
+runs, and does not invoke manual examples or large biological benchmark batches.
+Manual dispatch is also available once the workflow is present on the default
+branch. GitHub's regular PR event tests its merge revision; the run metadata
+records the tested SHA and event.
