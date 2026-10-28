@@ -5,58 +5,76 @@
 SJARACNe is a scalable solution of ARACNe that dramatically improves the computational 
 performance, especially on the memory usage to allow even researchers with modest 
 computational power to generate networks from thousands of samples. The algorithm uses 
-adaptive partitioning mutual information to calculate the correlation between all pairs 
-of genes to reconstruct the regulatory network. 
-SJARACNe is now integrated into our latest framework, [scMINER](https://jyyulab.github.io/scMINER/), 
+adaptive-partitioning mutual information to estimate statistical dependence
+between genes and infer candidate regulatory associations.
+SJARACNe is integrated into [scMINER](https://jyyulab.github.io/scMINER/),
 for single-cell RNA-seq data analysis.
 Check out scMINER to learn how to use SJARACNe for analyzing single-cell RNA-seq data.
 
 ## Download
+
 ```bash
 git clone --branch develop https://github.com/adamdingliang/SJARACNe.git
 ```
 
 
 ## Prerequisites
+
 * [Python>=3.7.6](https://www.python.org/downloads/)
     * [numpy>=1.20.1](https://www.scipy.org/scipylib/download.html)
-    * [scipy>=1.6.1](https://www.scipy.org/install.html)
+    * [scipy>=1.7.3](https://www.scipy.org/install.html)
     * [pandas>=1.2.3](https://pandas.pydata.org/)
     * [cwltool>=3.0.20201117141248](https://github.com/common-workflow-language/cwltool/releases)
-    * [node.js>=4.4.4](https://nodejs.org/fa/blog/release/v4.4.4/) (required by cwltool to run locally)
-* [cwlexec==0.2.2](https://github.com/IBMSpectrumComputing/cwlexec/releases) (CWL engine to run on IBM LSF)
+* [Node.js](https://nodejs.org/) for local CWL JavaScript expressions
+* Make and a C++ compiler (GCC or Clang) when building from source
+* [cwlexec==0.2.2](https://github.com/IBMSpectrumComputing/cwlexec/releases) only for the legacy IBM LSF integration
+
+These Python package minimums follow `setup.py`. The automated regression
+runs on Linux; on Windows, run the source-build and workflow commands in WSL.
 
 
 ## Create a virtual environment (recommended)
+
 ### Using conda to create a virtual environment 
+
 The recommended method of setting up the required Python environment and dependencies is to use the
 [conda](https://conda.io/en/latest/) dependency manager:
 
+The example uses Python 3.11, matching the GitHub Actions test environment:
+
 ```bash
-$ conda create -n py392 python=3.9.2
-$ source activate py392
+conda create -n sjaracne python=3.11
+conda activate sjaracne
 ```
 
 ## Installation
+
 Depends on the runtime environment, [node.js](https://nodejs.org/en/download/) may be installed manually to run 
 cwltool locally; [cwlexec](https://github.com/yuch7/cwlexec) may be installed manually to run on IBM LSF platform. 
 
 There are two options to install SJARACNe and its dependencies:
+
 ### (Option 1) Install via pip
-```$ pip install SJARACNe```
+
+```bash
+python -m pip install SJARACNe
+```
 
 ### (Option 2) Install from source
+
 ```bash
-$ git clone --branch develop https://github.com/adamdingliang/SJARACNe.git
-$ cd SJARACNe
-$ python setup.py build     # build SJARACNe binary
-$ python setup.py install
+git clone --branch develop https://github.com/adamdingliang/SJARACNe.git
+cd SJARACNe
+python setup.py build     # build SJARACNe binary
+python setup.py install
 ```
 
 The examples below use this source installation of `develop`; the PyPI release
-may not include the latest subsampling, PCHIP or minimum-recurrence options.
+may not include the latest subsampling, PCHIP, minimum-recurrence or dynamic-DPI
+options.
 
 ### Install optional packages depends on runtime platform
+
 SJARACNe workflow is implemented in [Common Workflow Language](https://www.commonwl.org/). 
 Install node.js for running locally using cwltool; install cwlexec to run on IBM LSF platform. 
 Users may check [Common Workflow Language](https://www.commonwl.org/) site for available workflow engines 
@@ -64,7 +82,9 @@ to run on other platforms, e.g., [Toil](https://toil.readthedocs.io/en/latest/).
 
 
 ## Usage
-```$ sjaracne 
+
+```text
+$ sjaracne
 usage: sjaracne [-h] {local,lsf} ...
 
 SJARACNe is a scalable tool for gene network reverse engineering.
@@ -78,8 +98,11 @@ Subcommands:
     lsf        run cwlexec as in a IBM LSf cluster
 ```
 ```sjaracne``` workflow is implemented with [CWL](https://www.commonwl.org/). It supports multiple
- computing platforms. We have tested it locally using [cwltool](https://github.com/common-workflow-language/cwltool) 
- and on an IBM LSF cluster using [cwlexec](https://github.com/IBMSpectrumComputing/cwlexec). 
+ computing platforms. The current small regression tests execute real local
+ workflows using [cwltool](https://github.com/common-workflow-language/cwltool).
+ The legacy IBM LSF integration uses [cwlexec](https://github.com/IBMSpectrumComputing/cwlexec);
+ current LSF option forwarding is tested with mocks, not by submitting jobs
+ to a cluster.
  For the convenience, a python wrapper is developed for you to choose computing platform using ```subcommand```.
  
 The local mode (sjaracne local) runs in parallel by default using cwltool's --parallel option. To run it in serial, 
@@ -91,10 +114,13 @@ step and consensus step if the dimension of your expression matrix file is large
 
 
 ### Inputs
-The main input for SJARACNe is a tab-separated genes/protein by cells/samples expression matrix
-with the first two columns being ID and symbol. The second required input file is the list of
-significant genes/proteins IDs to be considered as hubs in the reconstructed network (**the most recent version of curated 
-transcription factors and signaling proteins can be found in ./SJARACNe/config/TF_list.txt and ./SJARACNe/config/SIG_list.txt, respectively**). 
+The main input is a tab-separated gene/protein-by-sample/cell expression matrix
+whose first two columns contain ID and symbol. The second required input is
+a list of hub/source IDs matching the expression matrix's **first column**.
+Gene symbols work as hub IDs only when they are used in that first column.
+Bundled reference lists are available in [TF_list.txt](SJARACNe/config/TF_list.txt)
+and [SIG_list.txt](SJARACNe/config/SIG_list.txt); map them to the matrix's ID type
+before use. They are not a guarantee of the latest annotation release.
 An output directory is required for storing output files. Additional parameters (e.g., LSF queue) for running on different platforms are required. 
 Those are available in the helping information of the corresponding subcommands, e.g., ```sjaracne lsf -h```.
 
@@ -179,19 +205,25 @@ epsilon(H) = min(dpi_max, dpi_slope * max(0, log2(H / dpi_href)))
 
 The three tuning options require `--dynamic-dpi`. Larger epsilon relaxes DPI.
 `H` is counted automatically from unique reconstructed source rows before DPI,
-including constructed rows with no retained candidate edges. Missing IDs and
+including rows with zero edges after MI thresholding. Missing IDs and
 unconstructed rows do not count; it is not the annotation-list size or the
 number of nonempty rows. This initial option requires a native `-s` source
 list and at least two reconstructed sources. Adjacency replay (`-j`), native
 conditional reconstruction (`-c`), and single-hub or all-gene modes are not
-supported in this first experimental version.
+supported in this first experimental version. These are **native** flag names:
+workflow `-c` still selects a configuration directory, `-j` selects an LSF
+scheduler configuration, and `-s` selects serial local execution.
 
 Existing behavior is unchanged without opt-in: the workflow uses strict DPI,
 while the bare native executable defaults to no DPI (`-e 1`). Native
 `--dynamic-dpi` cannot be combined with an explicit fixed `-e`, including
 `-e 0`. Direct CWL jobs use `dynamic_dpi: true` and optional `dpi_href`,
-`dpi_slope`, `dpi_max`; do not also supply `tolerance`. Each network header
-records the mode, actual H, parameters and resolved decimal/hex epsilon.
+`dpi_slope`, `dpi_max`; do not also supply `tolerance`. Native adjacency headers
+record the mode, actual H, parameters and resolved decimal/hex epsilon; the
+workflow also retains this metadata in `parameter_info_.txt`.
+
+PCHIP and dynamic DPI are independent opt-ins. Dynamic DPI also works with
+legacy affine MI cutoffs; enabling it does not enable PCHIP or change `-pb`.
 
 For one native BRCA100 inference, using the experimental preset:
 
@@ -220,7 +252,9 @@ This is an **experimental engineering option**, not a new default or a claim
 of better biological edges. BRCA100/LUAD support a possible pruning/consistency
 balance; strong fixed tolerance remains competitive. DREAM5 did not show a
 dynamic-specific accuracy advantage and used different anchors. See the
-[benchmark summaries and conditional conclusions](https://github.com/adamdingliang/sjaracne_benchmark/blob/d814d63eb4b9c3c6c70e30f2661f04b8b04e9c4e/docs/benchmark_summaries/README.md).
+[benchmark summaries and conditional conclusions](https://github.com/adamdingliang/sjaracne_benchmark/blob/bd329ebf1ebdfb27307a81c583fe8301b62961be/docs/benchmark_summaries/README.md).
+Benchmark reports are in a separate private repository and require access;
+SJARACNe has no runtime dependency on it.
 
 ## Examples
 
@@ -237,7 +271,10 @@ Parameters used below:
 | `-n 100` | Generate 100 resampled networks (the default). |
 | `--subsample-size 80` | Use 80 distinct samples per network, sampled without replacement. Alternatively, use `--subsample-fraction 0.8` for 80% (the default); do not combine both options. |
 | `-M pchip` | Opt in to PCHIP MI cutoffs; omit it to retain legacy affine conversion. |
+| `-d 40` / `--depth 40` | AP-MI Npar limit, passed to native `-N`; the workflow default is 40. |
 | `-pb` | Requested per-resample MI null-tail probability; required explicitly with PCHIP. Without PCHIP, the default is `1e-7`. |
+| `--dynamic-dpi` | Opt in to experimental hub-count-dependent DPI tolerance; omitted means strict DPI in the workflow. |
+| `--dpi-href`, `--dpi-slope`, `--dpi-max` | Optional dynamic-DPI tuning; require `--dynamic-dpi`. See [defaults and definitions](#experimental-dynamic-dpi-tolerance-opt-in). |
 | `-k 6` / `--min-recurrence 6` | Retain ordered edges present in at least six input networks (inclusive; the default). Must be between 1 and the number of networks. |
 | `-pc` | Explicitly select the deprecated legacy normal-approximation consensus filter instead of recurrence; cannot be combined with `-k`. Separate from `-pb`. |
 | `-o`, `-tmp` | Final output directory and temporary working directory, respectively; both are required. |
@@ -268,6 +305,10 @@ of networks. See the current PCHIP K6
 [process](https://github.com/adamdingliang/sjaracne_benchmark/blob/d39103d44b03e6c7244417bea37aa9034db7ecc2/benchmarks/brca100_pchip_recurrence/README.md)
 and [results with NetBID2 QC](https://github.com/adamdingliang/sjaracne_benchmark/blob/d39103d44b03e6c7244417bea37aa9034db7ecc2/benchmarks/brca100_pchip_recurrence/results_2026-10-18/RESULTS.md).
 
+Both commands below use **strict DPI**, the unchanged workflow default. Add
+`--dynamic-dpi` to opt in to the experimental preset. Optional tuning defaults
+are `--dpi-href 479`, `--dpi-slope 0.05` and `--dpi-max 0.30`.
+
 ```bash
 # TF network
 sjaracne local \
@@ -290,7 +331,9 @@ older consensus results are comparison context, not PCHIP + K6 outcomes.
 ### Running on an IBM LSF cluster
 
 After configuring the LSF queue and resource settings, this runs the TF workflow
-with the same PCHIP settings as the local example:
+with the same PCHIP and strict-DPI settings as the local example. Dynamic mode
+can be requested with `--dynamic-dpi`; current regression does not exercise an
+actual LSF cluster:
 
 ```bash
 sjaracne lsf -j ./SJARACNe/config/config_cwlexec.json \
