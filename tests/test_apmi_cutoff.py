@@ -56,13 +56,22 @@ class TestStandaloneApmiCutoff(unittest.TestCase):
         self.assertIs(get_mi_cutoff, cutoff.get_mi_cutoff)
 
     def test_legacy_star_exports_remain_available(self):
-        scope = {}
-        exec('from SJARACNe import *', scope)
-        import SJARACNe.bin as legacy
-        for name in vars(legacy):
-            if not name.startswith('_'):
-                self.assertIs(scope[name], getattr(legacy, name), name)
-        self.assertIs(scope['get_mi_cutoff'], get_mi_cutoff)
+        # Test the historical exports in a clean interpreter. Importing a new
+        # submodule during test discovery adds incidental attributes to bin;
+        # those are not new public star-import compatibility requirements.
+        script = '''
+scope = {}
+exec('from SJARACNe import *', scope)
+import SJARACNe.bin as legacy
+from SJARACNe import get_mi_cutoff
+for name in vars(legacy):
+    if not name.startswith('_'):
+        assert scope[name] is getattr(legacy, name), name
+assert scope['get_mi_cutoff'] is get_mi_cutoff
+'''
+        result = subprocess.run([sys.executable, '-c', script], cwd=str(ROOT),
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_bundled_provenance_and_shared_native_data_hash(self):
         data = cutoff._load_data()

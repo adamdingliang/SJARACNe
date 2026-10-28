@@ -1,0 +1,13 @@
+# Pinned validation target: Sprocket 0.32.0. Trusted workflows only: no isolation.
+# A two-core budget for tiny parity tests, not a bulk-data resource recommendation.
+[run.backends.default]
+type = "local"
+cpu = 2
+memory = "2 GiB"
+
+[run.workflow.scatter]
+concurrency = 2
+
+[run.task]
+retries = 0
+cache = "off"

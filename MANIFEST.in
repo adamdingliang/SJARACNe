@@ -2,6 +2,7 @@ include SJARACNe/bin/*
 include SJARACNe/config/*.txt
 include SJARACNe/config/apmi_pchip.json
 include SJARACNe/cwl/*
+recursive-include SJARACNe/wdl *.wdl *.md *.json *.toml
 include SJARACNe/src/*
 include SJARACNe/Makefile
 include tools/apmi_null_generator.cpp

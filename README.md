@@ -358,6 +358,11 @@ sjaracne local \
 
 ## Regression tests
 
+An experimental [standalone WDL 1.3 workflow](SJARACNe/wdl/README.md) is being
+developed for local Sprocket execution with the same scientific steps. It does
+not replace the current Python/CWL CLI; see its documentation for scope and
+validation status.
+
 Run `python tests/run_regression.py` on Linux/WSL after installing this checkout.
 It builds both native programs and checks the small end-to-end workflow,
 Python tests and CWL utilities—not full BRCA100/DREAM resampling benchmarks.

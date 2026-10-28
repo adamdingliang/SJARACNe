@@ -53,6 +53,7 @@ It performs the following checks:
 | Experimental dynamic DPI | Native formula/anchor/doubling/cap, exact fixed-epsilon edge equivalence, unique constructed source counting (including empty rows), invalid inputs and fixed/dynamic conflicts, opt-out compatibility, provenance and witness diagnostics. Wrapper/CWL tests cover forwarding, real dynamic-versus-fixed inference, and two scattered resamples through consensus. All use tiny synthetic data. |
 | Consensus and enrichment | Recurrence boundaries, directed duplicate handling, legacy probability behavior, missing/empty inputs, output schemas, symbols and finite/bounded enhanced statistics. |
 | Utilities | Byte-exact line endings; checked CWL array types/order, empty arrays, output file contents and copies. Bats fixtures/results live in per-test temporary directories, not the checkout. |
+| Standalone WDL task plumbing | Parameters/defaults/conflicts, literal argv, safe line-ending copies, runtime/input/settings hashes, seed provenance and exact consensus staging. These ordinary tests require no WDL engine. |
 
 The small T-cell `cnn_5.txt` golden network and the active legacy consensus
 answerkeys are intentionally retained as compatibility fixtures. The BRCA100
@@ -96,6 +97,22 @@ they require explicit manual invocation and are not local CI validation of LSF.
 
 Scientific benchmarks and large run artifacts remain in
 [`sjaracne_benchmark`](https://github.com/adamdingliang/sjaracne_benchmark).
+
+## Optional WDL 1.3 engine parity
+
+The [standalone WDL guide](../SJARACNe/wdl/README.md) documents a separate tiny
+real CWL/Sprocket comparison:
+
+```bash
+python tests/wdl/run_parity.py --sprocket /absolute/path/sprocket \
+  --output-dir /absolute/path/new-parity-evidence
+```
+
+It requires Sprocket 0.32.0 and fails for missing dependencies, rather than
+skipping. It is deliberately outside `test_*.py` discovery: the existing GitHub
+Actions job still runs all task-plumbing tests but does not install Sprocket or
+claim to run WDL. No production dataset benchmarks are launched by either check.
+
 ## GitHub Actions
 
 `.github/workflows/regression.yml` runs this same strict small regression on
