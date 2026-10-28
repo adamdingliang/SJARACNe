@@ -50,6 +50,7 @@ It performs the following checks:
 | Current end-to-end workflow | Generated six-gene/100-observation expression, three hubs, six resamples: real input QC, default 80% sampling, PCHIP, actual DPI removals, default K=6, and nonempty enhanced consensus. Real serial CWL, parallel CWL and CLI outputs must agree. Expected recurrence/MI is derived from the actual native networks, not a frozen scientific network. |
 | Selection compatibility | Tiny affine/PCHIP × K=6/explicit legacy `-pc` matrix; explicit probability behavior remains supported and must not be deleted as obsolete. |
 | Native correctness | Sampling/seed behavior, rank caches, AP-MI workspace/null generator, PCHIP bounds/provenance/warnings, expression/hub validation, adjacency replay and DPI diagnostics/file-alias protection. |
+| Experimental dynamic DPI | Native formula/anchor/doubling/cap, exact fixed-epsilon edge equivalence, unique constructed source counting (including empty rows), invalid inputs and fixed/dynamic conflicts, opt-out compatibility, provenance and witness diagnostics. Wrapper/CWL tests cover forwarding, real dynamic-versus-fixed inference, and two scattered resamples through consensus. All use tiny synthetic data. |
 | Consensus and enrichment | Recurrence boundaries, directed duplicate handling, legacy probability behavior, missing/empty inputs, output schemas, symbols and finite/bounded enhanced statistics. |
 | Utilities | Byte-exact line endings; checked CWL array types/order, empty arrays, output file contents and copies. Bats fixtures/results live in per-test temporary directories, not the checkout. |
 
@@ -71,6 +72,15 @@ That is **not** equivalent to the strict complete runner. Set
 An invalid explicitly configured `SJARACNE_TEST_EXE` or
 `SJARACNE_APMI_NULL_EXE` always fails; it never silently selects another binary.
 The complete runner pins both variables and PATH to this checkout.
+
+The dynamic-DPI modules are discovered by the same `test_*.py` pattern and
+therefore run in GitHub Actions without a separate benchmark job. For a focused
+check after building the native binary and installing this checkout:
+
+```bash
+python -m unittest discover -s tests -p 'test_sjaracne_dynamic_dpi.py' -v
+python -m unittest discover -s tests -p 'test_dynamic_dpi_workflow.py' -v
+```
 
 ## Removed or separated during maintenance
 

@@ -2,6 +2,10 @@
 SJARACNe/config/apmi_pchip.json -text
 tools/export_apmi_pchip.py text eol=lf
 
+# Keep the small regression shell tests runnable in WSL after Windows checkouts.
+tests/*.bats text eol=lf
+tests/*.bash text eol=lf
+
 # Keep the runnable LSF examples executable under Bash after Windows checkouts.
 tests/test_sjaracne_lsf_brca_data.sh text eol=lf
 tests/test_sjaracne_lsf_real_data.sh text eol=lf

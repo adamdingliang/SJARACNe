@@ -489,6 +489,14 @@ bool Matrix::hasEnoughSourceRowsForDpi() const
 
 //------------------------------------------------------------------------------------
 
+std::size_t Matrix::sourceRowCount() const
+{
+   return static_cast<std::size_t>(std::count(adjacencyRowsPresent.begin(),
+                                             adjacencyRowsPresent.end(), true));
+}
+
+//------------------------------------------------------------------------------------
+
 void Matrix::writeGeneLine(std::ostream& out, const Microarray_Set& data, int geneId)
 {
    AdjacencyRow& row = nmv[geneId];
@@ -620,6 +628,22 @@ void Matrix::write(const Microarray_Set& data, const std::vector<int>& ids,
       out.precision(savedPrecision);
    }
    out << ">  DPI tolerance   " << p.eps        << std::endl;
+   if (p.dynamicDpi)
+   {
+      const std::streamsize savedPrecision = out.precision();
+      const std::ios::fmtflags savedFlags = out.flags();
+      out << ">  DPI mode experimental-dynamic" << std::endl;
+      out << ">  DPI dynamic rule log2-hub-ratio-v1" << std::endl;
+      out << ">  DPI H policy unique-reconstructed-rows-including-empty" << std::endl;
+      out << ">  DPI source rows H " << p.dpiActualH << std::endl;
+      out << ">  DPI H_ref " << p.dpiHref << std::endl;
+      out << ">  DPI slope " << std::setprecision(17) << p.dpiSlope << std::endl;
+      out << ">  DPI epsilon max " << p.dpiMax << std::endl;
+      out << ">  DPI epsilon binary64 " << p.eps << std::endl;
+      out << ">  DPI epsilon hex " << std::hexfloat << p.eps << std::endl;
+      out.flags(savedFlags);
+      out.precision(savedPrecision);
+   }
    //out << ">  Correction      " << p.correction << std::endl;
    out << ">  Subnetwork file " << p.subnetfile << std::endl;
 
