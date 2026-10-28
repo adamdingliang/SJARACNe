@@ -161,6 +161,67 @@ accuracy or biological FDR. See the
 and [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md)
 for calibration, runtime policy, provenance and limitations.
 
+### Experimental dynamic DPI tolerance (opt-in)
+
+`--dynamic-dpi` enables a hub-count-dependent tolerance in the native executable
+and the Python/CWL workflow. It changes one scalar epsilon per reconstructed
+network, not the MI estimator, cutoff or DPI pruning algorithm:
+
+```text
+epsilon(H) = min(dpi_max, dpi_slope * max(0, log2(H / dpi_href)))
+```
+
+| Option | Default when enabled | Meaning |
+| --- | ---: | --- |
+| `--dpi-href` | 479 | Positive integer anchor. At or below it, epsilon is zero (strict DPI). |
+| `--dpi-slope` | 0.05 | Finite positive epsilon increase per doubling above the anchor. |
+| `--dpi-max` | 0.30 | Finite cap in `[0,1)`; zero is allowed and keeps strict DPI. |
+
+The three tuning options require `--dynamic-dpi`. Larger epsilon relaxes DPI.
+`H` is counted automatically from unique reconstructed source rows before DPI,
+including constructed rows with no retained candidate edges. Missing IDs and
+unconstructed rows do not count; it is not the annotation-list size or the
+number of nonempty rows. This initial option requires a native `-s` source
+list and at least two reconstructed sources. Adjacency replay (`-j`), native
+conditional reconstruction (`-c`), and single-hub or all-gene modes are not
+supported in this first experimental version.
+
+Existing behavior is unchanged without opt-in: the workflow uses strict DPI,
+while the bare native executable defaults to no DPI (`-e 1`). Native
+`--dynamic-dpi` cannot be combined with an explicit fixed `-e`, including
+`-e 0`. Direct CWL jobs use `dynamic_dpi: true` and optional `dpi_href`,
+`dpi_slope`, `dpi_max`; do not also supply `tolerance`. Each network header
+records the mode, actual H, parameters and resolved decimal/hex epsilon.
+
+For one native BRCA100 inference, using the experimental preset:
+
+```bash
+./SJARACNe/bin/sjaracne.exe -i ./tests/inputs/BRCA100.exp \
+  -s ./tests/inputs/BRCA100_TF.txt -l ./tests/inputs/BRCA100_TF.txt \
+  -N 40 -u 80 -M pchip -p 0.001 --dynamic-dpi \
+  --dpi-href 479 --dpi-slope 0.05 --dpi-max 0.30 \
+  -o brca100_tf_dynamic.adj
+```
+
+For the full workflow, add the same four long options to a local or LSF
+example below. Workflow `-e` still means the expression file, not fixed DPI
+tolerance. For example, this two-resample smoke run uses dynamic DPI with
+the preset and an explicit PCHIP probability:
+
+```bash
+sjaracne local \
+  -e ./tests/inputs/BRCA100.exp -g ./tests/inputs/BRCA100_TF.txt \
+  -n 2 -k 1 --subsample-size 80 -M pchip -pb 0.001 \
+  --dynamic-dpi --dpi-href 479 --dpi-slope 0.05 --dpi-max 0.30 \
+  -o ./results/tf_dynamic_smoke -tmp ./results/tmp_tf_dynamic/
+```
+
+This is an **experimental engineering option**, not a new default or a claim
+of better biological edges. BRCA100/LUAD support a possible pruning/consistency
+balance; strong fixed tolerance remains competitive. DREAM5 did not show a
+dynamic-specific accuracy advantage and used different anchors. See the
+[benchmark summaries and conditional conclusions](https://github.com/adamdingliang/sjaracne_benchmark/blob/d814d63eb4b9c3c6c70e30f2661f04b8b04e9c4e/docs/benchmark_summaries/README.md).
+
 ## Examples
 
 Run these commands from the repository root after installing `develop`.

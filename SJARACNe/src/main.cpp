@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------------
 
 #include <cerrno>
+#include <climits>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -19,7 +20,7 @@
 
 //------------------------------------------------------------------------------------
 
-const int NUM_OPTIONS = 23;
+const int NUM_OPTIONS = 27;
 
 const char *option[NUM_OPTIONS] =
 {
@@ -27,6 +28,12 @@ const char *option[NUM_OPTIONS] =
 "-c <+/-probeId %>  Conditional network reconstruction, default: NONE [****]\n"
 "                   [format: \"+24 0.35\", \"-1973_s_at 0.4\"]",
 "-e <tolerance>     DPI tolerance, default: 1",
+"--dynamic-dpi      Opt in to experimental hub-size-dependent DPI; requires -s,\n"
+"                   excludes fixed -e, adjacency replay -j and conditional -c",
+"--dpi-href <count> Dynamic DPI reference source rows, positive integer; default: 479",
+"--dpi-slope <s>    Dynamic DPI increase per doubling of H above href;\n"
+"                   finite positive value, default: 0.05",
+"--dpi-max <value>  Dynamic DPI epsilon cap, finite in [0,1); default: 0.30",
 "-f <mean> <cv>     Gene filter by the mean and coefficient of variance (cv) of\n"
 "                   the expression values, default: mean=0, cv=0",
 "-H <ARACNE_HOME>   Directory containing ARACNE configuration files,\n"
@@ -121,6 +128,23 @@ double parseFiniteNumericOption(const char *optionName, const char *argument)
 
 //------------------------------------------------------------------------------------
 
+int parseDynamicDpiReference(const std::string& argument)
+{
+   if (argument.empty())
+      throw std::string("Option '--dpi-href' requires a positive integer.");
+   for (std::string::const_iterator c = argument.begin(); c != argument.end(); ++c)
+      if (*c < '0' || *c > '9')
+         throw std::string("Option '--dpi-href' requires a positive integer, not '") + argument + "'.";
+   errno = 0;
+   char *end = NULL;
+   const long value = std::strtol(argument.c_str(), &end, 10);
+   if (errno == ERANGE || *end != '\0' || value < 1 || value > INT_MAX)
+      throw std::string("Option '--dpi-href' must be an integer in [1,2147483647].");
+   return static_cast<int>(value);
+}
+
+//------------------------------------------------------------------------------------
+
 Parameter parseParameter(int argc, char *argv[])
 {
    Parameter p; // initializes parameters to default values
@@ -137,7 +161,39 @@ Parameter parseParameter(int argc, char *argv[])
                 p.percent    = std::atof(ARGF());
             break;
       case 'e': p.eps        = parseFiniteNumericOption("-e", ARGF()); // DPI tolerance
+                p.epsSpecified = true;
                 break;
+      case '-':
+      {
+         // Long options are parsed only at an option boundary. ARGF still
+         // consumes short-option values normally, even when a filename begins
+         // with '--', preserving the historical single-character interface.
+         const std::string longArgument = _arg;
+         _arg = (char *)"";
+         const std::size_t equal = longArgument.find('=');
+         const std::string name = longArgument.substr(0, equal);
+         const bool inlineValue = equal != std::string::npos;
+         if (name == "dynamic-dpi")
+         {
+            if (inlineValue)
+               throw std::string("Option '--dynamic-dpi' is a flag and takes no value.");
+            p.dynamicDpi = true;
+         }
+         else if (name == "dpi-href" || name == "dpi-slope" || name == "dpi-max")
+         {
+            const std::string value = inlineValue ? longArgument.substr(equal + 1) : ARGF();
+            p.dynamicDpiParametersSpecified = true;
+            if (name == "dpi-href")
+               p.dpiHref = parseDynamicDpiReference(value);
+            else if (name == "dpi-slope")
+               p.dpiSlope = parseFiniteNumericOption("--dpi-slope", value.c_str());
+            else
+               p.dpiMax = parseFiniteNumericOption("--dpi-max", value.c_str());
+         }
+         else
+            throw std::string("unknown parameter --") + longArgument;
+         break;
+      }
       case 'f': p.mean       = std::atof(ARGF());        // mean
                 p.cv         = std::atof(ARGF());        // coefficient of variance
                 break;
@@ -177,6 +233,24 @@ Parameter parseParameter(int argc, char *argv[])
       default : throw std::string("unknown parameter ") + ARGC();
    }
    ARGEND;
+
+   if (p.dynamicDpi && argc > 0)
+      throw std::string("Unexpected positional argument '") + argv[0] +
+            "' with '--dynamic-dpi'; this flag takes no value.";
+
+   // The legacy parser stops at a positional token or '--'. Do not let a
+   // new experimental option silently disappear in that unconsumed tail.
+   // Inspect only remaining arguments: an already-consumed filename may
+   // legitimately equal one of these option names.
+   for (int argument = 0; argument < argc; ++argument)
+   {
+      const std::string remaining = argv[argument];
+      const std::string name = remaining.substr(0, remaining.find('='));
+      if (name == "--dynamic-dpi" || name == "--dpi-href" ||
+          name == "--dpi-slope" || name == "--dpi-max")
+         throw std::string("Dynamic DPI option '") + name +
+               "' was not parsed; these options cannot follow positional arguments or '--'.";
+   }
 
    checkParameter(p);
 
@@ -479,6 +553,28 @@ void runStandard(int argc, char *argv[])
    }
 
    bool dpiApplied = false;
+
+   if (p.dynamicDpi)
+   {
+      p.dpiActualH = matrix.sourceRowCount();
+      if (p.dpiActualH < 2)
+         throw std::string("Experimental dynamic DPI requires at least two reconstructed "
+                           "source rows; unresolved IDs do not count, but empty rows do.");
+      p.eps = resolveDynamicDpiEpsilon(p.dpiActualH, p.dpiHref, p.dpiSlope, p.dpiMax);
+      const std::streamsize savedPrecision = std::cout.precision();
+      const std::ios::fmtflags savedFlags = std::cout.flags();
+      std::cout << "[DPI] WARNING: dynamic epsilon is an experimental engineering policy; "
+                   "biological accuracy and a universal anchor or slope are not established."
+                << std::endl;
+      std::cout << "[DPI] mode=experimental-dynamic H=" << p.dpiActualH
+                << " H_ref=" << p.dpiHref
+                << " slope=" << std::setprecision(17) << p.dpiSlope
+                << " epsilon_max=" << p.dpiMax
+                << " epsilon=" << p.eps
+                << " epsilon_hex=" << std::hexfloat << p.eps << std::endl;
+      std::cout.flags(savedFlags);
+      std::cout.precision(savedPrecision);
+   }
 
    if (p.eps != 1.0)
    {

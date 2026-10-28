@@ -75,6 +75,7 @@ public:
    void markAdjacencyRow(int geneId);
    bool hasAdjacencyRow(int geneId) const;
    bool hasEnoughSourceRowsForDpi() const;
+   std::size_t sourceRowCount() const;
 
    void writeGeneLine(std::ostream& out, const Microarray_Set& data, int geneId);
    void writeGeneList(const Microarray_Set& data, const std::string& name,

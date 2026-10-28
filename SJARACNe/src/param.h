@@ -9,6 +9,7 @@
 
 #include <string>
 #include <vector>
+#include <cstddef>
 
 //------------------------------------------------------------------------------------
 
@@ -34,6 +35,13 @@ struct Parameter
    int    samplingPopulation; // observations eligible for resampling
    int    samplingSize;       // observations selected for MI calculation
    bool   thresholdSpecified; // whether -t was supplied, including -t 0
+   bool   epsSpecified;       // whether fixed -e was explicitly supplied
+   bool   dynamicDpi;         // experimental hub-size-dependent DPI tolerance
+   bool   dynamicDpiParametersSpecified;
+   int    dpiHref;            // reference count of reconstructed source rows
+   double dpiSlope;           // epsilon increase per doubling above dpiHref
+   double dpiMax;             // upper bound of experimental dynamic epsilon
+   std::size_t dpiActualH;    // unique reconstructed rows, including empty rows
 
    std::string verbose, infile, outfile, adjfile, hub;
    std::string dpiWitnessFile;
@@ -50,7 +58,10 @@ struct Parameter
         sigma(default_sigma), sample(default_sample), percent(default_percent),
         mean(default_mean), cv(default_cv), correction(default_correction),
         nparLimit(default_nparLimit), seed(default_seed), samplingPopulation(0),
-        samplingSize(0), thresholdSpecified(false), verbose("off"), infile(""), outfile(""), adjfile(""),
+        samplingSize(0), thresholdSpecified(false), epsSpecified(false),
+        dynamicDpi(false), dynamicDpiParametersSpecified(false), dpiHref(479),
+        dpiSlope(0.05), dpiMax(0.30), dpiActualH(0),
+        verbose("off"), infile(""), outfile(""), adjfile(""),
         hub(""), dpiWitnessFile(""), subnetfile(""), annotfile(""), controlId(""), condition(""),
         home_dir("./"), subsampleSpec(""), samplingMethod(""), nullModelFile(""),
         thresholdMethod("none"), pchipPrimarySha256(""), pchipDataSha256(""),
@@ -65,5 +76,7 @@ void checkParameter(Parameter &p);
 void displayParameter(Parameter &p);
 void createOutfileName(Parameter &p );
 int resolveSubsampleSize(const std::string& spec, int populationSize);
+double resolveDynamicDpiEpsilon(std::size_t sourceRows, int referenceHubs,
+                                double slope, double maximum);
 
 #endif

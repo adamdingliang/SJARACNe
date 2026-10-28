@@ -27,6 +27,22 @@ inputs:
   apmi_null_model:
     type: string?
     label: Optional bundled experimental AP-MI PCHIP model name pchip
+  tolerance:
+    type: double?
+    label: Optional fixed DPI tolerance; omitted means strict zero unless dynamic_dpi is enabled
+  dynamic_dpi:
+    type: boolean
+    default: false
+    label: Experimental dynamic DPI opt-in; cannot be combined with tolerance
+  dpi_href:
+    type: int?
+    label: Optional dynamic reference source count; native default 479
+  dpi_slope:
+    type: double?
+    label: Optional dynamic epsilon increase per source-count doubling; native default 0.05
+  dpi_max:
+    type: double?
+    label: Optional dynamic epsilon cap; native default 0.30
   depth:
     type: int
     default: 40
@@ -115,6 +131,11 @@ steps:
             return self;
           }
       apmi_null_model: apmi_null_model
+      tolerance: tolerance
+      dynamic_dpi: dynamic_dpi
+      dpi_href: dpi_href
+      dpi_slope: dpi_slope
+      dpi_max: dpi_max
       aracne_config_dir: aracne_config_dir
       npar_limit: depth
       subsample_spec: subsample_spec

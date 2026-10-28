@@ -8,9 +8,40 @@ import subprocess
 import shlex
 import logging
 import pathlib
+import math
 
 
 DEFAULT_MIN_RECURRENCE = 6
+
+
+def dpi_reference_hubs(value):
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        raise argparse.ArgumentTypeError('DPI reference hub count must be a positive integer')
+    if not 1 <= parsed <= 2147483647:
+        raise argparse.ArgumentTypeError('DPI reference hub count must be within [1,2147483647]')
+    return parsed
+
+
+def dpi_positive_slope(value):
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        raise argparse.ArgumentTypeError('DPI slope must be finite and positive')
+    if not math.isfinite(parsed) or parsed <= 0:
+        raise argparse.ArgumentTypeError('DPI slope must be finite and positive')
+    return parsed
+
+
+def dpi_maximum(value):
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        raise argparse.ArgumentTypeError('DPI maximum must be finite and within [0,1)')
+    if not math.isfinite(parsed) or not 0 <= parsed < 1:
+        raise argparse.ArgumentTypeError('DPI maximum must be finite and within [0,1)')
+    return parsed
 
 
 def sampling_fraction(value):
@@ -88,6 +119,22 @@ def main():
         help='Opt in to bundled experimental PCHIP MI cutoffs; requires depth 40. Defaults remain legacy affine.',
     )
     parent_parser.add_argument('-d', '--depth', metavar='INT', default=40, help='maximum partitioning depth.')
+    parent_parser.add_argument(
+        '--dynamic-dpi', action='store_true',
+        help='Opt in to experimental hub-count-dependent DPI tolerance; default workflow remains strict DPI.',
+    )
+    parent_parser.add_argument(
+        '--dpi-href', metavar='INT', type=dpi_reference_hubs,
+        help='Dynamic DPI reference source count; requires --dynamic-dpi; native default: 479.',
+    )
+    parent_parser.add_argument(
+        '--dpi-slope', metavar='FLOAT', type=dpi_positive_slope,
+        help='Dynamic epsilon increase per doubling above the reference; requires --dynamic-dpi; native default: 0.05.',
+    )
+    parent_parser.add_argument(
+        '--dpi-max', metavar='FLOAT', type=dpi_maximum,
+        help='Dynamic epsilon cap in [0,1); requires --dynamic-dpi; native default: 0.30.',
+    )
     parent_parser.add_argument('-c', '--config-dir', metavar='DIR', help='Directory containing ARACNe configuration '
                                                                          'files. Use default configs if not provided.')
     parent_parser.add_argument('-n', '--bootstrap-num', metavar='INT', type=bootstrap_count, default=100,
@@ -123,6 +170,9 @@ def main():
         sys.exit(0)
 
     args = parser.parse_args()
+    if not args.dynamic_dpi and any(value is not None for value in
+                                    (args.dpi_href, args.dpi_slope, args.dpi_max)):
+        parser.error('--dpi-href, --dpi-slope and --dpi-max require --dynamic-dpi')
     if args.apmi_null_model == 'pchip':
         if args.p_value_bootstrap is None:
             parser.error('-M pchip requires an explicit -pb / --p-value-bootstrap; no PCHIP probability default is chosen')
@@ -200,6 +250,14 @@ def main():
                                                    output_dir_name)
         if args.apmi_null_model is not None:
             contents += '\napmi_null_model: {}'.format(json.dumps(args.apmi_null_model))
+        if args.dynamic_dpi:
+            contents += '\ndynamic_dpi: true'
+            # Leave omitted parameters null so the native executable owns its
+            # experimental defaults and records the values actually used.
+            for name in ('dpi_href', 'dpi_slope', 'dpi_max'):
+                value = getattr(args, name)
+                if value is not None:
+                    contents += '\n{}: {}'.format(name, json.dumps(value))
         logging.info(contents)
         fp_yml.write(contents)
         fp_yml.flush()

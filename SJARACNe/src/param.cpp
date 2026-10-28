@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------------
 
 #include <cerrno>
+#include <algorithm>
 #include <cctype>
 #include <climits>
 #include <cmath>
@@ -108,7 +109,27 @@ void checkParameter(Parameter &p)
    if (!std::isfinite(p.eps) || p.eps < 0.0 || p.eps > 1.0)
       throw std::string("DPI tolerance '-e' must be within [0,1]!");
 
-   if (!p.dpiWitnessFile.empty() && p.eps == 1.0)
+   if (p.dynamicDpiParametersSpecified && !p.dynamicDpi)
+      throw std::string("Dynamic DPI parameters require the explicit '--dynamic-dpi' option.");
+
+   if (p.dynamicDpi)
+   {
+      if (p.epsSpecified)
+         throw std::string("Options '--dynamic-dpi' and fixed DPI tolerance '-e' cannot be used together.");
+      if (p.subnetfile.empty() || !p.hub.empty())
+         throw std::string("Experimental '--dynamic-dpi' requires a source list '-s'; "
+                           "single-hub '-h' and all-gene inference are not supported.");
+      if (!p.adjfile.empty())
+         throw std::string("Experimental '--dynamic-dpi' cannot replay an adjacency matrix with '-j'; "
+                           "reconstruct from expression with '-s'.");
+      if (!p.controlId.empty())
+         throw std::string("Experimental '--dynamic-dpi' does not support conditional "
+                           "reconstruction '-c'; use an unconditional expression workflow.");
+      // Reuse the formula validator before reading expression or opening output.
+      resolveDynamicDpiEpsilon(1, p.dpiHref, p.dpiSlope, p.dpiMax);
+   }
+
+   if (!p.dpiWitnessFile.empty() && !p.dynamicDpi && p.eps == 1.0)
       throw std::string("DPI witness diagnostic '-W' requires active DPI "
                         "('-e' must be less than 1).");
 
@@ -139,6 +160,26 @@ void checkParameter(Parameter &p)
       if (b == std::string::npos || b < len - 1)
          p.home_dir += "/";
    }
+}
+
+//------------------------------------------------------------------------------------
+// The experimental schedule changes one scalar tolerance per reconstruction;
+// sourceRows must count constructed rows, not nonempty rows or retained edges.
+double resolveDynamicDpiEpsilon(std::size_t sourceRows, int referenceHubs,
+                                double slope, double maximum)
+{
+   if (sourceRows == 0)
+      throw std::string("Dynamic DPI requires a positive reconstructed source-row count.");
+   if (referenceHubs < 1)
+      throw std::string("Dynamic DPI '--dpi-href' must be a positive integer.");
+   if (!std::isfinite(slope) || slope <= 0.0)
+      throw std::string("Dynamic DPI '--dpi-slope' must be finite and positive.");
+   if (!std::isfinite(maximum) || maximum < 0.0 || maximum >= 1.0)
+      throw std::string("Dynamic DPI '--dpi-max' must be finite and in [0,1).");
+   if (sourceRows <= static_cast<std::size_t>(referenceHubs))
+      return 0.0;
+   return std::min(maximum, slope * std::log2(
+      static_cast<double>(sourceRows) / static_cast<double>(referenceHubs)));
 }
 
 //------------------------------------------------------------------------------------
@@ -301,7 +342,11 @@ void displayParameter(Parameter &p)
    if (!p.nullModelFile.empty())
       std::cout << "[PARA] AP-MI null model: " << p.nullModelFile << std::endl;
 
-   std::cout << "[PARA] DPI tolerance: " << p.eps << std::endl;
+   if (p.dynamicDpi)
+      std::cout << "[PARA] DPI tolerance: experimental dynamic schedule; "
+                   "resolved after source-row reconstruction" << std::endl;
+   else
+      std::cout << "[PARA] DPI tolerance: " << p.eps << std::endl;
 
    if (!p.dpiWitnessFile.empty())
       std::cout << "[PARA] DPI witness diagnostic: " << p.dpiWitnessFile

@@ -6,6 +6,30 @@ doc: Scalable solution of ARACNe that dramatically improves the computational pe
 
 baseCommand: sjaracne.exe
 
+requirements:
+  - class: InlineJavascriptRequirement
+
+arguments:
+  - position: 6
+    valueFrom: |
+      ${
+        function hasValue(value) {
+          return value !== null && typeof value !== 'undefined';
+        }
+        var fixed = inputs.tolerance;
+        var tuning = hasValue(inputs.dpi_href) || hasValue(inputs.dpi_slope) || hasValue(inputs.dpi_max);
+        if (inputs.dynamic_dpi) {
+          if (hasValue(fixed)) {
+            throw new Error('dynamic_dpi conflicts with an explicit fixed tolerance');
+          }
+          return [];
+        }
+        if (tuning) {
+          throw new Error('dpi_href, dpi_slope and dpi_max require dynamic_dpi');
+        }
+        return ['-e', String(hasValue(fixed) ? fixed : 0)];
+      }
+
 inputs:
   preflight_report:
     type: File?
@@ -40,12 +64,33 @@ inputs:
       position: 5
       prefix: -p
   tolerance:
-    type: int
-    default: 0
+    type: double?
+    doc: Optional fixed DPI tolerance; omitted resolves to strict zero unless dynamic_dpi is enabled
+  dynamic_dpi:
+    type: boolean
+    default: false
     inputBinding:
       position: 6
-      prefix: -e
-    doc: DPI tolerance
+      prefix: --dynamic-dpi
+    doc: Explicit experimental dynamic epsilon opt-in; conflicts with tolerance
+  dpi_href:
+    type: int?
+    inputBinding:
+      position: 6
+      prefix: --dpi-href
+    doc: Optional dynamic reference source count; requires dynamic_dpi; native default 479
+  dpi_slope:
+    type: double?
+    inputBinding:
+      position: 6
+      prefix: --dpi-slope
+    doc: Optional dynamic epsilon increase per source-count doubling; requires dynamic_dpi; native default 0.05
+  dpi_max:
+    type: double?
+    inputBinding:
+      position: 6
+      prefix: --dpi-max
+    doc: Optional dynamic epsilon cap in [0,1); requires dynamic_dpi; native default 0.30
   algorithm:
     type: string
     default: adaptive_partitioning
