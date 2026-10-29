@@ -102,7 +102,8 @@ sjaracne local --network-type TF \
   -e tests/inputs/BRCA100.exp \
   -g tests/inputs/BRCA100_TF.txt \
   -o results/brca100_tf_check \
-  -n 2 -k 1
+  -n 2 -k 1 \
+  --jobs 2 --memory "8 GiB"
 ```
 
 - `-e`: prepared expression matrix.
@@ -111,22 +112,26 @@ sjaracne local --network-type TF \
 - `-n 2 -k 1`: two resampled networks, retaining edges present in at least one.
   This is a functional check, not a recommended scientific configuration. It
   still processes the full bundled matrix and TF list.
+- `--jobs 2 --memory "8 GiB"`: up to two concurrent tasks within an 8-GiB
+  scheduling budget. This fits two 4-GiB inference requests or the subsequent
+  8-GiB consensus request; it is not a measured RAM requirement or a hard limit.
 
 A successful run publishes network files under `results/brca100_tf_check/`
 and records its settings and completion state in `sjaracne_run.json`.
 
 ### Full TF and SIG networks
 
-Omit `-n` and `-k` to use **100 resampled networks and minimum recurrence K=6**:
+Omit `-n` and `-k` to use **100 resampled networks and minimum recurrence K=6**.
+These examples retain the same resource budgets:
 
 ```bash
 sjaracne local --network-type TF \
   -e tests/inputs/BRCA100.exp -g tests/inputs/BRCA100_TF.txt \
-  -o results/brca100_tf
+  -o results/brca100_tf --jobs 2 --memory "8 GiB"
 
 sjaracne local --network-type SIG \
   -e tests/inputs/BRCA100.exp -g tests/inputs/BRCA100_SIG.txt \
-  -o results/brca100_sig
+  -o results/brca100_sig --jobs 2 --memory "8 GiB"
 ```
 
 For your own dataset, replace the example matrix and hub-list paths with your
