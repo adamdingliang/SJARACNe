@@ -1,113 +1,92 @@
 # SJARACNe
 
+SJARACNe is a command-line tool for reconstructing gene regulatory networks
+from gene expression data. It builds transcription factor (TF) and signaling
+(SIG) networks for exploring candidate regulators and their target genes.
+
 [![CI](https://img.shields.io/github/actions/workflow/status/adamdingliang/SJARACNe/regression.yml?branch=develop&event=push&label=CI)](https://github.com/adamdingliang/SJARACNe/actions/workflows/regression.yml?query=branch%3Adevelop "Regression status for develop")
 
-SJARACNe reconstructs candidate regulatory associations using
-adaptive-partitioning mutual information (AP-MI), DPI pruning and repeated
-observation resampling. It is also integrated into
-[scMINER](https://jyyulab.github.io/scMINER/).
+[Installation](#installation) · [Quick start](#quick-start) ·
+[Inputs](#inputs) · [Configuration](#configuration) ·
+[Documentation](#documentation) · [Citation](#citation)
 
-## Current workflow defaults
+> This README describes `feat/wdl13-scientific-parity`, not the published PyPI
+> release. Its default workflow uses WDL 1.3 and Sprocket. PCHIP MI cutoffs and
+> dynamic DPI tolerance are experimental, even though they are defaults here.
 
-This feature branch makes **WDL 1.3 with Sprocket** the default workflow,
-with **PCHIP MI cutoffs**, **dynamic DPI tolerance**, and **K=6 consensus**.
-PCHIP and dynamic DPI remain experimental scientific choices despite becoming
-defaults. Promoting them does not establish universal calibration or improved
-biological accuracy.
+## Features
 
-| Setting | Current profile |
-| --- | --- |
-| Workflow / engine | WDL 1.3 / Sprocket 0.32.0 |
-| Network type | Explicit `--network-type TF` or `SIG`; never inferred from a filename |
-| Per-resample probability `pb` | TF: `0.001`; SIG: `0.0005`; override with `-pb` |
-| MI conversion | Bundled empirical PCHIP surface |
-| Sampling | 80% without replacement, native ceiling rule |
-| Resampled networks | 100, seeds 1 through 100 |
-| AP-MI Npar limit | 40 |
-| DPI | Dynamic epsilon; Href=479, slope=0.05, maximum=0.30 |
-| Consensus | Edge appears in at least six distinct networks, inclusive |
-
-The same hub list supplies reconstruction sources (`-s`) and regulator
-annotations (`-l`) to the native program. Network type selects a probability
-default; it does not select, infer or modify the supplied hub list.
-
-Backward-compatible settings and the CWL route are retained. See
-[BACKWARD_COMPATIBILITY.md](docs/BACKWARD_COMPATIBILITY.md) for the explicit
-pre-sampling `legacy` profile, older develop settings and native API behavior.
-Changing the engine alone does **not** select a historical scientific profile.
+- Reconstruct TF and SIG networks from a prepared expression matrix and a
+  user-supplied regulator list.
+- Run the complete reconstruction and consensus workflow from one command.
+- Export edge lists with gene annotations, correlation statistics and recorded
+  run settings.
+- Select a backward-compatible scientific profile or the retained local CWL
+  workflow when needed.
 
 ## Installation
 
-Use Linux or WSL with Python, Make, a C++ compiler, Bash and the separately
-installed [Sprocket 0.32.0 executable](https://github.com/stjude-rust-labs/sprocket/releases/tag/v0.32.0).
-The Python runtime minimum remains 3.7.6; local validation uses Python 3.9 and
-GitHub Actions uses Python 3.11. NumPy, pandas and SciPy are installed by pip.
+### Prerequisites
 
-These instructions describe the feature branch being reviewed, not an older
-PyPI release or the current release branches:
+- Linux, or Linux through WSL on Windows. These are the validated workflow
+  environments; native Windows execution is not covered by these instructions.
+- Python **3.11 recommended**, Git, Make, a C++ compiler and Bash.
+- **Sprocket 0.32.0**, installed separately from its
+  [official release](https://github.com/stjude-rust-labs/sprocket/releases/tag/v0.32.0)
+  and available on `PATH`. The CLI currently requires this exact version.
+
+The default local workflow does not require Docker. It runs trusted task
+commands directly on the host, without container isolation.
+
+### Install from source
+
+Run the following in a Linux or WSL terminal. Use Python 3.11 for the virtual
+environment to match the GitHub Actions test environment.
 
 ```bash
 git clone --branch feat/wdl13-scientific-parity https://github.com/adamdingliang/SJARACNe.git
 cd SJARACNe
+
+python3.11 -m venv .venv
+source .venv/bin/activate
 make -C SJARACNe
 python -m pip install -e .
+
 sprocket --version
+sjaracne local --help
 ```
 
-Sprocket is not installed automatically by pip or downloaded when a workflow
-starts. A missing or unsupported engine fails clearly; there is no silent CWL
-fallback. The [WDL guide](SJARACNe/wdl/README.md) contains the verified binary
-checksum and standalone execution instructions. The default local backend
-runs trusted task commands directly on the host, without container isolation.
+Pip installs NumPy, pandas and SciPy, but **does not install Sprocket**. A missing
+or incompatible engine is an error; there is no automatic download or silent
+fallback. See the [WDL guide](SJARACNe/wdl/README.md#local-use) for the verified
+Sprocket archive checksum and standalone workflow instructions.
 
-For CWL compatibility or the complete regression, also install the optional
-CWL dependencies and Node.js:
+## Quick start
+
+From the installed source checkout, run a reduced workflow check with the
+bundled BRCA100 expression matrix and TF list:
 
 ```bash
-python -m pip install -e '.[cwl]'
+sjaracne local --network-type TF \
+  -e tests/inputs/BRCA100.exp \
+  -g tests/inputs/BRCA100_TF.txt \
+  -o results/brca100_tf_check \
+  -n 2 -k 1
 ```
 
-CWLEXEC is no longer supported or required. Its legacy CLI route, configuration
-templates and launchers have been removed; local CWL compatibility remains.
+- `-e`: prepared expression matrix.
+- `-g`: regulator IDs to reconstruct as sources, also called hubs.
+- `-o`: a **new or empty** output directory; existing results are not overwritten.
+- `-n 2 -k 1`: two resampled networks, retaining edges present in at least one.
+  This is a functional check, not a recommended scientific configuration. It
+  still processes the full bundled matrix and TF list.
 
-## Inputs
-
-The expression matrix is tab-separated, with header columns `isoformId`,
-`geneSymbol`, followed by observations. Hub IDs must match the matrix's **first
-column**, not necessarily its symbol column. Bundled
-[TF](SJARACNe/config/TF_list.txt) and [SIG](SJARACNe/config/SIG_list.txt) lists
-are reference annotations to match to your matrix, not a guarantee of the
-latest annotation release.
-
-The workflow validates hub overlap and stages LF-normalized copies. It does
-not log-transform, filter or otherwise preprocess expression values for you.
-Original inputs are not modified. Use a new or empty output directory.
-
-### Outputs
-
-The familiar result files are published at the output root:
-
-- `consensus_network_ncol_.txt`: source/target IDs and symbols, MI, Pearson and
-  Spearman correlations, regression slope and regression p-value.
-- `consensus_network_3col_.txt`: source, target and consensus MI.
-- `bootstrap_info_.txt`: selection rule, number of networks and recurrence or
-  legacy-consensus metadata; the filename is retained for compatibility.
-- `parameter_info_.txt`: native scientific parameters and consensus settings.
-
-Sprocket attempts, per-seed adjacency files, logs and provenance remain in the
-engine directory recorded by `sjaracne_run.json`. Correlations and regressions
-use the full expression matrix, not just a resampled subset. The enhanced
-network's regression p-value is **not** an MI or consensus-edge probability.
-
-## Examples
-
-Run from the source checkout after installation. `local` remains an accepted
-subcommand but now uses WDL/Sprocket unless `--engine cwl` is supplied.
+A successful run publishes network files under `results/brca100_tf_check/`
+and records its settings and completion state in `sjaracne_run.json`.
 
 ### Full TF and SIG networks
 
-These commands use the defaults in the table above. The role must still be
-supplied when `-pb` is explicitly overridden.
+Omit `-n` and `-k` to use **100 resampled networks and minimum recurrence K=6**:
 
 ```bash
 sjaracne local --network-type TF \
@@ -119,100 +98,191 @@ sjaracne local --network-type SIG \
   -o results/brca100_sig
 ```
 
-The provisional TF/SIG probabilities are operating choices, not universal
-biological thresholds. For a functional smoke test only, add `-n 2 -k 1`;
-default K=6 requires at least six input networks.
+For your own dataset, replace the example matrix and hub-list paths with your
+prepared inputs. `TF` selects the default per-resample probability
+`pb=0.001`; `SIG` selects `pb=0.0005`. It does **not** choose or modify your hub
+list. The network type is required for the current profile, even with an
+explicit `-pb` override.
 
-### Explicit overrides
+## Inputs
+
+### Expression matrix
+
+Use a tab-separated text file: one gene or feature per row, with the first two
+header fields exactly `isoformId` and `geneSymbol`, followed by observations.
+The following illustrates the layout, not a runnable dataset:
+
+```text
+isoformId	geneSymbol	sample_1	sample_2	sample_3
+GENE_001	STAT1	2.1	3.4	1.8
+GENE_002	MYD88	1.5	2.2	2.9
+```
+
+Values must already be prepared for network inference. SJARACNe does **not**
+normalize, log-transform or filter genes for you. With the default PCHIP model,
+the selected observation count `m` must be within **50–10,000**; the default is
+`m = ceil(0.8 * N)`, where `N` is the number of input observations.
+
+### Regulator / hub list
+
+Supply one source ID per line, without a header:
+
+```text
+GENE_001
+GENE_002
+```
+
+IDs must match the expression matrix's **first column**, not necessarily
+`geneSymbol`. The same list supplies native reconstruction sources (`-s`) and
+regulator annotations (`-l`). Bundled [TF](SJARACNe/config/TF_list.txt) and
+[SIG](SJARACNe/config/SIG_list.txt) lists are reference annotations to match to
+your matrix, not automatically selected or guaranteed-current annotations.
+
+The workflow reports missing hubs and refuses to launch if none match. It
+normalizes line endings on staged copies without modifying the original inputs.
+
+## Configuration
+
+### Current workflow defaults
+
+| Setting | Default |
+| --- | --- |
+| Workflow / engine | WDL 1.3 / Sprocket 0.32.0 |
+| Resampling | 80% of observations without replacement; 100 networks, seeds 1–100 |
+| Per-resample probability `pb` | TF: `0.001`; SIG: `0.0005` |
+| Mutual information (MI) cutoff | Experimental empirical PCHIP conversion; Npar=40 |
+| Data processing inequality (DPI) pruning | Experimental dynamic tolerance; Href=479, slope=0.05, cap=0.30 |
+| Consensus | Retain edges present in at least six distinct resampled networks (K=6) |
+| Local scheduling | Four task slots; 16 GiB memory budget |
+
+These are **workflow defaults**, not the defaults of every bare native
+executable invocation. Memory settings are scheduling requests, not a guarantee
+that a dataset fits. Larger datasets may need higher budgets and task memory
+requests; see [resources and outputs](SJARACNe/wdl/README.md#resources-outputs-and-provenance).
+
+### Common overrides
 
 ```bash
-# Current profile, but strict fixed DPI instead of the dynamic default.
-sjaracne local --network-type TF --fixed-dpi \
+# Example: change pb and use strict DPI, keeping the other current defaults.
+sjaracne local --network-type TF -pb 0.002 --fixed-dpi \
   -e tests/inputs/BRCA100.exp -g tests/inputs/BRCA100_TF.txt \
-  -o results/tf_strict
-
-# Current scientific defaults through the retained CWL engine.
-sjaracne local --engine cwl --network-type SIG \
-  -e tests/inputs/BRCA100.exp -g tests/inputs/BRCA100_SIG.txt \
-  -o results/sig_cwl
-
-# Pre-sampling scientific profile through the default WDL engine.
-sjaracne local --profile legacy \
-  -e tests/inputs/BRCA100.exp -g tests/inputs/BRCA100_TF.txt \
-  -o results/tf_legacy
+  -o results/brca100_tf_strict
 ```
 
 | Option | Meaning |
 | --- | --- |
-| `--network-type TF` / `SIG` | Required for the current profile; selects its default `pb`. |
-| `-pb` | Override the per-resample MI null-tail probability. |
-| `-M pchip` / `affine` | Explicit MI conversion; affine does not automatically restore other historical settings. |
-| `--fixed-dpi` | Use fixed epsilon, zero unless `--tolerance` is supplied. |
-| `--tolerance 0.1` | Select fixed epsilon 0.1; conflicts with an explicit `--dynamic-dpi`. |
-| `--dpi-href`, `--dpi-slope`, `--dpi-max` | Tune the current dynamic schedule; not allowed with fixed DPI. |
-| `--subsample-fraction 0.8` / `--subsample-size 80` | Sampling without replacement; fraction and exact size are mutually exclusive. |
-| `-n`, `-k` | Number of networks and inclusive minimum recurrence, respectively. |
-| `-pc` | Explicit legacy normal-approximation consensus filter; mutually exclusive with `-k`. |
-| `--jobs`, `--serial` | Sprocket task budget; serial means one task slot. CWL also accepts `--serial`, but not `--jobs`. |
-| `--sprocket-config` | Explicit trusted engine configuration; overrides generated local scheduling configuration. |
-| `-tmp` | Optional parent for a fresh engine working directory; existing unrelated files are not removed. |
+| `-pb VALUE` | Override the per-resample MI null-tail probability, not a biological false-discovery rate. |
+| `-n COUNT`, `-k COUNT` | Number of resampled networks and minimum edge recurrence; `1 <= k <= n`. |
+| `--subsample-fraction 0.8` or `--subsample-size 80` | Select a fraction or exact number of observations without replacement; use only one. |
+| `--fixed-dpi` or `--tolerance 0.1` | Use strict DPI (epsilon=0), or fixed positive epsilon. Larger epsilon relaxes pruning. |
+| `--dpi-href`, `--dpi-slope`, `--dpi-max` | Adjust the dynamic tolerance schedule; incompatible with fixed DPI. |
+| `--jobs 8`, `--memory "32 GiB"` | Change the local Sprocket task and memory budgets; `--serial` uses one task slot. |
+| `-tmp PATH` | Choose a scratch parent; only a fresh child is used, without deleting existing contents. |
 
-Run `sjaracne local --help` for resource options and the full interface.
-Scheduler backends require explicit Sprocket configuration. LSF, Slurm and cloud
-execution are not established by local parity tests; the retired `lsf` command
-does not submit jobs or silently fall back to local execution.
+Run `sjaracne local --help` for the full interface. The
+[WDL guide](SJARACNe/wdl/README.md) explains the dynamic formula, standalone WDL
+inputs, task memory requests and explicit `--sprocket-config` settings. Local
+validation does not establish support for production LSF, Slurm or cloud runs.
 
-## Scientific details and limitations
+### Backward compatibility
 
-PCHIP interpolates the bundled empirical null surface at selected sample count
-`m` and probability `pb`. It requires Npar=40, `m=50..10000` and computable
-`pb=1e-7..0.05`, except the native preserve-all request `p=1`. Unsupported inputs
-fail rather than falling back to affine. Requests below 0.0005 warn that they
-are outside the main assessment range; extreme tails have limited Monte Carlo
-precision. No biological FDR guarantee is claimed. See the null-model
-[process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m)
-and [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md).
-
-Dynamic DPI sets one scalar per reconstruction:
-
-```text
-epsilon(H) = min(0.30, 0.05 * max(0, log2(H / 479)))
-```
-
-H counts unique reconstructed source rows before DPI, including empty rows;
-it is not the annotation-list length or emitted-edge count. Larger epsilon
-relaxes pruning. At H<=479 it is zero. Dynamic DPI is an engineering choice
-motivated by hub-context sensitivity, not proof of more accurate edges.
-DREAM5 did not establish a dynamic-specific accuracy advantage. See the
-[benchmark summaries](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/docs/benchmark_summaries/README.md).
-Benchmark reports are in a separate private repository and require access;
-SJARACNe has no runtime dependency on that repository.
-
-The direct native executable retains its existing low-level defaults and
-special modes. The public workflow passes its current profile explicitly.
-See the compatibility guide before interpreting a bare native invocation as
-equivalent to a full workflow run.
-
-## Regression and validation
+Use the explicit legacy profile for the pre-sampling scientific settings,
+still running through Sprocket by default:
 
 ```bash
+sjaracne local --profile legacy \
+  -e tests/inputs/BRCA100.exp -g tests/inputs/BRCA100_TF.txt \
+  -o results/brca100_tf_legacy
+```
+
+Local CWL is optional: install `python -m pip install -e '.[cwl]'` and Node.js,
+then add `--engine cwl` to a workflow command. Engine choice and scientific
+profile are independent; choosing CWL alone does not restore legacy settings.
+CWLEXEC and the old `lsf` command have been removed.
+
+See [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) for the profile
+comparison, historical overrides and native API behavior.
+
+## Outputs
+
+Final files are published directly in the chosen output directory:
+
+| File | Contents |
+| --- | --- |
+| `consensus_network_ncol_.txt` | Source/target IDs and symbols, MI, Pearson and Spearman correlations, regression slope and regression p-value. |
+| `consensus_network_3col_.txt` | Source ID, target ID and consensus MI. |
+| `bootstrap_info_.txt` | Number of networks and edge-selection metadata; historical filename retained for compatibility. |
+| `parameter_info_.txt` | Native reconstruction and consensus parameters. |
+| `sjaracne_run.json` | Resolved options, runtime fingerprints, engine output location and run state. |
+
+Per-resample adjacency files, task logs and provenance are retained in the
+engine directory recorded in `sjaracne_run.json`. Correlations and regressions
+use the full input matrix. The output regression p-value is **not** an MI or
+consensus-edge probability.
+
+## Scientific scope
+
+Inferred edges are candidate associations, not verified direct or causal
+regulation. The provisional TF/SIG probabilities are operating choices, not
+universal optima or biological false-discovery-rate guarantees.
+
+PCHIP converts sample count and probability to an MI cutoff using a bundled
+empirical null surface. It requires Npar=40, `m=50..10000` and probabilities
+`1e-7..0.05` (with `pb=1` reserved for preserving all MI candidates). Unsupported
+inputs fail rather than silently falling back. Probabilities below `0.0005`
+warn that they are outside the main assessment range; extreme-tail assessment
+has limited Monte Carlo precision.
+
+Dynamic DPI relaxes pruning as the reconstructed hub count increases above its
+reference. It addresses hub-context sensitivity as an engineering choice;
+DREAM5 tests did not establish a dynamic-specific accuracy advantage. See the
+linked benchmark reports for the evidence and its limitations.
+
+## Documentation
+
+| Resource | What it covers |
+| --- | --- |
+| [Workflow guide](SJARACNe/wdl/README.md) | WDL inputs, dynamic DPI formula, resources, outputs and provenance. |
+| [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) | Legacy profile, local CWL and low-level native behavior. |
+| [Regression guide](tests/README.md) | Test prerequisites, execution and retained evidence. |
+| [Current validation report](docs/default_profiles_validation.md) | Default-profile and engine-parity checks, with validation limits. |
+| [Benchmark index](https://github.com/adamdingliang/sjaracne_benchmark) | DREAM5, THP-1, BRCA100, LUAD and calibration analyses. |
+| [Null calibration process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m) / [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md) | PCHIP calibration design and measured accuracy. |
+| [DPI benchmark summaries](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/docs/benchmark_summaries/README.md) | Fixed and dynamic tolerance comparisons. |
+
+The benchmark repository is private and requires access; it is **not a runtime
+dependency** of SJARACNe. Related software: [scMINER](https://jyyulab.github.io/scMINER/).
+
+## Development and testing
+
+Install the optional CWL dependencies, Node.js and Bats in addition to the
+normal prerequisites, then run the small regression suite:
+
+```bash
+python -m pip install -e '.[cwl]'
 python tests/run_regression.py --jobs 4
 ```
 
-The complete small regression requires the compiler, Sprocket, optional CWL
-dependencies, Node.js and Bats. It tests native correctness, real default CLI
-execution, CWL compatibility and paired WDL/CWL scientific parity. It does not
-launch BRCA100, LUAD or DREAM5 benchmark batches. GitHub Actions installs a
-checksum-pinned Sprocket and runs this suite for PRs into and pushes to
-`develop` and `master` when this workflow is present on the branch.
+It tests native correctness, real CLI execution and WDL/CWL scientific parity,
+without launching full dataset benchmark batches. GitHub Actions runs the
+suite for PRs into and pushes to `develop` and `master` when the workflow is
+present on the branch. The badge above reports **develop's** push status, not
+this feature branch's validation.
 
-See [tests/README.md](tests/README.md), the
-[current-default validation report](docs/default_profiles_validation.md), and
-the [WDL guide](SJARACNe/wdl/README.md). Local validation does not establish
-production-scale resource behavior, remote scheduling, caching or recovery.
+## Support and contributions
 
-## Reference
+Report bugs or suggest improvements through
+[Issues](https://github.com/adamdingliang/SJARACNe/issues); proposed changes can
+be submitted as [pull requests](https://github.com/adamdingliang/SJARACNe/pulls)
+against `develop`. Include the revision, command, engine version, input
+dimensions and relevant logs. Remove sensitive data before sharing reports.
 
-Alireza Khatamian, Evan O. Paull, Andrea Califano* & Jiyang Yu*.
-SJARACNe: a scalable software tool for gene network reverse engineering from
-big data. Bioinformatics (2018). *Corresponding authors.
+## Citation
+
+Khatamian A, Paull EO, Califano A, Yu J.
+[SJARACNe: a scalable software tool for gene network reverse engineering from big data](https://doi.org/10.1093/bioinformatics/bty907).
+*Bioinformatics*, 35(12):2165–2166 (2019; published online 2018).
+
+## License
+
+See [LICENSE.md](LICENSE.md) for the software's license terms.
