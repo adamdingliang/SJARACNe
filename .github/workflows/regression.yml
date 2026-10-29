@@ -58,12 +58,11 @@ jobs:
       - name: Install system prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends g++ make nodejs bats
+          sudo apt-get install --yes --no-install-recommends build-essential nodejs bats
 
       - name: Install locked regression environment and this checkout
         run: |
           mkdir -p "$BOOTSTRAP_OUTPUT"
-          make -C SJARACNe
           uv sync --locked --python '${{ matrix.python-version }}' --group regression --extra cwl
           uv export --locked --group regression --extra cwl --no-emit-project --no-hashes --output-file "$BOOTSTRAP_OUTPUT/locked-requirements.txt"
           uv run --locked --no-sync python -m pip check

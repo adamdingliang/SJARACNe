@@ -51,8 +51,10 @@ class TestCIWorkflow(unittest.TestCase):
         install = next(step for step in job['steps']
                        if step.get('name') == 'Install locked regression environment and this checkout')
         self.assertIn("uv sync --locked --python '${{ matrix.python-version }}' --group regression --extra cwl", install['run'])
-        self.assertIn('make -C SJARACNe', install['run'])
-        self.assertLess(install['run'].index('make -C SJARACNe'), install['run'].index('uv sync'))
+        self.assertNotIn('make -C SJARACNe', install['run'])
+        system = next(step for step in job['steps']
+                      if step.get('name') == 'Install system prerequisites')
+        self.assertIn('build-essential', system['run'])
         baseline = '\n'.join(self.project['tool']['uv']['constraint-dependencies'])
         for pin in ('numpy==1.26.4', 'pandas==2.2.3', 'scipy==1.13.1',
                     'cwltool==3.1.20240508115724', 'numpy==2.4.6',

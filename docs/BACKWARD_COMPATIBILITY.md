@@ -39,7 +39,8 @@ This restores the complete legacy scientific profile while using Sprocket to
 orchestrate it. To use the retained CWL path instead:
 
 ```bash
-python -m pip install -e '.[cwl]'
+uv sync --locked --extra cwl
+source .venv/bin/activate
 sjaracne local --engine cwl --profile legacy \
   -e tests/inputs/BRCA100.exp -g tests/inputs/BRCA100_TF.txt \
   -o legacy_cwl_brca100_tf -tmp /absolute/path/cwl-scratch

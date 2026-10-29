@@ -122,6 +122,33 @@ class TestUvProject(unittest.TestCase):
         self.assertTrue(package_was_built('DEBUG Built `SJARACNe @ file:///tmp/source`\n'))
         self.assertFalse(package_was_built('Building setuptools\nInstalled 1 package\n'))
 
+    def test_runtime_probe_checks_both_native_programs_and_editable_import_location(self):
+        tree = ast.parse(RUNTIME_PROBE)
+        binary_loops = [node for node in ast.walk(tree) if isinstance(node, ast.For)
+                        and isinstance(node.iter, ast.Tuple)]
+        self.assertTrue(any([item.value for item in node.iter.elts]
+                            == ['sjaracne.exe', 'apmi_null_generator.exe']
+                            for node in binary_loops))
+        self.assertIn("if sys.argv[2] == 'installed':", RUNTIME_PROBE)
+        self.assertIn('assert package == Path(sys.argv[2]).resolve()', RUNTIME_PROBE)
+
+    def test_uv_install_probe_covers_clean_default_editable_and_source_refresh(self):
+        source = (ROOT / 'tests/check_uv_install.py').read_text(encoding='utf-8')
+        tree = ast.parse(source)
+        sync_calls = {node.args[0].value: node for node in ast.walk(tree)
+                      if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                      and node.func.id == 'sync' and node.args
+                      and isinstance(node.args[0], ast.Constant)}
+        for name in ('editable-initial-locked-sync', 'editable-unchanged-locked-sync',
+                     'editable-offline-header-rebuild', 'editable-offline-source-rebuild'):
+            call = sync_calls[name]
+            values = {keyword.arg: keyword.value for keyword in call.keywords}
+            self.assertIs(values['editable'].value, True)
+        self.assertIn('fresh_source(editable_source)', source)
+        self.assertIn("changed_objects != {'SJARACNe/build/util.o'}", source)
+        self.assertIn("(('make', 'g++'), ('g++', 'make'))", source)
+        self.assertIn("'sudo apt install build-essential' not in failure_log", source)
+
 
 if __name__ == '__main__':
     unittest.main()

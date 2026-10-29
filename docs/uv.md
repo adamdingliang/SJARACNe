@@ -8,6 +8,20 @@ installation, offline/cache and workflow checks.
 
 ## Install and prepare
 
+Use a Linux terminal, or **Ubuntu in WSL** on Windows. Git Bash and
+MSYS2/UCRT64 are not substitutes for WSL. A source installation needs Make and
+a C++ compiler, even though the Python installer invokes them automatically.
+For Ubuntu or Ubuntu in WSL, install those prerequisites once:
+
+```bash
+sudo apt update
+sudo apt install --yes build-essential git curl
+```
+
+Other Linux distributions should use their package manager for the equivalent
+compiler and Make packages. The installer does not run `sudo` or install
+system packages automatically.
+
 Install the pinned uv version using the
 [official installation instructions](https://docs.astral.sh/uv/getting-started/installation/#installing-a-specific-version).
 For the standalone installer on Linux/WSL:
@@ -20,10 +34,15 @@ Open a new shell if needed so uv is on `PATH`, then run from the checkout:
 
 ```bash
 uv --version
-make -C SJARACNe
 uv sync --locked
 uv run --locked --no-sync sjaracne local --help
 ```
+
+`uv sync --locked` automatically builds the native programs when installing
+this source checkout, including its default editable installation. There is
+no separate Make step for normal installation. Missing Make or compiler tools
+stop installation with an actionable error rather than leaving a Python-only
+package. See the [native installation validation](native_build_installation.md).
 
 The normal project environment is `.venv`. Activate it with
 `source .venv/bin/activate` to use `sjaracne` directly. Without activation,
@@ -103,13 +122,15 @@ identical numerical output across operating systems, CPUs or compiler builds.
 
 ## Native builds and cache invalidation
 
-`make -C SJARACNe` builds the standalone C++ executables. The setuptools
-backend invokes that Makefile when building a wheel from source, before
-packaging the executables. uv manages Python environments and build invocation;
-it does not replace Make or install system compilers.
+The setuptools backend invokes the native Makefile for both editable source
+installations and ordinary wheels built from source. Normal `uv sync --locked`
+and pip source installation therefore do not need a separate `make` command.
+uv manages Python environments and build invocation; it does not replace Make
+or install system compilers.
 
-Use the explicit Make command during development. Editable installation and
-cached synchronization are not promises that every invocation recompiles C++.
+For advanced C++ development, `make -C SJARACNe` remains available as an
+explicit native rebuild command. An unchanged cached synchronization is not a
+promise that every invocation recompiles C++.
 The uv cache keys explicitly include native sources, headers, the Makefile,
 build metadata and runtime assets. Changes to those inputs invalidate the
 cached package build. A compiler/toolchain change should trigger an explicit
@@ -174,10 +195,12 @@ still uses the standard setuptools backend:
 python3.14 -m venv .venv-pip
 source .venv-pip/bin/activate
 python -m pip install -r tests/requirements-build.txt
-make -C SJARACNe
 python -m pip install --no-build-isolation -c tests/requirements-ci-py314.txt -e .
 sjaracne local --help
 ```
+
+The pip installation also builds the native executables automatically. It
+requires the same compiler/Make prerequisites as the uv installation.
 
 For Python 3.11, select that interpreter and use `tests/requirements-ci.txt`
 instead. These retained requirements files are **historical top-level

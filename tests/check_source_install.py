@@ -6,7 +6,8 @@ discovery. Prepare the locked regression group (or pip build requirements)
 first. Build and installation
 logs, archives and fingerprints are retained; temporary source and virtual
 environment copies are removed automatically. No source checkout is installed
-into the fresh environment and no dataset benchmark jobs are launched.
+into the fresh wheel environment. A separate clean editable install uses a
+disposable source copy. No dataset benchmark jobs are launched.
 """
 
 import argparse
@@ -58,7 +59,10 @@ import SJARACNe
 
 package = Path(SJARACNe.__file__).resolve().parent
 prefix = Path(sys.prefix).resolve()
-assert os.path.commonpath((str(package), str(prefix))) == str(prefix), str(package)
+if len(sys.argv) > 3:
+    assert package == Path(sys.argv[3]).resolve(), str(package)
+else:
+    assert os.path.commonpath((str(package), str(prefix))) == str(prefix), str(package)
 assets = json.loads(sys.argv[2])
 hashes = {}
 for name in assets:
@@ -67,6 +71,7 @@ for name in assets:
     hashes[name] = hashlib.sha256(path.read_bytes()).hexdigest()
 native = package / 'bin/sjaracne.exe'
 assert os.access(native, os.X_OK), str(native)
+assert os.access(package / 'bin/apmi_null_generator.exe', os.X_OK)
 native_help = subprocess.run([str(native), '--help'],
                              capture_output=True, text=True)
 assert native_help.returncode in (0, 1), native_help.stderr
@@ -225,12 +230,30 @@ def main():
             run('installed-runtime', [python, '-c', PROBE,
                                       output / 'installed-runtime.json',
                                       json.dumps(PACKAGE_ASSETS)], scratch)
+            # Metadata preparation must not compile this clean source copy.
+            # Ordinary pip editable installation must build its native programs
+            # automatically, without uv or a preceding manual Make command.
+            if any((source / 'SJARACNe/bin').glob('*.exe')):
+                raise RuntimeError('Source metadata unexpectedly built native executables')
+            editable = scratch / 'editable-env'
+            venv.EnvBuilder(with_pip=True).create(editable)
+            editable_python = editable / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+            run('editable-build-tools', [editable_python, '-m', 'pip', 'install', '-r',
+                                         build_requirements], scratch)
+            run('fresh-editable-install', [editable_python, '-m', 'pip', 'install',
+                                          '--constraint', requirements,
+                                          '--no-build-isolation', '--editable',
+                                          str(source) + '[cwl]'], scratch)
+            run('editable-pip-check', [editable_python, '-m', 'pip', 'check'], scratch)
+            run('editable-runtime', [editable_python, '-c', PROBE,
+                                     output / 'editable-runtime.json',
+                                     json.dumps(PACKAGE_ASSETS), source / 'SJARACNe'], scratch)
             record.update(source_archive={'name': str(archive.relative_to(output)),
                                           'sha256': sha256(archive)},
                           wheel={'name': str(wheel.relative_to(output)),
                                  'sha256': sha256(wheel), 'tags': tags})
         record['complete'] = True
-        print('Clean source archive, native wheel and fresh installation passed.', flush=True)
+        print('Clean source archive, native wheel and fresh wheel/editable installs passed.', flush=True)
         return 0
     except Exception as error:
         record['error'] = str(error)

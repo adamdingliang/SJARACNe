@@ -12,7 +12,6 @@ in the active environment so Python-module CWL commands cannot silently import
 another revision:
 
 ```bash
-make -C SJARACNe
 # Use --python 3.11 for the compatibility lane.
 uv sync --locked --python 3.14 --group regression --extra cwl
 uv run --locked --no-sync python tests/run_regression.py --jobs 4
@@ -73,8 +72,8 @@ It performs the following checks:
 | Consensus and enrichment | Recurrence boundaries, directed duplicate handling, legacy probability behavior, missing/empty inputs, output schemas, symbols and finite/bounded enhanced statistics. |
 | Utilities | Byte-exact line endings; checked CWL array types/order, empty arrays, output file contents and copies. Bats fixtures/results live in per-test temporary directories, not the checkout. |
 | Standalone WDL task plumbing | Parameters/defaults/conflicts, literal argv, safe line-ending copies, runtime/input/settings hashes, seed provenance and exact consensus staging. These ordinary tests require no WDL engine. |
-| Packaging and Python compatibility | Build-backend/package-data contracts and strict cross-version output-comparator tests. CI separately builds a source archive, compiles and installs its platform wheel in a fresh environment, and checks installed assets and native execution. |
-| uv installation and native freshness | CI uses a disposable source copy and dedicated cache: locked non-editable installation, a new environment installed offline after cache preparation, header-only native rebuilds, and changed configuration assets. It verifies the installed runtime rather than only checking cache-key declarations. |
+| Packaging and Python compatibility | Build-backend/package-data contracts and strict cross-version output-comparator tests. CI separately builds a source archive, compiles/installs its platform wheel, and checks a fresh pip editable install. Neither needs a manual Make step. Metadata discovery must not compile; failed builds must fail installation. |
+| uv installation and native freshness | CI uses disposable source copies and a dedicated cache: clean default editable and non-editable installations, offline cache reuse, header/source rebuilds, and changed configuration assets. Missing Make/compiler installs must fail with actionable guidance; the installed runtime is probed rather than relying only on cache-key declarations. |
 
 The small T-cell `cnn_5.txt` golden network and the active legacy consensus
 answerkeys are intentionally retained as compatibility fixtures. The BRCA100
@@ -155,10 +154,12 @@ silently update dependencies. It does not share mutable runtime environments or
 depend on a restored dependency cache.
 
 The source-install check separately verifies ordinary pip installation of a
-fresh native platform wheel, using a complete requirements export from the lock
-for runtime and build constraints. A second standalone check verifies uv's
-non-editable installation, offline installation from its prepared cache, and
-native/configuration cache invalidation; it never edits the real checkout.
+fresh native platform wheel and a clean editable source installation, using a
+complete requirements export from the lock for runtime and build constraints.
+A second standalone check verifies uv's default editable and non-editable
+installation, offline installation from its prepared cache, native/configuration
+cache invalidation and clear missing-tool errors. Neither check edits the real
+checkout or requires a manual Make step before installation.
 Sprocket's external binary remains pinned to
 0.32.0 and its release-archive SHA256. The lock/metadata hashes, complete
 requirements export, `pip freeze`, tool versions, test logs, counts and
@@ -182,7 +183,6 @@ with the same locked dependencies, export the regression environment once:
 uv export --locked --group regression --extra cwl --no-emit-project --no-hashes \
   --output-file /tmp/sjaracne-locked-requirements.txt
 python -m pip install -r /tmp/sjaracne-locked-requirements.txt
-make -C SJARACNe
 python -m pip install --no-deps --no-build-isolation -e .
 ```
 

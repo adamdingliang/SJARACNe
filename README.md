@@ -29,9 +29,12 @@ from gene expression data. It builds transcription factor (TF) and signaling
 ### Prerequisites
 
 - Linux, or Linux through WSL on Windows. These are the validated workflow
-  environments; native Windows execution is not covered by these instructions.
+  environments. On Windows, open **Ubuntu in WSL**, not Git Bash or an
+  MSYS2/UCRT64 shell; native Windows execution is not covered here.
 - Python **3.14 recommended**; Python 3.11 remains a tested compatibility
-  option. Also install Git, Make, a C++ compiler and Bash.
+  option. uv can download the selected interpreter if it is missing.
+- Git, Bash, Make and a C++ compiler for installation from source. On Ubuntu,
+  the one-time setup below installs the build tools together.
 - **uv 0.11.16** for the locked installation below; see the
   [environment guide](docs/uv.md) for installation and the ordinary pip alternative.
 - **Sprocket 0.32.0**, installed separately from its
@@ -40,6 +43,20 @@ from gene expression data. It builds transcription factor (TF) and signaling
 
 The default local workflow does not require Docker. It runs trusted task
 commands directly on the host, without container isolation.
+
+### One-time setup on Ubuntu or Ubuntu in WSL
+
+Run these commands **inside Ubuntu**:
+
+```bash
+sudo apt update
+sudo apt install --yes build-essential git curl
+curl -LsSf https://astral.sh/uv/0.11.16/install.sh | sh
+```
+
+Open a new Ubuntu terminal so `uv` is available on `PATH`. Other Linux
+distributions should install Make and a C++ compiler through their own package
+manager. Install Sprocket separately as described above.
 
 ### Install from source
 
@@ -50,7 +67,6 @@ the validated dependency versions; `.python-version` selects Python 3.14:
 git clone --branch feat/wdl13-scientific-parity https://github.com/adamdingliang/SJARACNe.git
 cd SJARACNe
 
-make -C SJARACNe
 uv sync --locked
 source .venv/bin/activate
 
@@ -58,11 +74,11 @@ sprocket --version
 sjaracne local --help
 ```
 
-The explicit `make` command builds or rebuilds the C++ executables. When
-building a wheel (installable package) from source, the setuptools build backend
-calls the same Makefile through a custom build hook before including those
-executables in the package. You do not run setuptools manually; the explicit
-Make step above keeps the native build visible during development.
+`uv sync --locked` installs the Python dependencies and automatically builds
+the native C++ executables. A separate `make` command is not needed for normal
+installation. Missing build tools produce an installation error with setup
+instructions; the installer does not run `sudo` or install system packages for
+you. See the [native installation validation](docs/native_build_installation.md).
 
 For Python 3.11, use `uv sync --locked --python 3.11` instead. Use separate
 environments when working with both versions; do not replace an environment
@@ -267,6 +283,7 @@ linked benchmark reports for the evidence and its limitations.
 | [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) | Legacy profile, local CWL and low-level native behavior. |
 | [Regression guide](tests/README.md) | Test prerequisites, execution and retained evidence. |
 | [Environment and deployment guide](docs/uv.md) | uv lockfile, pip alternative, native builds and offline/HPC/cloud precautions. |
+| [Native installation validation](docs/native_build_installation.md) | Automatic C++ builds during source installation and missing-tool diagnostics. |
 | [Current validation report](docs/default_profiles_validation.md) | Default-profile and engine-parity checks, with validation limits. |
 | [Python compatibility report](docs/python_compatibility.md) | Python 3.11/3.14 dependencies, clean source installations and scientific-output comparisons. |
 | [Benchmark index](https://github.com/adamdingliang/sjaracne_benchmark) | DREAM5, THP-1, BRCA100, LUAD and calibration analyses. |
