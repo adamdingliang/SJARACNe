@@ -1,6 +1,7 @@
 """Default CLI adapter contracts without requiring either external engine."""
 from contextlib import ExitStack
 import importlib
+import io
 import json
 from pathlib import Path
 import subprocess
@@ -133,6 +134,38 @@ class TestWorkflowCli(unittest.TestCase):
         with self.assertRaises(SystemExit):
             self.invoke(tool=missing)
         self.assertFalse(self.output.exists())
+
+    def test_help_advertises_only_local_workflow_routes(self):
+        help_text = CLI.build_parser().format_help()
+        self.assertIn('local', help_text)
+        self.assertIn('run', help_text)
+        self.assertNotRegex(help_text, r'\blsf\b')
+
+    def test_retired_lsf_route_fails_before_dependencies_or_outputs(self):
+        diagnostic = io.StringIO()
+        with mock.patch.object(CLI, 'require_tool') as require_tool, \
+                mock.patch.object(CLI, 'runtime_fingerprint') as runtime, \
+                mock.patch.object(CLI, 'run_shell_command_call') as launch, \
+                mock.patch.object(CLI.sys, 'stderr', diagnostic):
+            with self.assertRaises(SystemExit) as result:
+                CLI.main(['lsf'] + self.base[1:] + ['--profile', 'legacy'])
+        self.assertEqual(result.exception.code, 2)
+        self.assertIn('removed', diagnostic.getvalue().lower())
+        require_tool.assert_not_called()
+        runtime.assert_not_called()
+        launch.assert_not_called()
+        self.assertFalse(self.output.exists())
+
+    def test_retired_scheduler_flags_are_not_local_options(self):
+        for flag in ('-j', '--config-json'):
+            with self.subTest(flag=flag), mock.patch.object(CLI, 'require_tool') as require_tool, \
+                    mock.patch.object(CLI, 'run_shell_command_call') as launch, \
+                    mock.patch.object(CLI.sys, 'stderr', io.StringIO()):
+                with self.assertRaises(SystemExit):
+                    CLI.main(self.base + [flag, 'scheduler.json'])
+                require_tool.assert_not_called()
+                launch.assert_not_called()
+                self.assertFalse(self.output.exists())
 
     def test_cwl_rejects_explicit_job_limit_instead_of_ignoring_it(self):
         with self.assertRaises(SystemExit):

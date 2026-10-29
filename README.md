@@ -32,7 +32,7 @@ annotations (`-l`) to the native program. Network type selects a probability
 default; it does not select, infer or modify the supplied hub list.
 
 Backward-compatible settings and the CWL route are retained. See
-[BACKWARD_COMPATIBILITY.md](BACKWARD_COMPATIBILITY.md) for the explicit
+[BACKWARD_COMPATIBILITY.md](docs/BACKWARD_COMPATIBILITY.md) for the explicit
 pre-sampling `legacy` profile, older develop settings and native API behavior.
 Changing the engine alone does **not** select a historical scientific profile.
 
@@ -67,8 +67,8 @@ CWL dependencies and Node.js:
 python -m pip install -e '.[cwl]'
 ```
 
-The legacy IBM LSF `cwlexec` runner is a separate optional installation, not a
-dependency of the default workflow.
+CWLEXEC is no longer supported or required. Its legacy CLI route, configuration
+templates and launchers have been removed; local CWL compatibility remains.
 
 ## Inputs
 
@@ -158,8 +158,9 @@ sjaracne local --profile legacy \
 | `-tmp` | Optional parent for a fresh engine working directory; existing unrelated files are not removed. |
 
 Run `sjaracne local --help` for resource options and the full interface.
-The legacy LSF invocation and its limitations are in the compatibility guide.
-LSF, Slurm and cloud execution are not established by local parity tests.
+Scheduler backends require explicit Sprocket configuration. LSF, Slurm and cloud
+execution are not established by local parity tests; the retired `lsf` command
+does not submit jobs or silently fall back to local execution.
 
 ## Scientific details and limitations
 

@@ -7,7 +7,7 @@ in the native C++ executable; WDL does not reimplement those calculations.
 
 This branch also makes experimental **PCHIP MI cutoffs and dynamic DPI** the
 current-profile defaults. The retained CWL path and an explicit pre-sampling
-legacy profile are documented in [BACKWARD_COMPATIBILITY.md](../../BACKWARD_COMPATIBILITY.md).
+legacy profile are documented in [BACKWARD_COMPATIBILITY.md](../../docs/BACKWARD_COMPATIBILITY.md).
 
 ## Local use
 
@@ -85,7 +85,7 @@ sjaracne local --engine cwl --profile legacy \
 requested, in which case the conflict is rejected. `-M affine` chooses affine
 conversion without implicitly changing other current-profile settings. Legacy
 defaults, supported overrides and low-level native behavior are detailed in the
-[compatibility guide](../../BACKWARD_COMPATIBILITY.md).
+[compatibility guide](../../docs/BACKWARD_COMPATIBILITY.md).
 
 ## Direct WDL inputs
 

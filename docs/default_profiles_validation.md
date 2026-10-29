@@ -3,7 +3,7 @@
 Validation date: 2026-10-28 (America/New_York). Work is on the existing
 `feat/wdl13-scientific-parity` branch, following Step 1 commit `d824d7a`.
 
-The complete small regression passed: **284 Python tests**, **ten CWL
+The complete small regression passed: **287 Python tests**, **ten CWL
 validations**, **four Bats tests**, and **422 assertions** in the expanded
 engine matrix, with no failed checks or skips.
 
@@ -27,13 +27,20 @@ PCHIP and dynamic DPI remain experimental scientific operating choices.
 
 | Validation | Result |
 | --- | --- |
-| Full ordinary Python/native/CLI suite | 284 tests passed, zero skips/errors/failures |
+| Full ordinary Python/native/CLI suite | 287 tests passed, zero skips/errors/failures |
 | Production CWL documents | Ten validated |
 | CWL utility tests | Four passed |
 | Expanded real CWL/WDL matrix | Seven paired configurations plus CRLF/fail-fast checks; 422 assertions passed |
 | Historical/current native legacy check | Seeds 1 and 17 had identical adjacency bodies on the tiny fixture |
-| Source package | Built successfully; required WDL/profile/configuration/documentation assets and `version.py` verified; CWL dependency remains optional |
+| Source package | Built successfully; moved guide present under `docs/`, old root copy and all CWLEXEC assets absent; required WDL/profile assets retained and CWL dependency remains optional |
 | Hosted GitHub Actions | Workflow updated; no hosted result is claimed by these local checks |
+
+The compatibility guide now lives at [docs/BACKWARD_COMPATIBILITY.md](BACKWARD_COMPATIBILITY.md).
+CWLEXEC integration, its old `lsf` CLI command, scheduler flags, configuration
+templates and launchers have been removed. Tests require these retired commands
+to fail before tool lookup or output creation. Local `cwltool` compatibility
+and the legacy scientific profile remain supported. Eight obsolete tracked
+configuration/launcher files remain recoverable from Git history.
 
 The ordinary regression includes real default CLI runs for TF and SIG, legacy
 WDL/CWL engine equivalence, missing-role rejection and incompatible-option
@@ -84,13 +91,13 @@ No obsolete executable is bundled or required by ordinary regression/CI.
 
 Local artifacts, not committed to the repository:
 
-- Full regression: `D:\GitHub\local_runs\wdl13_defaults_regression_20261028_r3`.
+- Full regression: `D:\GitHub\local_runs\wdl13_no_cwlexec_regression_20261028`.
   Its `manifest.json`, `python_tests.json`, logs and nested `wdl_parity/summary.json`
   record commands, versions, results and tested source/binary hashes.
 - Historical binary comparison:
   `D:\GitHub\local_runs\wdl13_defaults_legacy_native_20261028\summary.json`.
 - Source-package check:
-  `D:\GitHub\local_runs\wdl13_defaults_package_20261028_r2\sjaracne-0.2.1.tar.gz`.
+  `D:\GitHub\local_runs\wdl13_no_cwlexec_package_20261028\sjaracne-0.2.1.tar.gz`.
 
 ```bash
 python tests/run_regression.py --jobs 2 --output-dir /absolute/path/new-evidence
@@ -110,6 +117,6 @@ remain compatible; current safety checks and metadata are not rolled back.
 Production-scale resources, remote LSF/Slurm/cloud execution, containers,
 call caching and failure recovery remain outside this local validation.
 
-See the [compatibility guide](../BACKWARD_COMPATIBILITY.md) and
+See the [compatibility guide](BACKWARD_COMPATIBILITY.md) and
 [WDL guide](../SJARACNe/wdl/README.md). The earlier
 [Step 1 report](wdl13_parity.md) is preserved as historical evidence.

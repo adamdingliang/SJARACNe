@@ -1,4 +1,4 @@
-# Manual CWL and LSF examples — not automated regression tests
+# Manual local CWL examples — not automated regression tests
 
 These retained launchers run commands; they are **not asserting tests** and are
 never launched by `tests/run_regression.py`. They were moved out of `tests/` to
@@ -12,10 +12,8 @@ are compatibility examples, not recommended current PCHIP/K=6 settings. The
 workflow template uses two resamples and explicitly selects legacy p-value
 consensus; it does not test the default K=6 behavior.
 
-The `cwlexec/` examples additionally require a functioning LSF cluster and
-site-specific queue configuration. The separate `../lsf/run_real_data.sh` can
-submit 100 resampling jobs and requires explicit input environment variables.
-**Do not include these launchers in routine CI.** LSF execution was not validated
-by the local regression cleanup. Current parameter examples are in the main
+The obsolete CWLEXEC cluster launchers and their configuration templates have
+been removed. These remaining examples use local `cwltool` only.
+**Do not include these launchers in routine CI.** Current parameter examples are in the main
 [README](../../README.md); small asserting tests are described in
 [tests/README.md](../../tests/README.md).

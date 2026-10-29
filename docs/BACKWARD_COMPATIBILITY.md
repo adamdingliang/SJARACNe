@@ -45,17 +45,17 @@ sjaracne local --engine cwl --profile legacy \
   -o legacy_cwl_brca100_tf -tmp /absolute/path/cwl-scratch
 ```
 
-CWL additionally needs Node.js. The legacy LSF integration still uses CWLEXEC:
+CWL additionally needs Node.js. CWLEXEC and the old `sjaracne lsf` command have
+been removed, including their configuration templates and launchers. They are
+not installed, invoked or retained as an optional execution dependency.
+Old `lsf`, `-j` and `--config-json` invocations now fail instead of submitting
+jobs or silently switching engines.
 
-```bash
-sjaracne lsf --profile legacy \
-  -e /absolute/path/input.exp -g /absolute/path/hubs.txt \
-  -o /absolute/path/output -j /absolute/path/config_cwlexec.json
-```
-
-LSF execution is retained for compatibility, not newly validated on a cluster.
-CWLEXEC must be installed separately. Selecting an engine does not silently
-select the scientific profile: use `--profile legacy` explicitly.
+Use WDL/Sprocket with an explicit `--sprocket-config` for separately configured
+scheduler backends. Cluster execution remains unvalidated here; old CWLEXEC
+JSON files are not Sprocket configurations and are not converted automatically.
+The `legacy` scientific profile remains available with either Sprocket or local
+`cwltool`; it does not depend on the retired scheduler runner.
 
 ## Explicit overrides and saved inputs
 
@@ -142,10 +142,10 @@ produced byte-identical adjacency **bodies**. This is useful evidence that the
 retained replacement/affine/strict-DPI path reproduces that small example; it
 does not establish identical metadata or universal fidelity across datasets,
 compilers and platforms. Artifact provenance is recorded in the
-[current validation report](docs/default_profiles_validation.md).
+[current validation report](default_profiles_validation.md).
 
 The new PCHIP and dynamic-DPI defaults remain experimental scientific operating
 choices. Default status does not establish biological FDR control, direct-edge
 accuracy, universal calibration or an optimal TF/SIG probability for every
-dataset. See the [workflow guide](SJARACNe/wdl/README.md) and
-[current validation report](docs/default_profiles_validation.md).
+dataset. See the [workflow guide](../SJARACNe/wdl/README.md) and
+[current validation report](default_profiles_validation.md).

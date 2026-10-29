@@ -129,9 +129,6 @@ def build_parser():
     commands = parser.add_subparsers(dest="subcommand")
     local = commands.add_parser("local", aliases=["run"], parents=[common], help="WDL/Sprocket local workflow")
     local.add_argument("-s", "--serial", action="store_true", help="One local task at a time")
-    lsf = commands.add_parser("lsf", parents=[common], help="Legacy CWLEXEC route; not cluster-validated")
-    lsf.add_argument("-j", "--config-json", required=True, help="Legacy CWLEXEC configuration")
-    lsf.set_defaults(serial=False)
     return parser
 
 
@@ -326,14 +323,15 @@ def main(argv=None):
     if not arguments:
         parser.print_help()
         return 0
-    if arguments[0] not in ("local", "run", "lsf", "-h", "--help"):
+    if arguments[0] == "lsf":
+        parser.error("The old 'lsf' command was removed. Use WDL/Sprocket with an explicit "
+                     "--sprocket-config; scheduler execution remains unvalidated.")
+    if arguments[0] not in ("local", "run", "-h", "--help"):
         arguments.insert(0, "local")
     args = parser.parse_args(arguments)
     logging.basicConfig(level=logging.INFO)
     try:
-        engine = args.engine or ("cwl" if args.subcommand == "lsf" else "sprocket")
-        if args.subcommand == "lsf" and engine != "cwl":
-            raise ValueError("The lsf compatibility command requires --engine cwl; WDL cluster execution is not validated")
+        engine = args.engine or "sprocket"
         if engine == "cwl" and args.sprocket_config is not None:
             raise ValueError("--sprocket-config is only valid with --engine sprocket")
         if engine == "cwl" and args.jobs is not None:
@@ -358,12 +356,10 @@ def main(argv=None):
             if any(memory_bytes(value) > memory_bytes(args.memory) for value in (
                     args.prepare_memory, args.inference_memory, args.consensus_memory)):
                 raise ValueError("A task memory request exceeds the local memory scheduling budget")
-        tool = require_tool(args.sprocket if engine == "sprocket" else ("cwlexec" if args.subcommand == "lsf" else "cwltool"))
+        tool = require_tool(args.sprocket if engine == "sprocket" else "cwltool")
         version = check_sprocket_version(tool) if engine == "sprocket" else None
         if args.sprocket_config is not None:
             normalized_input(args.sprocket_config, "Sprocket configuration")
-        if args.subcommand == "lsf":
-            normalized_input(args.config_json, "CWLEXEC configuration")
         runtime = runtime_fingerprint(str(config))
         with tempfile.TemporaryDirectory(prefix="sjaracne-preflight-") as temporary:
             validate_inputs(str(expression), str(hubs), str(Path(temporary) / "validation.txt"))
@@ -373,7 +369,7 @@ def main(argv=None):
     ensure_empty_output(output)
     output.mkdir(parents=True, exist_ok=True)
     manifest_path = output / "sjaracne_run.json"
-    record = {"schema": "sjaracne-cli-run-v1", "state": "prepared", "engine": "cwlexec" if args.subcommand == "lsf" else engine,
+    record = {"schema": "sjaracne-cli-run-v1", "state": "prepared", "engine": engine,
               "scientific_options": parameters, "runtime": runtime, "sprocket_version": version,
               "inputs": {"expression": str(expression), "hubs": str(hubs)}, "published_outputs": {}}
     environment = execution_env()
@@ -402,16 +398,12 @@ def main(argv=None):
             record["engine_configuration_sha256"] = sha256(backend_config)
         else:
             job = make_cwl_job(args, parameters, expression, hubs, config)
-            if args.subcommand == "lsf":
-                command = [tool, "-pe", "PATH", "-c", str(Path(args.config_json).resolve()), "--outdir", str(output),
-                           str(PACKAGE / "cwl/sjaracne_workflow.cwl"), str(job_file)]
-            else:
-                scratch = Path(args.tmpdir_prefix).expanduser().absolute() if args.tmpdir_prefix else output / ".cwl_tmp"
-                scratch.mkdir(parents=True, exist_ok=True)
-                command = [tool, "--preserve-environment", "PYTHONPATH", "--tmpdir-prefix", str(scratch) + os.sep, "--outdir", str(output)]
-                if not args.serial:
-                    command += ["--parallel"]
-                command += [str(PACKAGE / "cwl/sjaracne_workflow.cwl"), str(job_file)]
+            scratch = Path(args.tmpdir_prefix).expanduser().absolute() if args.tmpdir_prefix else output / ".cwl_tmp"
+            scratch.mkdir(parents=True, exist_ok=True)
+            command = [tool, "--preserve-environment", "PYTHONPATH", "--tmpdir-prefix", str(scratch) + os.sep, "--outdir", str(output)]
+            if not args.serial:
+                command += ["--parallel"]
+            command += [str(PACKAGE / "cwl/sjaracne_workflow.cwl"), str(job_file)]
         write_json(job_file, job)
         record.update(state="running", argv=command, job_file=str(job_file))
         write_json(manifest_path, record)

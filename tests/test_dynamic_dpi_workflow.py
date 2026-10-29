@@ -26,17 +26,14 @@ def load_wrapper():
 
 
 class TestDynamicDpiWrapper(unittest.TestCase):
-    def run_wrapper(self, *extra, platform='local'):
+    def run_wrapper(self, *extra):
         module = load_wrapper()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             output, scratch = root / 'output', root / 'scratch'
             expression, hubs = write_multihub_dpi_inputs(root)
-            args = ['sjaracne', platform, '--engine', 'cwl', '--network-type', 'TF',
+            args = ['sjaracne', 'local', '--engine', 'cwl', '--network-type', 'TF',
                     '-e', str(expression), '-g', str(hubs), '-o', str(output), '-tmp', str(scratch)]
-            if platform == 'lsf':
-                (root / 'lsf.json').write_text('{}', encoding='ascii')
-                args += ['-j', str(root / 'lsf.json')]
             args += list(extra)
             with mock.patch.object(module, 'run_shell_command_call') as launch, \
                     mock.patch.object(module, 'runtime_fingerprint', return_value={}), \
@@ -62,16 +59,13 @@ class TestDynamicDpiWrapper(unittest.TestCase):
         for key, value in (('dpi_href', 479), ('dpi_slope', 0.05), ('dpi_max', 0.3)):
             self.assertEqual(default.get(key) if default.get(key) is not None else value, value)
 
-    def test_all_parameters_pass_through_for_local_and_lsf(self):
-        for platform in ('local', 'lsf'):
-            with self.subTest(platform=platform):
-                job, command = self.run_wrapper('--dynamic-dpi', '--dpi-href', '2',
-                                                  '--dpi-slope', '0.1', '--dpi-max', '0.25',
-                                                  platform=platform)
-                for key, value in (('dynamic_dpi', True), ('dpi_href', 2), ('dpi_slope', 0.1), ('dpi_max', 0.25)):
-                    self.assertEqual(job[key], value)
-                self.assertIn('cwlexec' if platform == 'lsf' else 'cwltool', command)
-                self.assertIsNone(job.get('tolerance'))
+    def test_all_parameters_pass_through_for_local_cwl(self):
+        job, command = self.run_wrapper('--dynamic-dpi', '--dpi-href', '2',
+                                       '--dpi-slope', '0.1', '--dpi-max', '0.25')
+        for key, value in (('dynamic_dpi', True), ('dpi_href', 2), ('dpi_slope', 0.1), ('dpi_max', 0.25)):
+            self.assertEqual(job[key], value)
+        self.assertIn('cwltool', command)
+        self.assertIsNone(job.get('tolerance'))
 
     def test_zero_cap_is_valid(self):
         job, _ = self.run_wrapper('--dynamic-dpi', '--dpi-max', '0')

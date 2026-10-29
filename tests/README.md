@@ -96,10 +96,10 @@ acceptance snapshots, the disabled enhanced-output test/golden, and obsolete
 Travis configuration were removed. They remain recoverable from Git history;
 active answerkeys were not regenerated to make tests pass.
 
-Non-asserting CWL/LSF launchers and their jobs are retained under
-[`examples/manual_cwl`](../examples/manual_cwl/README.md) and `examples/lsf/`,
-outside automated test discovery. Some launchers can submit large batches;
-they require explicit manual invocation and are not local CI validation of LSF.
+Non-asserting local CWL launchers and their jobs remain under
+[`examples/manual_cwl`](../examples/manual_cwl/README.md), outside automated test
+discovery. Obsolete CWLEXEC/LSF launchers and configuration templates were
+removed; their history remains in Git. No cluster jobs are submitted by tests.
 
 Scientific benchmarks and large run artifacts remain in
 [`sjaracne_benchmark`](https://github.com/adamdingliang/sjaracne_benchmark).
