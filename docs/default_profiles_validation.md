@@ -3,6 +3,10 @@
 Validation date: 2026-10-28 (America/New_York). Work is on the existing
 `feat/wdl13-scientific-parity` branch, following Step 1 commit `d824d7a`.
 
+This report preserves the original default-profile checks. Subsequent packaging,
+Python 3.11/3.14 CI and cross-version validation are recorded in the
+[Python compatibility report](python_compatibility.md).
+
 The complete small regression passed: **287 Python tests**, **ten CWL
 validations**, **four Bats tests**, and **422 assertions** in the expanded
 engine matrix, with no failed checks or skips.

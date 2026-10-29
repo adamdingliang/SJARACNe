@@ -6,18 +6,22 @@ launch BRCA100/DREAM resampling batches or require an LSF cluster.
 
 ## Complete check (Linux or WSL)
 
-Use Python 3.8+ with compatible package dependencies, a C++ compiler/Make,
-Node.js, `cwltool`, Bats and Sprocket 0.32.0. Install this checkout in the active environment so
-Python-module CWL commands cannot silently import another revision:
+Use Python **3.11 or 3.14** with the matching pinned dependency set, a C++
+compiler/Make, Node.js, `cwltool`, Bats and Sprocket 0.32.0. Install this checkout
+in the active environment so Python-module CWL commands cannot silently import
+another revision:
 
 ```bash
-python -m pip install -e '.[cwl]'
+python -m pip install -r tests/requirements-build.txt
+# Python 3.14; use tests/requirements-ci.txt instead for Python 3.11.
+python -m pip install -r tests/requirements-ci-py314.txt
+python -m pip install --no-deps --no-build-isolation -e .
 python tests/run_regression.py --jobs 4
 ```
 
 On Ubuntu, the system prerequisites can be installed with
-`sudo apt-get install build-essential nodejs bats`. Python dependencies come
-from the optional CWL package installation. Install the separately distributed
+`sudo apt-get install build-essential nodejs bats`. The CI manifests include
+the optional CWL dependencies. Install the separately distributed
 Sprocket executable as described in the [WDL guide](../SJARACNe/wdl/README.md).
 The runner itself installs nothing and downloads neither data nor dependencies.
 
@@ -60,6 +64,7 @@ It performs the following checks:
 | Consensus and enrichment | Recurrence boundaries, directed duplicate handling, legacy probability behavior, missing/empty inputs, output schemas, symbols and finite/bounded enhanced statistics. |
 | Utilities | Byte-exact line endings; checked CWL array types/order, empty arrays, output file contents and copies. Bats fixtures/results live in per-test temporary directories, not the checkout. |
 | Standalone WDL task plumbing | Parameters/defaults/conflicts, literal argv, safe line-ending copies, runtime/input/settings hashes, seed provenance and exact consensus staging. These ordinary tests require no WDL engine. |
+| Packaging and Python compatibility | Build-backend/package-data contracts and strict cross-version output-comparator tests. CI separately builds a source archive, compiles and installs its platform wheel in a fresh environment, and checks installed assets and native execution. |
 
 The small T-cell `cnn_5.txt` golden network and the active legacy consensus
 answerkeys are intentionally retained as compatibility fixtures. The BRCA100
@@ -129,12 +134,15 @@ The workflow is introduced on `develop`; `master` gains it and the refreshed
 runner together through the next release merge, not by silently promoting
 scientific changes now. This does not change branch-protection requirements.
 
-The hosted baseline is standard Ubuntu 24.04 / Python 3.11, using the CI-only
-numerical/CWL pins in `requirements-ci.txt`. Runtime dependency minimums are
-unchanged. Sprocket's external binary is pinned to 0.32.0 and its release-archive
+The hosted matrix uses standard Ubuntu 24.04 with **Python 3.11 and 3.14**.
+The 3.11 lane retains the numerical/CWL pins in `requirements-ci.txt`; the 3.14
+lane uses `requirements-ci-py314.txt`. Both use `requirements-build.txt` for
+build tools, and both must pass independently (`fail-fast: false`, no allowed
+failures). These are tested environment pins, not new runtime dependency
+minimums. Sprocket's external binary is pinned to 0.32.0 and its release-archive
 SHA256. Top-level Python pins do not lock every transitive dependency: the resolved
 `pip freeze`, tool versions, test logs, counts and source/binary hashes are saved
-as a seven-day Actions artifact. First-party actions are pinned by commit SHA,
+as a version-specific seven-day Actions artifact. First-party actions are pinned by commit SHA,
 permissions are read-only, and no repository secret is required.
 
 The job is bounded to 20 minutes (15 minutes for regression), cancels superseded
@@ -142,3 +150,26 @@ runs, and does not invoke manual examples or large biological benchmark batches.
 Manual dispatch is also available once the workflow is present on the default
 branch. GitHub's regular PR event tests its merge revision; the run metadata
 records the tested SHA and event.
+
+## Cross-Python scientific output comparison
+
+After installing this checkout in two separate environments, run the additional
+tiny compatibility comparison. Do not run it while a regression rebuilds the
+same native executable:
+
+```bash
+python tests/python_compatibility.py \
+  --baseline-python /absolute/path/py311/bin/python \
+  --candidate-python /absolute/path/py314/bin/python \
+  --sprocket /absolute/path/sprocket \
+  --output-dir /absolute/path/new-python-comparison
+```
+
+It holds expression values, hubs, native executable, seeds and Sprocket fixed.
+Current TF/SIG settings and an explicitly tuned, nonempty legacy-consensus case
+are compared. Native edges/MI and selected consensus identities must agree
+exactly; correlations and regression statistics use a small declared float64
+tolerance. Selection is independently checked rather than treating agreement
+between environments as sufficient evidence. Versions, commands, logs and
+differences are retained. This is separate from a biological benchmark or a
+claim of bitwise identity for arbitrary datasets.

@@ -55,7 +55,8 @@ def build_command(jobs):
 
 
 def source_hashes():
-    paths = [ROOT / "setup.py", ROOT / "requirements.txt", ROOT / "SJARACNe/Makefile"]
+    paths = [ROOT / name for name in ("setup.py", "pyproject.toml", "MANIFEST.in", "requirements.txt")]
+    paths.append(ROOT / "SJARACNe/Makefile")
     for folder in ("SJARACNe/src", "SJARACNe/config", "SJARACNe/cwl", "SJARACNe/wdl", "tests", "tools", ".github/workflows"):
         paths.extend(path for path in (ROOT / folder).rglob("*")
                      if path.is_file() and "__pycache__" not in path.parts

@@ -30,7 +30,8 @@ from gene expression data. It builds transcription factor (TF) and signaling
 
 - Linux, or Linux through WSL on Windows. These are the validated workflow
   environments; native Windows execution is not covered by these instructions.
-- Python **3.11 recommended**, Git, Make, a C++ compiler and Bash.
+- Python **3.14 recommended**; Python 3.11 remains a tested compatibility
+  option. Also install Git, Make, a C++ compiler and Bash.
 - **Sprocket 0.32.0**, installed separately from its
   [official release](https://github.com/stjude-rust-labs/sprocket/releases/tag/v0.32.0)
   and available on `PATH`. The CLI currently requires this exact version.
@@ -40,21 +41,34 @@ commands directly on the host, without container isolation.
 
 ### Install from source
 
-Run the following in a Linux or WSL terminal. Use Python 3.11 for the virtual
-environment to match the GitHub Actions test environment.
+Run the following in a Linux or WSL terminal. These commands use Python 3.14
+and its tested dependency versions:
 
 ```bash
 git clone --branch feat/wdl13-scientific-parity https://github.com/adamdingliang/SJARACNe.git
 cd SJARACNe
 
-python3.11 -m venv .venv
+python3.14 -m venv .venv
 source .venv/bin/activate
+python -m pip install -r tests/requirements-build.txt
 make -C SJARACNe
-python -m pip install -e .
+python -m pip install --no-build-isolation -c tests/requirements-ci-py314.txt -e .
 
 sprocket --version
 sjaracne local --help
 ```
+
+The explicit `make` command builds or rebuilds the C++ executables. When
+building a wheel (installable package) from source, the setuptools build backend
+calls the same Makefile through a custom build hook before including those
+executables in the package. You do not run setuptools manually; the explicit
+Make step above keeps the native build visible during development.
+
+For Python 3.11, use `python3.11` and replace the dependency constraint file
+with `tests/requirements-ci.txt`. The build-tool file is shared by both
+versions. These are tested environments, not a guarantee for every dependency
+version allowed by the package metadata; see the
+[Python compatibility report](docs/python_compatibility.md).
 
 Pip installs NumPy, pandas and SciPy, but **does not install Sprocket**. A missing
 or incompatible engine is an error; there is no automatic download or silent
@@ -195,8 +209,14 @@ sjaracne local --profile legacy \
   -o results/brca100_tf_legacy
 ```
 
-Local CWL is optional: install `python -m pip install -e '.[cwl]'` and Node.js,
-then add `--engine cwl` to a workflow command. Engine choice and scientific
+Local CWL is optional. For the Python 3.14 environment above, install Node.js
+and the extra:
+
+```bash
+python -m pip install --no-build-isolation -c tests/requirements-ci-py314.txt -e '.[cwl]'
+```
+
+Then add `--engine cwl` to a workflow command. Engine choice and scientific
 profile are independent; choosing CWL alone does not restore legacy settings.
 CWLEXEC and the old `lsf` command have been removed.
 
@@ -246,6 +266,7 @@ linked benchmark reports for the evidence and its limitations.
 | [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) | Legacy profile, local CWL and low-level native behavior. |
 | [Regression guide](tests/README.md) | Test prerequisites, execution and retained evidence. |
 | [Current validation report](docs/default_profiles_validation.md) | Default-profile and engine-parity checks, with validation limits. |
+| [Python compatibility report](docs/python_compatibility.md) | Python 3.11/3.14 dependencies, clean source installations and scientific-output comparisons. |
 | [Benchmark index](https://github.com/adamdingliang/sjaracne_benchmark) | DREAM5, THP-1, BRCA100, LUAD and calibration analyses. |
 | [Null calibration process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m) / [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md) | PCHIP calibration design and measured accuracy. |
 | [DPI benchmark summaries](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/docs/benchmark_summaries/README.md) | Fixed and dynamic tolerance comparisons. |
@@ -259,13 +280,15 @@ Install the optional CWL dependencies, Node.js and Bats in addition to the
 normal prerequisites, then run the small regression suite:
 
 ```bash
-python -m pip install -e '.[cwl]'
+python -m pip install -r tests/requirements-ci-py314.txt
 python tests/run_regression.py --jobs 4
 ```
 
+For Python 3.11, use `tests/requirements-ci.txt` instead.
+
 It tests native correctness, real CLI execution and WDL/CWL scientific parity,
 without launching full dataset benchmark batches. GitHub Actions runs the
-suite for PRs into and pushes to `develop` and `master` when the workflow is
+suite on Python 3.11 and 3.14 for PRs into and pushes to `develop` and `master` when the workflow is
 present on the branch. The badge above reports **develop's** push status, not
 this feature branch's validation.
 

@@ -2,10 +2,16 @@ import unittest
 from pathlib import Path
 import tempfile
 
-from run_regression import strict_success, collect_test_ids, build_command, verify_installed_runtime
+from run_regression import (strict_success, collect_test_ids, build_command,
+                            verify_installed_runtime, source_hashes)
 
 
 class TestStrictRunner(unittest.TestCase):
+    def test_packaging_controls_are_part_of_the_frozen_sources(self):
+        hashes = source_hashes()
+        for name in ('setup.py', 'pyproject.toml', 'MANIFEST.in'):
+            self.assertIn(name, hashes)
+
     def test_native_build_is_forced_including_both_targets(self):
         command = build_command(2)
         self.assertEqual(command[0], 'make')

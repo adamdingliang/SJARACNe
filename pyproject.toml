@@ -1,0 +1,6 @@
+[build-system]
+# Pip selects a backend compatible with the active Python. CI separately pins
+# the exact modern toolchain tested on Python 3.11 and 3.14; these lower bounds
+# do not silently raise the existing declared runtime minimum.
+requires = ["setuptools>=67.8", "wheel>=0.42"]
+build-backend = "setuptools.build_meta"

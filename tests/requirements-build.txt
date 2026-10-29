@@ -1,0 +1,5 @@
+# Shared, pinned build frontend/backend baseline for Python 3.11 and 3.14 CI.
+pip==26.2.2
+setuptools==84.2.1
+wheel==0.48.0
+build==1.6.1
