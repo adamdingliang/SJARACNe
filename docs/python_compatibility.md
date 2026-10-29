@@ -1,5 +1,11 @@
 # Python 3.11 and 3.14 compatibility
 
+This report records the **pre-uv** validation at `8a4f9f1`; its measurements and
+requirements-file provenance are retained unchanged. The subsequent
+[uv migration](uv.md) centralizes active dependencies in `pyproject.toml` and
+locks transitive versions. See the [migration validation](uv_validation.md)
+for checks of that later environment-management change.
+
 Validation scope: Linux/WSL, on `feat/wdl13-scientific-parity`, following
 `5188c52`. This is installation and small-workflow validation, not a new
 biological benchmark. Full commands, source hashes and dependency inventories

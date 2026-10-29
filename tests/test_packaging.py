@@ -5,6 +5,7 @@ import importlib.util
 from pathlib import Path
 import subprocess
 import tempfile
+import tomllib
 import unittest
 from unittest import mock
 import zipfile
@@ -69,7 +70,8 @@ class TestPackaging(unittest.TestCase):
         for pattern in ('bin/*', 'config/*.json', 'config/*.txt', 'cwl/*.cwl',
                         'wdl/*.wdl', 'wdl/*.toml'):
             self.assertIn(pattern, patterns)
-        self.assertEqual(settings['python_requires'], '>=3.7.6')
+        project = tomllib.loads((ROOT / 'pyproject.toml').read_text(encoding='utf-8'))
+        self.assertEqual(project['project']['requires-python'], '>=3.7.6')
 
     def test_pep517_backend_and_source_build_inputs_are_declared(self):
         project = (ROOT / 'pyproject.toml').read_text(encoding='utf-8')

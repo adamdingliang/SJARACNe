@@ -32,6 +32,8 @@ from gene expression data. It builds transcription factor (TF) and signaling
   environments; native Windows execution is not covered by these instructions.
 - Python **3.14 recommended**; Python 3.11 remains a tested compatibility
   option. Also install Git, Make, a C++ compiler and Bash.
+- **uv 0.11.16** for the locked installation below; see the
+  [environment guide](docs/uv.md) for installation and the ordinary pip alternative.
 - **Sprocket 0.32.0**, installed separately from its
   [official release](https://github.com/stjude-rust-labs/sprocket/releases/tag/v0.32.0)
   and available on `PATH`. The CLI currently requires this exact version.
@@ -41,18 +43,16 @@ commands directly on the host, without container isolation.
 
 ### Install from source
 
-Run the following in a Linux or WSL terminal. These commands use Python 3.14
-and its tested dependency versions:
+Run the following in a Linux or WSL terminal. The committed `uv.lock` selects
+the validated dependency versions; `.python-version` selects Python 3.14:
 
 ```bash
 git clone --branch feat/wdl13-scientific-parity https://github.com/adamdingliang/SJARACNe.git
 cd SJARACNe
 
-python3.14 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r tests/requirements-build.txt
 make -C SJARACNe
-python -m pip install --no-build-isolation -c tests/requirements-ci-py314.txt -e .
+uv sync --locked
+source .venv/bin/activate
 
 sprocket --version
 sjaracne local --help
@@ -64,13 +64,14 @@ calls the same Makefile through a custom build hook before including those
 executables in the package. You do not run setuptools manually; the explicit
 Make step above keeps the native build visible during development.
 
-For Python 3.11, use `python3.11` and replace the dependency constraint file
-with `tests/requirements-ci.txt`. The build-tool file is shared by both
-versions. These are tested environments, not a guarantee for every dependency
-version allowed by the package metadata; see the
+For Python 3.11, use `uv sync --locked --python 3.11` instead. Use separate
+environments when working with both versions; do not replace an environment
+while jobs use it. Python 3.11 and 3.14 are tested; the lock's 3.11–3.14 range
+does not establish validation of every intermediate version or platform.
+See the [environment guide](docs/uv.md) and
 [Python compatibility report](docs/python_compatibility.md).
 
-Pip installs NumPy, pandas and SciPy, but **does not install Sprocket**. A missing
+uv installs NumPy, pandas and SciPy, but **does not install Sprocket**. A missing
 or incompatible engine is an error; there is no automatic download or silent
 fallback. See the [WDL guide](SJARACNe/wdl/README.md#local-use) for the verified
 Sprocket archive checksum and standalone workflow instructions.
@@ -209,11 +210,11 @@ sjaracne local --profile legacy \
   -o results/brca100_tf_legacy
 ```
 
-Local CWL is optional. For the Python 3.14 environment above, install Node.js
-and the extra:
+Local CWL is optional. Install Node.js and add the extra to the prepared
+environment:
 
 ```bash
-python -m pip install --no-build-isolation -c tests/requirements-ci-py314.txt -e '.[cwl]'
+uv sync --locked --extra cwl
 ```
 
 Then add `--engine cwl` to a workflow command. Engine choice and scientific
@@ -265,6 +266,7 @@ linked benchmark reports for the evidence and its limitations.
 | [Workflow guide](SJARACNe/wdl/README.md) | WDL inputs, dynamic DPI formula, resources, outputs and provenance. |
 | [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) | Legacy profile, local CWL and low-level native behavior. |
 | [Regression guide](tests/README.md) | Test prerequisites, execution and retained evidence. |
+| [Environment and deployment guide](docs/uv.md) | uv lockfile, pip alternative, native builds and offline/HPC/cloud precautions. |
 | [Current validation report](docs/default_profiles_validation.md) | Default-profile and engine-parity checks, with validation limits. |
 | [Python compatibility report](docs/python_compatibility.md) | Python 3.11/3.14 dependencies, clean source installations and scientific-output comparisons. |
 | [Benchmark index](https://github.com/adamdingliang/sjaracne_benchmark) | DREAM5, THP-1, BRCA100, LUAD and calibration analyses. |
@@ -280,11 +282,13 @@ Install the optional CWL dependencies, Node.js and Bats in addition to the
 normal prerequisites, then run the small regression suite:
 
 ```bash
-python -m pip install -r tests/requirements-ci-py314.txt
-python tests/run_regression.py --jobs 4
+uv sync --locked --group regression --extra cwl
+uv run --locked --no-sync python tests/run_regression.py --jobs 4
 ```
 
-For Python 3.11, use `tests/requirements-ci.txt` instead.
+Add `--python 3.11` to the sync command for the compatibility lane. The
+`regression` group adds the pinned build/test tools; the `cwl` extra adds CWL
+support. Sprocket, Node.js, Bats and the compiler remain system prerequisites.
 
 It tests native correctness, real CLI execution and WDL/CWL scientific parity,
 without launching full dataset benchmark batches. GitHub Actions runs the

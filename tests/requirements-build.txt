@@ -1,4 +1,5 @@
-# Shared, pinned build frontend/backend baseline for Python 3.11 and 3.14 CI.
+# Historical pre-uv validation snapshot / ordinary pip fallback.
+# Active tooling pins are the build dependency group in pyproject.toml/uv.lock.
 pip==26.2.2
 setuptools==84.2.1
 wheel==0.48.0

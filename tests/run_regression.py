@@ -49,13 +49,15 @@ def strict_success(result, discovered):
 
 
 def build_command(jobs):
-    # The native Makefile does not track every header dependency. Never let a
-    # header-only edit pass against yesterday's incremental binary.
+    # Force a clean compilation decision independently of Make's dependency
+    # tracking and uv's cached package rebuild decisions.
     return ["make", "-B", "-C", ROOT / "SJARACNe", "-j", jobs, "all"]
 
 
 def source_hashes():
-    paths = [ROOT / name for name in ("setup.py", "pyproject.toml", "MANIFEST.in", "requirements.txt")]
+    paths = [ROOT / name for name in ("setup.py", "pyproject.toml", "uv.lock",
+                                     ".python-version", "version.py", "MANIFEST.in",
+                                     "requirements.txt")]
     paths.append(ROOT / "SJARACNe/Makefile")
     for folder in ("SJARACNe/src", "SJARACNe/config", "SJARACNe/cwl", "SJARACNe/wdl", "tests", "tools", ".github/workflows"):
         paths.extend(path for path in (ROOT / folder).rglob("*")

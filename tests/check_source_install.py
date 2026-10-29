@@ -2,7 +2,8 @@
 """Build a clean source archive and verify its wheel in an isolated environment.
 
 This is an explicit packaging/network-install check, not part of unit-test
-discovery. Install tests/requirements-build.txt first. Build and installation
+discovery. Prepare the locked regression group (or pip build requirements)
+first. Build and installation
 logs, archives and fingerprints are retained; temporary source and virtual
 environment copies are removed automatically. No source checkout is installed
 into the fresh environment and no dataset benchmark jobs are launched.
@@ -36,7 +37,7 @@ PACKAGE_ASSETS = (
     'SJARACNe/wdl/sjaracne.wdl', 'SJARACNe/wdl/sprocket.local.toml',
 )
 SOURCE_ASSETS = (
-    'setup.py', 'pyproject.toml', 'MANIFEST.in', 'version.py',
+    'setup.py', 'pyproject.toml', 'uv.lock', '.python-version', 'MANIFEST.in', 'version.py',
     'SJARACNe/Makefile', 'SJARACNe/src/main.cpp', 'SJARACNe/src/apmi.cpp',
     'SJARACNe/src/apmi_pchip_data.h', 'tools/apmi_null_generator.cpp',
     'docs/BACKWARD_COMPATIBILITY.md',
@@ -140,12 +141,18 @@ def main():
     parser.add_argument('--output-dir', required=True, type=Path)
     parser.add_argument('--requirements', type=Path,
                         default=ROOT / 'tests/requirements-ci.txt',
-                        help='Runtime constraints for the active Python CI lane')
+                        help='Runtime constraints, preferably exported from uv.lock')
+    parser.add_argument('--build-requirements', type=Path,
+                        default=ROOT / 'tests/requirements-build.txt',
+                        help='Build-tool requirements; may use the same locked export')
     arguments = parser.parse_args()
     output = arguments.output_dir.expanduser().resolve()
     requirements = arguments.requirements.expanduser().resolve()
+    build_requirements = arguments.build_requirements.expanduser().resolve()
     if not requirements.is_file():
         parser.error('Runtime requirements file does not exist: ' + str(requirements))
+    if not build_requirements.is_file():
+        parser.error('Build requirements file does not exist: ' + str(build_requirements))
     if output.exists() and (not output.is_dir() or any(output.iterdir())):
         parser.error('Output must be a new or empty directory: ' + str(output))
     output.mkdir(parents=True, exist_ok=True)
@@ -153,7 +160,9 @@ def main():
         'schema': 'sjaracne-source-install-v1', 'complete': False,
         'started_at_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
         'python': sys.version, 'requirements': str(requirements),
-        'requirements_sha256': sha256(requirements), 'steps': [],
+        'requirements_sha256': sha256(requirements),
+        'build_requirements': str(build_requirements),
+        'build_requirements_sha256': sha256(build_requirements), 'steps': [],
     }
     manifest = output / 'manifest.json'
     write_json(manifest, record)
@@ -207,7 +216,7 @@ def main():
             venv.EnvBuilder(with_pip=True).create(fresh)
             python = fresh / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
             run('fresh-build-tools', [python, '-m', 'pip', 'install', '-r',
-                                      ROOT / 'tests/requirements-build.txt'], scratch)
+                                      build_requirements], scratch)
             run('fresh-wheel-install', [python, '-m', 'pip', 'install', '--no-cache-dir',
                                         '--constraint', requirements,
                                         str(wheel) + '[cwl]'], scratch)

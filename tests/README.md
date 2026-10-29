@@ -6,31 +6,39 @@ launch BRCA100/DREAM resampling batches or require an LSF cluster.
 
 ## Complete check (Linux or WSL)
 
-Use Python **3.11 or 3.14** with the matching pinned dependency set, a C++
+Use Python **3.11 or 3.14**, uv **0.11.16**, a C++
 compiler/Make, Node.js, `cwltool`, Bats and Sprocket 0.32.0. Install this checkout
 in the active environment so Python-module CWL commands cannot silently import
 another revision:
 
 ```bash
-python -m pip install -r tests/requirements-build.txt
-# Python 3.14; use tests/requirements-ci.txt instead for Python 3.11.
-python -m pip install -r tests/requirements-ci-py314.txt
-python -m pip install --no-deps --no-build-isolation -e .
-python tests/run_regression.py --jobs 4
+make -C SJARACNe
+# Use --python 3.11 for the compatibility lane.
+uv sync --locked --python 3.14 --group regression --extra cwl
+uv run --locked --no-sync python tests/run_regression.py --jobs 4
 ```
 
 On Ubuntu, the system prerequisites can be installed with
-`sudo apt-get install build-essential nodejs bats`. The CI manifests include
-the optional CWL dependencies. Install the separately distributed
+`sudo apt-get install build-essential nodejs bats`. The `regression` group
+includes the build/test tools; `--extra cwl` includes optional CWL support.
+`pyproject.toml` declares the version-specific validated baselines and `uv.lock`
+also fixes their transitive dependencies. The lock is not upgraded by these
+commands. Install the separately distributed
 Sprocket executable as described in the [WDL guide](../SJARACNe/wdl/README.md).
 The runner itself installs nothing and downloads neither data nor dependencies.
+
+Prepare the environment before submitting cluster jobs, rather than running
+`uv sync` in each task. `UV_PROJECT_ENVIRONMENT` and `UV_CACHE_DIR` can place
+the environment and cache on suitable scratch storage. Do not modify a prepared
+environment while it is being used by other jobs. The uv-managed workflow does
+not itself validate LSF, Slurm or cloud execution.
 
 The command can be invoked from another working directory using its absolute
 path. It creates a fresh evidence directory under the system temporary
 directory and prints the location. To choose a **new** directory explicitly:
 
 ```bash
-python tests/run_regression.py --jobs 4 --output-dir /tmp/sjaracne-regression-check
+uv run --locked --no-sync python tests/run_regression.py --jobs 4 --output-dir /tmp/sjaracne-regression-check
 ```
 
 It performs the following checks:
@@ -39,7 +47,8 @@ It performs the following checks:
    runtime whose bytes differ from this checkout. CWL jobs normally do not
    inherit the parent's `PYTHONPATH`; setting it alone is insufficient.
 2. Force-rebuild both `sjaracne.exe` and `apmi_null_generator.exe`. The force
-   rebuild matters because the native Makefile does not track every header.
+   rebuild is an independent freshness safeguard, even though ordinary Make
+   builds now track native headers and Makefile changes.
 3. Run every `test_*.py` test with the freshly built native executables and
    required-native mode. Empty/duplicate discovery, failures, errors, skips and
    expected failures do not count as a complete successful regression.
@@ -65,6 +74,7 @@ It performs the following checks:
 | Utilities | Byte-exact line endings; checked CWL array types/order, empty arrays, output file contents and copies. Bats fixtures/results live in per-test temporary directories, not the checkout. |
 | Standalone WDL task plumbing | Parameters/defaults/conflicts, literal argv, safe line-ending copies, runtime/input/settings hashes, seed provenance and exact consensus staging. These ordinary tests require no WDL engine. |
 | Packaging and Python compatibility | Build-backend/package-data contracts and strict cross-version output-comparator tests. CI separately builds a source archive, compiles and installs its platform wheel in a fresh environment, and checks installed assets and native execution. |
+| uv installation and native freshness | CI uses a disposable source copy and dedicated cache: locked non-editable installation, a new environment installed offline after cache preparation, header-only native rebuilds, and changed configuration assets. It verifies the installed runtime rather than only checking cache-key declarations. |
 
 The small T-cell `cnn_5.txt` golden network and the active legacy consensus
 answerkeys are intentionally retained as compatibility fixtures. The BRCA100
@@ -135,21 +145,82 @@ runner together through the next release merge, not by silently promoting
 scientific changes now. This does not change branch-protection requirements.
 
 The hosted matrix uses standard Ubuntu 24.04 with **Python 3.11 and 3.14**.
-The 3.11 lane retains the numerical/CWL pins in `requirements-ci.txt`; the 3.14
-lane uses `requirements-ci-py314.txt`. Both use `requirements-build.txt` for
-build tools, and both must pass independently (`fail-fast: false`, no allowed
-failures). These are tested environment pins, not new runtime dependency
-minimums. Sprocket's external binary is pinned to 0.32.0 and its release-archive
-SHA256. Top-level Python pins do not lock every transitive dependency: the resolved
-`pip freeze`, tool versions, test logs, counts and source/binary hashes are saved
-as a version-specific seven-day Actions artifact. First-party actions are pinned by commit SHA,
-permissions are read-only, and no repository secret is required.
+Both lanes install uv **0.11.16**, sync the same committed `uv.lock` with
+`--locked --group regression --extra cwl`, and must pass independently
+(`fail-fast: false`, no allowed failures). Python markers retain the previously
+validated numerical/CWL versions for each lane; these are environment pins, not
+new published runtime dependency minimums. CI prepares one environment per lane
+under `RUNNER_TEMP`, then runs tests with `--no-sync` so execution does not
+silently update dependencies. It does not share mutable runtime environments or
+depend on a restored dependency cache.
+
+The source-install check separately verifies ordinary pip installation of a
+fresh native platform wheel, using a complete requirements export from the lock
+for runtime and build constraints. A second standalone check verifies uv's
+non-editable installation, offline installation from its prepared cache, and
+native/configuration cache invalidation; it never edits the real checkout.
+Sprocket's external binary remains pinned to
+0.32.0 and its release-archive SHA256. The lock/metadata hashes, complete
+requirements export, `pip freeze`, tool versions, test logs, counts and
+source/binary hashes are saved as a version-specific seven-day Actions artifact.
+Actions are pinned by commit SHA, permissions are read-only, and no repository
+secret is required. None of this claims hosted or cluster success before the
+corresponding workflow actually runs.
 
 The job is bounded to 20 minutes (15 minutes for regression), cancels superseded
 runs, and does not invoke manual examples or large biological benchmark batches.
 Manual dispatch is also available once the workflow is present on the default
 branch. GitHub's regular PR event tests its merge revision; the run metadata
 records the tested SHA and event.
+
+## Ordinary pip and fresh-source installation
+
+uv is not a runtime requirement of SJARACNe. To prepare a pip-based environment
+with the same locked dependencies, export the regression environment once:
+
+```bash
+uv export --locked --group regression --extra cwl --no-emit-project --no-hashes \
+  --output-file /tmp/sjaracne-locked-requirements.txt
+python -m pip install -r /tmp/sjaracne-locked-requirements.txt
+make -C SJARACNe
+python -m pip install --no-deps --no-build-isolation -e .
+```
+
+Use a separate Python 3.11 or 3.14 virtual environment; do not point pip at an
+unrelated shared environment. The export contains Python-version markers and
+does not contain the checkout itself. It intentionally omits hashes because it
+is also used as pip constraints when installing a locally built wheel; the full
+package hashes remain in `uv.lock`.
+
+The explicit clean-source packaging check, which does perform installation, is:
+
+```bash
+python tests/check_source_install.py \
+  --requirements /tmp/sjaracne-locked-requirements.txt \
+  --build-requirements /tmp/sjaracne-locked-requirements.txt \
+  --output-dir /tmp/sjaracne-new-source-install-check
+```
+
+The old `requirements-ci.txt`, `requirements-ci-py314.txt` and
+`requirements-build.txt` files are retained as historical top-level pin
+snapshots/fallback constraints, not the source of CI resolution. They do not
+freeze every transitive dependency; use the committed lock and its export when
+the exact migrated environment is required.
+
+The uv installation check is also available explicitly. Supply a **new**
+dedicated cache directory and a new evidence directory. The initial cache
+preparation can download dependencies; subsequent installations are offline.
+
+```bash
+python tests/check_uv_install.py \
+  --uv "$(command -v uv)" --python "$(command -v python)" \
+  --cache-dir /tmp/sjaracne-new-uv-install-cache \
+  --output-dir /tmp/sjaracne-new-uv-install-check
+```
+
+This check needs the compiler/Make but not CWL, Sprocket or biological data. It
+tests the current host's prepared-cache deployment path, not arbitrary offline
+clusters, architectures or operating systems.
 
 ## Cross-Python scientific output comparison
 

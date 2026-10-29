@@ -9,7 +9,8 @@ from run_regression import (strict_success, collect_test_ids, build_command,
 class TestStrictRunner(unittest.TestCase):
     def test_packaging_controls_are_part_of_the_frozen_sources(self):
         hashes = source_hashes()
-        for name in ('setup.py', 'pyproject.toml', 'MANIFEST.in'):
+        for name in ('setup.py', 'pyproject.toml', 'uv.lock', '.python-version',
+                     'version.py', 'MANIFEST.in'):
             self.assertIn(name, hashes)
 
     def test_native_build_is_forced_including_both_targets(self):

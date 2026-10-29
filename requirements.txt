@@ -1,5 +1,3 @@
-numpy>=1.20.1
-scipy>=1.7.3
-pandas>=1.2.3
-# The default workflow uses the separately installed Sprocket executable.
-# Install optional CWL support with: python -m pip install '.[cwl]'
+# Compatibility entry point; metadata/dependencies are in pyproject.toml.
+# For the tested, fully locked environment use uv sync --locked instead.
+.
