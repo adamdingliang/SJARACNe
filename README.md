@@ -37,8 +37,8 @@ from gene expression data. It builds transcription factor (TF) and signaling
   the one-time setup below installs the build tools together.
 - **uv 0.11.16** for the locked installation below; see the
   [environment guide](docs/uv.md) for installation and the ordinary pip alternative.
-- **Sprocket 0.32.0**, installed separately from its
-  [official release](https://github.com/stjude-rust-labs/sprocket/releases/tag/v0.32.0)
+- **Sprocket 0.32.0**, installed separately using the
+  [official installation guide](https://sprocket.bio/getting-started/installation)
   and available on `PATH`. The CLI currently requires this exact version.
 
 The default local workflow does not require Docker. It runs trusted task

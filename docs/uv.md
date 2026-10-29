@@ -72,8 +72,9 @@ already-prepared environment, not initial installation or dependency updates.
 
 ## Prepare Sprocket for workflows
 
-Install **Sprocket 0.32.0 separately** using the
-[official release](https://github.com/stjude-rust-labs/sprocket/releases/tag/v0.32.0).
+Install **Sprocket 0.32.0 separately** following the
+[official installation guide](https://sprocket.bio/getting-started/installation).
+Select version `0.32.0`, rather than an unpinned latest version.
 A prebuilt binary avoids compiling its Rust dependencies. Choose the correct
 platform and verify the checksum; the
 [WDL guide](../SJARACNe/wdl/README.md#local-use) records the Linux x86_64 checksum.

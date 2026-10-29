@@ -12,9 +12,11 @@ legacy profile are documented in [BACKWARD_COMPATIBILITY.md](../../docs/BACKWARD
 ## Local use
 
 Use Linux or WSL. Build and install this source checkout in the Python environment
-that will execute its tasks, and install Sprocket separately from its official
-[0.32.0 release](https://github.com/stjude-rust-labs/sprocket/releases/tag/v0.32.0).
-The Linux x86_64 release archive SHA256 is
+that will execute its tasks, and install **Sprocket 0.32.0** separately using the
+[official installation guide](https://sprocket.bio/getting-started/installation).
+For the Linux x86_64 archive from the
+[0.32.0 release](https://github.com/stjude-rust-labs/sprocket/releases/tag/v0.32.0),
+the SHA256 is
 `27dbf45e3ceaad9e13d416fdf44e8741af1a98c6a516723b27057e695cab0756`.
 The CLI checks the engine; it does not silently install Sprocket or fall back to
 CWL when it is missing. Sprocket is not a Python package dependency.
