@@ -1,8 +1,12 @@
 include SJARACNe/bin/*
 include SJARACNe/config/*.txt
 include SJARACNe/config/apmi_pchip.json
+include SJARACNe/config/config_cwlexec.json
 include SJARACNe/cwl/*
-recursive-include SJARACNe/wdl *.wdl *.md *.json *.toml
+include BACKWARD_COMPATIBILITY.md
+recursive-include docs *.md
+recursive-include SJARACNe/wdl *.wdl *.md *.toml
+include version.py
 include SJARACNe/src/*
 include SJARACNe/Makefile
 include tools/apmi_null_generator.cpp

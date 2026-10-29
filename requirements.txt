@@ -1,4 +1,5 @@
 numpy>=1.20.1
-scipy>=1.6.1
+scipy>=1.7.3
 pandas>=1.2.3
-cwltool>=3.0.20201117141248
+# The default workflow uses the separately installed Sprocket executable.
+# Install optional CWL support with: python -m pip install '.[cwl]'

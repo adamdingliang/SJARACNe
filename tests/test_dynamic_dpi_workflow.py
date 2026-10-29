@@ -31,43 +31,51 @@ class TestDynamicDpiWrapper(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             output, scratch = root / 'output', root / 'scratch'
-            args = ['sjaracne', platform, '-e', str(root / 'input.exp'),
-                    '-g', str(root / 'hubs.txt'), '-o', str(output), '-tmp', str(scratch)]
+            expression, hubs = write_multihub_dpi_inputs(root)
+            args = ['sjaracne', platform, '--engine', 'cwl', '--network-type', 'TF',
+                    '-e', str(expression), '-g', str(hubs), '-o', str(output), '-tmp', str(scratch)]
             if platform == 'lsf':
+                (root / 'lsf.json').write_text('{}', encoding='ascii')
                 args += ['-j', str(root / 'lsf.json')]
             args += list(extra)
-            with mock.patch.object(module, 'run_shell_command_call') as launch:
+            with mock.patch.object(module, 'run_shell_command_call') as launch, \
+                    mock.patch.object(module, 'runtime_fingerprint', return_value={}), \
+                    mock.patch.object(module, 'validate_cwl_outputs', return_value={}), \
+                    mock.patch.object(module, 'require_tool', side_effect=lambda name: name):
                 with mock.patch.object(sys, 'argv', args):
                     module.main()
                 self.assertEqual(launch.call_count, 1)
                 command = launch.call_args.args[0]
-            return (output / 'sjaracne_workflow.yml').read_text(encoding='utf-8'), command
+            return json.loads((output / 'sjaracne_workflow.yml').read_text(encoding='utf-8')), command
 
-    def test_opt_out_yaml_does_not_add_dpi_inputs(self):
-        text, _ = self.run_wrapper()
-        for key in ('dynamic_dpi', 'dpi_href', 'dpi_slope', 'dpi_max', 'tolerance'):
-            self.assertNotRegex(text, r'(?m)^' + key + ':')
+    def test_explicit_fixed_dpi_disables_new_dynamic_default(self):
+        job, _ = self.run_wrapper('--fixed-dpi')
+        self.assertFalse(job['dynamic_dpi'])
+        self.assertEqual(job['tolerance'], 0)
 
-    def test_opt_in_uses_native_defaults_when_not_explicit(self):
-        text, _ = self.run_wrapper('--dynamic-dpi')
-        self.assertRegex(text, r'(?m)^dynamic_dpi: true$')
-        for key in ('dpi_href', 'dpi_slope', 'dpi_max', 'tolerance'):
-            self.assertNotRegex(text, r'(?m)^' + key + ':')
+    def test_current_default_and_explicit_dynamic_use_same_native_tuning(self):
+        default, _ = self.run_wrapper()
+        explicit, _ = self.run_wrapper('--dynamic-dpi')
+        self.assertTrue(default['dynamic_dpi'])
+        self.assertEqual(default['dynamic_dpi'], explicit['dynamic_dpi'])
+        self.assertIsNone(default.get('tolerance'))
+        for key, value in (('dpi_href', 479), ('dpi_slope', 0.05), ('dpi_max', 0.3)):
+            self.assertEqual(default.get(key) if default.get(key) is not None else value, value)
 
     def test_all_parameters_pass_through_for_local_and_lsf(self):
         for platform in ('local', 'lsf'):
             with self.subTest(platform=platform):
-                text, command = self.run_wrapper('--dynamic-dpi', '--dpi-href', '2',
+                job, command = self.run_wrapper('--dynamic-dpi', '--dpi-href', '2',
                                                   '--dpi-slope', '0.1', '--dpi-max', '0.25',
                                                   platform=platform)
-                for line in ('dynamic_dpi: true', 'dpi_href: 2', 'dpi_slope: 0.1', 'dpi_max: 0.25'):
-                    self.assertIn(line, text)
+                for key, value in (('dynamic_dpi', True), ('dpi_href', 2), ('dpi_slope', 0.1), ('dpi_max', 0.25)):
+                    self.assertEqual(job[key], value)
                 self.assertIn('cwlexec' if platform == 'lsf' else 'cwltool', command)
-                self.assertNotIn('tolerance:', text)
+                self.assertIsNone(job.get('tolerance'))
 
     def test_zero_cap_is_valid(self):
-        text, _ = self.run_wrapper('--dynamic-dpi', '--dpi-max', '0')
-        self.assertIn('dpi_max: 0.0', text)
+        job, _ = self.run_wrapper('--dynamic-dpi', '--dpi-max', '0')
+        self.assertEqual(job['dpi_max'], 0)
 
     def test_invalid_parameters_fail_before_launch_or_output(self):
         cases = [(flag, value) for flag, values in (
@@ -79,19 +87,23 @@ class TestDynamicDpiWrapper(unittest.TestCase):
             with self.subTest(flag=flag, value=value):
                 self.assert_rejected('--dynamic-dpi', flag, value)
 
-    def test_tuning_requires_explicit_opt_in(self):
+    def test_tuning_is_rejected_when_dynamic_is_explicitly_disabled(self):
         for flag, value in (('--dpi-href', '479'), ('--dpi-slope', '0.05'), ('--dpi-max', '0.3')):
             with self.subTest(flag=flag):
-                self.assert_rejected(flag, value)
+                self.assert_rejected('--fixed-dpi', flag, value)
 
     def assert_rejected(self, *extra):
         module = load_wrapper()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             output, scratch = root / 'output', root / 'scratch'
-            args = ['sjaracne', 'local', '-e', str(root / 'input.exp'),
-                    '-g', str(root / 'hubs.txt'), '-o', str(output), '-tmp', str(scratch), *extra]
-            with mock.patch.object(module, 'run_shell_command_call') as launch:
+            expression, hubs = write_multihub_dpi_inputs(root)
+            args = ['sjaracne', 'local', '--engine', 'cwl', '--network-type', 'TF',
+                    '-e', str(expression), '-g', str(hubs), '-o', str(output), '-tmp', str(scratch), *extra]
+            with mock.patch.object(module, 'run_shell_command_call') as launch, \
+                    mock.patch.object(module, 'runtime_fingerprint', return_value={}), \
+                    mock.patch.object(module, 'validate_cwl_outputs', return_value={}), \
+                    mock.patch.object(module, 'require_tool', side_effect=lambda name: name):
                 with mock.patch.object(sys, 'argv', args), self.assertRaises(SystemExit):
                     module.main()
                 launch.assert_not_called()
@@ -179,6 +191,7 @@ class TestDynamicDpiRealCwl(unittest.TestCase):
             output = workdir / 'output'
             result = subprocess.run([
                 sys.executable, '-m', 'SJARACNe.sjaracne', 'local',
+                '--engine', 'cwl', '--network-type', 'TF',
                 '-e', str(expression), '-g', str(hubs), '-n', '2', '--min-recurrence', '1',
                 '-pb', '1', '--dynamic-dpi', '--dpi-href', '2',
                 '--dpi-slope', '0.1', '--dpi-max', '0.3',

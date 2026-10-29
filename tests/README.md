@@ -7,18 +7,19 @@ launch BRCA100/DREAM resampling batches or require an LSF cluster.
 ## Complete check (Linux or WSL)
 
 Use Python 3.8+ with compatible package dependencies, a C++ compiler/Make,
-Node.js, `cwltool`, and Bats. Install this checkout in the active environment so
+Node.js, `cwltool`, Bats and Sprocket 0.32.0. Install this checkout in the active environment so
 Python-module CWL commands cannot silently import another revision:
 
 ```bash
-python -m pip install -e .
+python -m pip install -e '.[cwl]'
 python tests/run_regression.py --jobs 4
 ```
 
 On Ubuntu, the system prerequisites can be installed with
 `sudo apt-get install build-essential nodejs bats`. Python dependencies come
-from the package installation. The runner itself installs nothing and downloads
-neither data nor dependencies.
+from the optional CWL package installation. Install the separately distributed
+Sprocket executable as described in the [WDL guide](../SJARACNe/wdl/README.md).
+The runner itself installs nothing and downloads neither data nor dependencies.
 
 The command can be invoked from another working directory using its absolute
 path. It creates a fresh evidence directory under the system temporary
@@ -42,12 +43,17 @@ It performs the following checks:
    tests, requiring a nonempty, all-passing plan with no skips.
 5. Record commands, versions, source/fixture hashes, native binary hashes,
    counts and logs. Reject source/fixture changes during the check.
+6. Run real current TF/SIG defaults and the legacy profile through the CLI,
+   plus the paired WDL/CWL engine matrix. Missing Sprocket is a failure, not a
+   skipped test or a reason to switch engines silently.
 
 ## Coverage and fixtures
 
 | Coverage | What is checked |
 | --- | --- |
-| Current end-to-end workflow | Generated six-gene/100-observation expression, three hubs, six resamples: real input QC, default 80% sampling, PCHIP, actual DPI removals, default K=6, and nonempty enhanced consensus. Real serial CWL, parallel CWL and CLI outputs must agree. Expected recurrence/MI is derived from the actual native networks, not a frozen scientific network. |
+| Scientific core compatibility | Generated six-gene/100-observation expression, three hubs, six resamples: input QC, 80% sampling, PCHIP, real DPI removals, K=6 and enhanced consensus. Strict-DPI baseline settings are explicit in the historical CWL/CLI cases; answerkeys are not regenerated to match new defaults. |
+| Current default workflow | Actual Sprocket execution of the CLI for TF and SIG, without explicit MI/DPI settings; verifies role-specific pb, PCHIP, dynamic DPI, without-replacement sampling, K=6, published outputs and provenance. |
+| Pre-sampling compatibility | Explicit legacy profile with replacement, affine conversion, fixed DPI and legacy consensus through WDL and CWL; the native low-level defaults remain unchanged. |
 | Selection compatibility | Tiny affine/PCHIP × K=6/explicit legacy `-pc` matrix; explicit probability behavior remains supported and must not be deleted as obsolete. |
 | Native correctness | Sampling/seed behavior, rank caches, AP-MI workspace/null generator, PCHIP bounds/provenance/warnings, expression/hub validation, adjacency replay and DPI diagnostics/file-alias protection. |
 | Experimental dynamic DPI | Native formula/anchor/doubling/cap, exact fixed-epsilon edge equivalence, unique constructed source counting (including empty rows), invalid inputs and fixed/dynamic conflicts, opt-out compatibility, provenance and witness diagnostics. Wrapper/CWL tests cover forwarding, real dynamic-versus-fixed inference, and two scattered resamples through consensus. All use tiny synthetic data. |
@@ -98,10 +104,10 @@ they require explicit manual invocation and are not local CI validation of LSF.
 Scientific benchmarks and large run artifacts remain in
 [`sjaracne_benchmark`](https://github.com/adamdingliang/sjaracne_benchmark).
 
-## Optional WDL 1.3 engine parity
+## WDL 1.3 engine parity
 
-The [standalone WDL guide](../SJARACNe/wdl/README.md) documents a separate tiny
-real CWL/Sprocket comparison:
+The [WDL guide](../SJARACNe/wdl/README.md) documents the tiny real CWL/Sprocket
+comparison, which can also be run directly:
 
 ```bash
 python tests/wdl/run_parity.py --sprocket /absolute/path/sprocket \
@@ -109,9 +115,11 @@ python tests/wdl/run_parity.py --sprocket /absolute/path/sprocket \
 ```
 
 It requires Sprocket 0.32.0 and fails for missing dependencies, rather than
-skipping. It is deliberately outside `test_*.py` discovery: the existing GitHub
-Actions job still runs all task-plumbing tests but does not install Sprocket or
-claim to run WDL. No production dataset benchmarks are launched by either check.
+skipping. Its standalone runner is outside `test_*.py` discovery, but the full
+regression invokes it explicitly after the ordinary tests and CWL utilities.
+GitHub Actions installs a checksum-verified Sprocket and therefore executes
+both real default CLI runs and the paired engine matrix. No production dataset
+benchmarks are launched by either check.
 
 ## GitHub Actions
 
@@ -123,7 +131,8 @@ scientific changes now. This does not change branch-protection requirements.
 
 The hosted baseline is standard Ubuntu 24.04 / Python 3.11, using the CI-only
 numerical/CWL pins in `requirements-ci.txt`. Runtime dependency minimums are
-unchanged. Top-level pins do not lock every transitive dependency: the resolved
+unchanged. Sprocket's external binary is pinned to 0.32.0 and its release-archive
+SHA256. Top-level Python pins do not lock every transitive dependency: the resolved
 `pip freeze`, tool versions, test logs, counts and source/binary hashes are saved
 as a seven-day Actions artifact. First-party actions are pinned by commit SHA,
 permissions are read-only, and no repository secret is required.

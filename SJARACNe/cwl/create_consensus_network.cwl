@@ -49,6 +49,10 @@ inputs:
     doc: file with gene symbols of interest to build a subnet
 
 outputs:
+  consensus_network:
+    type: File
+    outputBinding:
+      glob: $(inputs.output_dir)/consensus_network_3col_.txt
   out_dir:
     type: File
     outputBinding:

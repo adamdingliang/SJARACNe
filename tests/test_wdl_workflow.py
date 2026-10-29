@@ -13,6 +13,13 @@ from unittest import mock
 WDL = importlib.import_module("SJARACNe.bin.wdl_workflow")
 
 
+def validate_current(parameters, observation_count):
+    """Supply the required network role, except where a test targets omission."""
+    if isinstance(parameters, dict):
+        parameters = {"network_type": "TF", **parameters}
+    return WDL.validate_parameters(parameters, observation_count)
+
+
 @contextlib.contextmanager
 def work_directory():
     previous = Path.cwd()
@@ -27,27 +34,44 @@ def work_directory():
 
 class TestWdlParameters(unittest.TestCase):
     def test_workflow_defaults_and_null_inputs(self):
-        values = WDL.validate_parameters({}, 100)
+        values = validate_current({}, 100)
         for name, expected in {
             "bootstrap_num": 100, "subsample_spec": "80%", "depth": 40,
-            "p_value_bootstrap": 1e-7, "apmi_null_model": None,
-            "dynamic_dpi": False, "tolerance": 0,
+            "profile": "current", "network_type": "TF",
+            "sampling_method": "without-replacement",
+            "p_value_bootstrap": 0.001, "apmi_null_model": "pchip",
+            "dynamic_dpi": True,
             "min_recurrence": 6, "p_value_consensus": None,
         }.items():
             self.assertEqual(values[name], expected, name)
-        self.assertEqual(values, WDL.validate_parameters(
-            {name: None for name in WDL.OPTION_NAMES}, 100))
+        self.assertNotIn('tolerance', values)
+        self.assertEqual(values, validate_current(
+            {name: None for name in WDL.OPTION_NAMES if name != 'network_type'}, 100))
 
-    def test_pchip_requires_explicit_probability_without_tf_sig_default(self):
-        for probability in ({}, {"p_value_bootstrap": None}):
-            with self.subTest(probability=probability), self.assertRaisesRegex(
-                    ValueError, "PCHIP requires explicit"):
-                WDL.validate_parameters({"apmi_null_model": "pchip", **probability}, 100)
-        for probability in (0.001, 0.0005):
-            values = WDL.validate_parameters({"apmi_null_model": "pchip",
-                                               "p_value_bootstrap": probability}, 100)
-            self.assertEqual(values["p_value_bootstrap"], probability)
-            self.assertEqual(values["subsample_spec"], "80%")
+    def test_current_requires_network_type_and_uses_explicit_tf_sig_defaults(self):
+        for parameters in ({}, {'p_value_bootstrap': 0.001}, {'apmi_null_model': 'pchip'}):
+            with self.subTest(parameters=parameters), self.assertRaisesRegex(ValueError, 'network_type'):
+                WDL.validate_parameters(parameters, 100)
+        for network, probability in (('TF', 0.001), ('SIG', 0.0005)):
+            values = WDL.validate_parameters({'network_type': network}, 100)
+            self.assertEqual(values['p_value_bootstrap'], probability)
+            self.assertEqual(values['apmi_null_model'], 'pchip')
+            self.assertTrue(values['dynamic_dpi'])
+            self.assertEqual(values['subsample_spec'], '80%')
+            values = WDL.validate_parameters({'network_type': network, 'p_value_bootstrap': 0.007}, 100)
+            self.assertEqual(values['p_value_bootstrap'], 0.007)
+
+    def test_legacy_profile_reconstructs_full_size_replacement_configuration(self):
+        values = WDL.validate_parameters({'profile': 'legacy'}, 100)
+        for key, expected in {'sampling_method': 'with-replacement', 'subsample_spec': None,
+                'apmi_null_model': 'affine', 'p_value_bootstrap': 1e-7, 'dynamic_dpi': False,
+                'tolerance': 0, 'p_value_consensus': 1e-5, 'min_recurrence': None,
+                'depth': 40, 'bootstrap_num': 100}.items():
+            self.assertEqual(values[key], expected, key)
+        for forbidden in ({'subsample_spec': '80%'}, {'sampling_method': 'without-replacement'},
+                          {'apmi_null_model': 'pchip'}, {'dynamic_dpi': True}, {'min_recurrence': 6}):
+            with self.subTest(forbidden=forbidden), self.assertRaises(ValueError):
+                WDL.validate_parameters({'profile': 'legacy', **forbidden}, 100)
 
     def test_pchip_uses_resolved_m_and_native_ceil_operation(self):
         cases = [(100, "80%", 80), (517, "80%", 414),
@@ -55,7 +79,7 @@ class TestWdlParameters(unittest.TestCase):
         for population, spec, expected in cases:
             with self.subTest(population=population, spec=spec):
                 with mock.patch("SJARACNe.apmi_cutoff.get_mi_cutoff", return_value=0.1) as cutoff:
-                    values = WDL.validate_parameters({"apmi_null_model": "pchip",
+                    values = validate_current({"apmi_null_model": "pchip",
                         "p_value_bootstrap": 0.001, "subsample_spec": spec}, population)
                 cutoff.assert_called_once_with(expected, 0.001)
                 self.assertEqual(values["subsample_spec"], spec)
@@ -63,7 +87,7 @@ class TestWdlParameters(unittest.TestCase):
     def test_pchip_bounds_are_checked_by_shared_callable(self):
         for selected in (50, 80, 10000):
             with self.subTest(selected=selected):
-                self.assertEqual(WDL.validate_parameters({"apmi_null_model": "pchip",
+                self.assertEqual(validate_current({"apmi_null_model": "pchip",
                     "p_value_bootstrap": 0.001, "subsample_spec": str(selected)}, selected)["depth"], 40)
         invalid = [({"subsample_spec": "49"}, 100),
                    ({"subsample_spec": "10001"}, 10001),
@@ -71,41 +95,41 @@ class TestWdlParameters(unittest.TestCase):
                    ({"p_value_bootstrap": 0.1}, 100)]
         for extra, population in invalid:
             with self.subTest(extra=extra), self.assertRaises(ValueError):
-                WDL.validate_parameters({"apmi_null_model": "pchip",
+                validate_current({"apmi_null_model": "pchip",
                     "p_value_bootstrap": 0.001, **extra}, population)
 
     def test_probability_one_bypasses_pchip_conversion(self):
         with mock.patch("SJARACNe.apmi_cutoff.get_mi_cutoff",
                         side_effect=AssertionError("p=1 must not request a cutoff")):
-            values = WDL.validate_parameters({"apmi_null_model": "pchip",
+            values = validate_current({"apmi_null_model": "pchip",
                 "p_value_bootstrap": 1, "depth": 1, "subsample_spec": "2"}, 2)
         self.assertEqual(values["p_value_bootstrap"], 1)
         self.assertEqual(values["depth"], 1)
 
     def test_consensus_default_and_explicit_legacy_selection(self):
-        values = WDL.validate_parameters({"bootstrap_num": 2, "min_recurrence": 1}, 100)
+        values = validate_current({"bootstrap_num": 2, "min_recurrence": 1}, 100)
         self.assertEqual(values["min_recurrence"], 1)
-        values = WDL.validate_parameters({"bootstrap_num": 2, "p_value_consensus": 1e-5}, 100)
+        values = validate_current({"bootstrap_num": 2, "p_value_consensus": 1e-5}, 100)
         self.assertIsNone(values["min_recurrence"])
         self.assertEqual(values["p_value_consensus"], 1e-5)
         for options in ({"bootstrap_num": 2},
                         {"bootstrap_num": 2, "min_recurrence": 3},
                         {"min_recurrence": 6, "p_value_consensus": 0.01}):
             with self.subTest(options=options), self.assertRaises(ValueError):
-                WDL.validate_parameters(options, 100)
+                validate_current(options, 100)
 
-    def test_dynamic_conflicts_and_tuning_requires_opt_in(self):
+    def test_dynamic_conflicts_and_tuning_requires_enabled_dynamic_mode(self):
         for fixed in (0, 0.1, 1):
             with self.subTest(fixed=fixed), self.assertRaisesRegex(ValueError, "conflicts"):
-                WDL.validate_parameters({"dynamic_dpi": True, "tolerance": fixed}, 100)
+                validate_current({"dynamic_dpi": True, "tolerance": fixed}, 100)
         for key, value in (("dpi_href", 479), ("dpi_slope", 0.05), ("dpi_max", 0.3)):
             with self.subTest(key=key), self.assertRaisesRegex(ValueError, "require dynamic_dpi"):
-                WDL.validate_parameters({key: value}, 100)
-        values = WDL.validate_parameters({"dynamic_dpi": True}, 100)
+                validate_current({'dynamic_dpi': False, key: value}, 100)
+        values = validate_current({"dynamic_dpi": True}, 100)
         self.assertNotIn("tolerance", values)
         for key in ("dpi_href", "dpi_slope", "dpi_max"):
             self.assertNotIn(key, values, "Native executable must own omitted tuning defaults")
-        values = WDL.validate_parameters({"dynamic_dpi": True, "dpi_href": 2,
+        values = validate_current({"dynamic_dpi": True, "dpi_href": 2,
             "dpi_slope": 0.1, "dpi_max": 0}, 100)
         self.assertEqual(values["dpi_max"], 0)
 
@@ -119,11 +143,14 @@ class TestWdlParameters(unittest.TestCase):
             "tolerance": (True, -0.1, 1.1, "0", float("nan"), float("inf")),
             "dynamic_dpi": (0, 1, "true"),
             "apmi_null_model": (True, "gpd", "legacy", "PCHIP"),
+            "network_type": (True, 'unknown', 1),
+            "profile": (True, 'unknown', 1),
+            "sampling_method": (True, 'unknown', 1),
         }
         for name, invalid_values in cases.items():
             for value in invalid_values:
                 with self.subTest(name=name, value=value), self.assertRaises(ValueError):
-                    WDL.validate_parameters({name: value}, 100)
+                    validate_current({name: value}, 100)
         for name, invalid_values in {
             "dpi_href": (True, 0, -1, 2.0, 2147483648),
             "dpi_slope": (True, 0, -1, float("nan"), float("inf")),
@@ -131,25 +158,25 @@ class TestWdlParameters(unittest.TestCase):
         }.items():
             for value in invalid_values:
                 with self.subTest(name=name, value=value), self.assertRaises(ValueError):
-                    WDL.validate_parameters({"dynamic_dpi": True, name: value}, 100)
+                    validate_current({"dynamic_dpi": True, name: value}, 100)
         for parameters in ([], None, {"unknown": 1}):
             with self.subTest(parameters=parameters), self.assertRaises(ValueError):
-                WDL.validate_parameters(parameters, 100)
+                validate_current(parameters, 100)
 
     def test_subsampling_count_percentage_and_invalid_forms(self):
         for spec in ("2", "100", "100%", "80.0%", ".8%", "00100"):
             population = 1000 if spec == ".8%" else 100
-            self.assertEqual(WDL.validate_parameters({"subsample_spec": spec}, population)["subsample_spec"], spec)
+            self.assertEqual(validate_current({'apmi_null_model': 'affine', "subsample_spec": spec}, population)["subsample_spec"], spec)
         for spec in (True, 80, "", "0", "1", "101", "0%", "100.1%", "nan%",
                      "inf%", "80 %", " 80%", "-80", "1e2", "1e2%", "80.0"):
             with self.subTest(spec=spec), self.assertRaises(ValueError):
-                WDL.validate_parameters({"subsample_spec": spec}, 100)
+                validate_current({'apmi_null_model': 'affine', "subsample_spec": spec}, 100)
 
 
 class TestWdlNativeCommand(unittest.TestCase):
     @staticmethod
     def command(options=None, request=None):
-        values = WDL.validate_parameters(options or {}, 100)
+        values = validate_current(options or {}, 100)
         request = {"exp_file": "/expression with space;$(literal).exp",
                    "probe_file": "/hubs 'quoted';literal.txt", "seed": 1, **(request or {})}
         return WDL.native_command(request, values)
@@ -157,13 +184,24 @@ class TestWdlNativeCommand(unittest.TestCase):
     def test_sampling_and_scientific_options_map_to_native_flags(self):
         command = self.command()
         self.assertEqual(command[command.index("-s") + 1], command[command.index("-l") + 1])
-        for flag, expected in (("-u", "80%"), ("-N", "40"), ("-p", "1e-07"),
+        for flag, expected in (("-u", "80%"), ("-N", "40"), ("-p", "0.001"),
                                ("-a", "adaptive_partitioning"), ("-S", "1"),
                                ("-o", "TF_run_001.adj")):
             self.assertEqual(command[command.index(flag) + 1], expected)
         self.assertNotIn("-r", command)
-        self.assertNotIn("-M", command)
+        self.assertEqual(command[command.index('-M') + 1], 'pchip')
+        self.assertIn('--dynamic-dpi', command)
+        self.assertNotIn('-e', command)
         self.assertEqual(Path(command[0]), WDL.PACKAGE / "bin/sjaracne.exe")
+
+    def test_legacy_profile_maps_to_native_replacement_affine_and_strict_dpi(self):
+        command = self.command({'profile': 'legacy', 'network_type': None})
+        self.assertEqual(command[command.index('-r') + 1], '1')
+        self.assertNotIn('-u', command)
+        self.assertNotIn('-M', command)
+        self.assertNotIn('--dynamic-dpi', command)
+        self.assertEqual(float(command[command.index('-p') + 1]), 1e-7)
+        self.assertEqual(float(command[command.index('-e') + 1]), 0)
 
     def test_paths_with_shell_characters_are_literal_argv_elements(self):
         request = {"exp_file": "/input 'quoted';$(do_not_run).exp",
@@ -254,12 +292,13 @@ class TestWdlTaskBoundaries(unittest.TestCase):
             + "\r\nA\tSYMBOL_A\t" + "\t".join(str(i) for i in range(observations))
             + "\r\nB\tSYMBOL_B\t" + "\t".join(str(observations-i) for i in range(observations))
             + "\r\n").encode("ascii"))
-        hubs.write_bytes(b"A\r\nA\r\nMISSING\r\n")
+        hubs.write_bytes(b"A\r\nB\r\nA\r\nMISSING\r\n")
         return expression, hubs
 
     def prepare(self, root, options=None):
         expression, hubs = self.inputs(root)
-        request = {"exp_file": str(expression), "probe_file": str(hubs), "parameters": options or {}}
+        request = {"exp_file": str(expression), "probe_file": str(hubs),
+                   "parameters": {"network_type": "TF", **(options or {})}}
         fingerprint = {"native_sha256": "frozen-binary", "python_runtime": {"module.py": "frozen"}}
         with mock.patch.object(WDL, "runtime_fingerprint", return_value=fingerprint):
             WDL.prepare(request)
@@ -280,7 +319,7 @@ class TestWdlTaskBoundaries(unittest.TestCase):
                 self.assertEqual(settings["original_input_sha256"][key], WDL.sha256(request[key]))
             validation = Path("hub_overlap_validation.txt").read_text(encoding="utf-8")
             self.assertIn("status\tpassed\n", validation)
-            self.assertIn("hub_genes_matched\t1\n", validation)
+            self.assertIn("hub_genes_matched\t2\n", validation)
             self.assertIn("hub_genes_missing\t1\n", validation)
             self.assertIn("hub_duplicates_ignored\t1\n", validation)
 
@@ -290,7 +329,7 @@ class TestWdlTaskBoundaries(unittest.TestCase):
             with mock.patch.object(WDL, "runtime_fingerprint") as runtime:
                 with self.assertRaises(ValueError):
                     WDL.prepare({"exp_file": str(expression), "probe_file": str(hubs),
-                                 "parameters": {"bootstrap_num": 2}})
+                                 "parameters": {"network_type": "TF", "bootstrap_num": 2}})
                 runtime.assert_not_called()
             for name in ("parameters.json", "expression.exp", "hubs.txt", "hub_overlap_validation.txt"):
                 self.assertFalse(Path(name).exists(), name)
@@ -301,7 +340,8 @@ class TestWdlTaskBoundaries(unittest.TestCase):
             hubs.write_bytes(b"not_present\n")
             with mock.patch.object(WDL, "runtime_fingerprint", return_value={}):
                 with self.assertRaises(SystemExit):
-                    WDL.prepare({"exp_file": str(expression), "probe_file": str(hubs), "parameters": {}})
+                    WDL.prepare({"exp_file": str(expression), "probe_file": str(hubs),
+                                 "parameters": {"network_type": "TF"}})
             for name in ("expression.exp", "hubs.txt", "parameters.json"):
                 self.assertFalse(Path(name).exists(), name)
 

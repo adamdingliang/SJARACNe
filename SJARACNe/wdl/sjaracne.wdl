@@ -1,15 +1,18 @@
 version 1.3
 
 struct WorkflowOptions {
+    String profile
+    String? network_type
+    String? sampling_method
     Int bootstrap_num
-    String subsample_spec
+    String? subsample_spec
     Int depth
     Float? p_value_bootstrap
     String? apmi_null_model
     Int? min_recurrence
     Float? p_value_consensus
     Float? tolerance
-    Boolean dynamic_dpi
+    Boolean? dynamic_dpi
     Int? dpi_href
     Float? dpi_slope
     Float? dpi_max
@@ -20,21 +23,30 @@ workflow SJARACNe {
         File exp_file
         File probe_file
         Directory? aracne_config_dir
+        String profile = "current"
+        String? network_type
+        String? sampling_method
         Int bootstrap_num = 100
-        String subsample_spec = "80%"
+        String? subsample_spec
         Int depth = 40
         Float? p_value_bootstrap
         String? apmi_null_model
         Int? min_recurrence
         Float? p_value_consensus
         Float? tolerance
-        Boolean dynamic_dpi = false
+        Boolean? dynamic_dpi
         Int? dpi_href
         Float? dpi_slope
         Float? dpi_max
+        String prepare_memory = "2 GiB"
+        String inference_memory = "4 GiB"
+        String consensus_memory = "8 GiB"
     }
 
     WorkflowOptions options = WorkflowOptions {
+        profile: profile,
+        network_type: network_type,
+        sampling_method: sampling_method,
         bootstrap_num: bootstrap_num,
         subsample_spec: subsample_spec,
         depth: depth,
@@ -54,6 +66,7 @@ workflow SJARACNe {
         probe_file = probe_file,
         aracne_config_dir = aracne_config_dir,
         options = options,
+        task_memory = prepare_memory,
     }
 
     scatter (index in range(bootstrap_num)) {
@@ -63,6 +76,7 @@ workflow SJARACNe {
             aracne_config_dir = aracne_config_dir,
             settings = Prepare.parameters,
             seed = index + 1,
+            task_memory = inference_memory,
         }
     }
 
@@ -72,6 +86,7 @@ workflow SJARACNe {
         settings = Prepare.parameters,
         adjacencies = Infer.adjacency,
         run_provenance = Infer.provenance,
+        task_memory = consensus_memory,
     }
 
     output {
@@ -88,7 +103,7 @@ workflow SJARACNe {
     }
 
     meta {
-        description: "Experimental standalone SJARACNe workflow; same scientific engine as CWL, no CLI adapter."
+        description: "Default SJARACNe WDL workflow, with explicit current and legacy scientific profiles."
     }
 }
 
@@ -98,6 +113,7 @@ task Prepare {
         File probe_file
         Directory? aracne_config_dir
         WorkflowOptions options
+        String task_memory = "2 GiB"
     }
 
     env File request = write_json(object {
@@ -121,7 +137,7 @@ task Prepare {
 
     requirements {
         cpu: 1
-        memory: "1 GiB"
+        memory: task_memory
     }
 }
 
@@ -132,6 +148,7 @@ task Infer {
         Directory? aracne_config_dir
         File settings
         Int seed
+        String task_memory = "4 GiB"
     }
 
     env File request = write_json(object {
@@ -156,7 +173,7 @@ task Infer {
 
     requirements {
         cpu: 1
-        memory: "1 GiB"
+        memory: task_memory
     }
 }
 
@@ -167,6 +184,7 @@ task Consensus {
         File settings
         Array[File] adjacencies
         Array[File] run_provenance
+        String task_memory = "8 GiB"
     }
 
     env File request = write_json(object {
@@ -191,6 +209,6 @@ task Consensus {
 
     requirements {
         cpu: 1
-        memory: "1 GiB"
+        memory: task_memory
     }
 }

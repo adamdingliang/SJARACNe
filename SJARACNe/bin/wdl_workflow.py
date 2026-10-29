@@ -7,24 +7,18 @@ import argparse
 import hashlib
 import importlib
 import json
-import math
 import os
 from pathlib import Path
-import re
 import shutil
 import subprocess
 import sys
 
 from .QC_input import validate_inputs
+from ..workflow_options import OPTION_NAMES, integer, resolve_options
 
 
 PACKAGE = Path(__file__).resolve().parents[1]
-SCHEMA = "sjaracne-wdl-parameters-v1"
-OPTION_NAMES = {
-    "bootstrap_num", "subsample_spec", "depth", "p_value_bootstrap",
-    "apmi_null_model", "min_recurrence", "p_value_consensus", "tolerance",
-    "dynamic_dpi", "dpi_href", "dpi_slope", "dpi_max",
-}
+SCHEMA = "sjaracne-wdl-parameters-v2"
 
 
 def sha256(path):
@@ -51,88 +45,9 @@ def write_json(path, value):
         handle.write("\n")
 
 
-def integer(value, name, minimum=1, maximum=2147483647):
-    if isinstance(value, bool) or not isinstance(value, int) or not minimum <= value <= maximum:
-        raise ValueError("{} must be an integer within [{},{}]".format(name, minimum, maximum))
-    return value
-
-
-def finite_number(value, name, lower, upper, lower_inclusive=True, upper_inclusive=True):
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ValueError(name + " must be numeric")
-    value = float(value)
-    if (not math.isfinite(value)
-            or (value < lower if lower_inclusive else value <= lower)
-            or (value > upper if upper_inclusive else value >= upper)):
-        raise ValueError(name + " is outside its supported range")
-    return value
-
-
 def validate_parameters(parameters, observation_count):
-    """Resolve workflow defaults and reject conflicts before scattering tasks."""
-    if not isinstance(parameters, dict) or set(parameters) - OPTION_NAMES:
-        raise ValueError("Unknown workflow parameters")
-    values = {key: value for key, value in parameters.items() if value is not None}
-    n = integer(values.get("bootstrap_num", 100), "bootstrap_num")
-    depth = integer(values.get("depth", 40), "depth")
-    spec = values.get("subsample_spec", "80%")
-    if not isinstance(spec, str):
-        raise ValueError("subsample_spec must be a count or explicit percentage string")
-    if re.fullmatch(r"[0-9]+", spec):
-        m = int(spec)
-    elif re.fullmatch(r"(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)%", spec):
-        percentage = float(spec[:-1])
-        if not 0 < percentage <= 100:
-            raise ValueError("subsample percentage must be within (0,100]")
-        # Same operation order as Parameter::resolveSubsampleSize in C++.
-        m = math.ceil(percentage * observation_count / 100.0)
-    else:
-        raise ValueError("subsample_spec must be a count or explicit percentage string")
-    if not 2 <= m <= observation_count:
-        raise ValueError("selected sample count must be within [2,N]")
-    model = values.get("apmi_null_model")
-    if model not in (None, "pchip"):
-        raise ValueError("apmi_null_model must be omitted or pchip")
-    if model == "pchip" and "p_value_bootstrap" not in values:
-        raise ValueError("PCHIP requires explicit p_value_bootstrap; no TF/SIG default is chosen")
-    pb = finite_number(values.get("p_value_bootstrap", 1e-7), "p_value_bootstrap", 0, 1,
-                       lower_inclusive=False)
-    if model == "pchip" and pb != 1:
-        if depth != 40:
-            raise ValueError("PCHIP requires depth 40")
-        # The shared callable validates sample-count/probability bounds. It does
-        # not set the native cutoff: the executable still resolves its own MI.
-        from ..apmi_cutoff import get_mi_cutoff
-        get_mi_cutoff(m, pb)
-    k, pc = values.get("min_recurrence"), values.get("p_value_consensus")
-    if k is not None and pc is not None:
-        raise ValueError("min_recurrence and p_value_consensus are mutually exclusive")
-    if pc is None:
-        k = integer(6 if k is None else k, "min_recurrence")
-        if k > n:
-            raise ValueError("minimum recurrence exceeds bootstrap_num")
-    else:
-        pc = finite_number(pc, "p_value_consensus", 0, 1, lower_inclusive=False)
-    dynamic = values.get("dynamic_dpi", False)
-    if not isinstance(dynamic, bool):
-        raise ValueError("dynamic_dpi must be boolean")
-    if dynamic and "tolerance" in values:
-        raise ValueError("dynamic_dpi conflicts with an explicit fixed tolerance")
-    tuning = {key: values[key] for key in ("dpi_href", "dpi_slope", "dpi_max") if key in values}
-    if tuning and not dynamic:
-        raise ValueError("DPI tuning parameters require dynamic_dpi")
-    if "dpi_href" in tuning:
-        integer(tuning["dpi_href"], "dpi_href")
-    if "dpi_slope" in tuning:
-        finite_number(tuning["dpi_slope"], "dpi_slope", 0, math.inf, lower_inclusive=False)
-    if "dpi_max" in tuning:
-        finite_number(tuning["dpi_max"], "dpi_max", 0, 1, upper_inclusive=False)
-    if not dynamic:
-        values["tolerance"] = finite_number(values.get("tolerance", 0), "tolerance", 0, 1)
-    values.update(bootstrap_num=n, depth=depth, subsample_spec=spec,
-                  p_value_bootstrap=pb, dynamic_dpi=dynamic,
-                  min_recurrence=k, p_value_consensus=pc, apmi_null_model=model)
-    return values
+    """Use the same profile resolution as the public CLI."""
+    return resolve_options(parameters, observation_count)
 
 
 def normalize_lf(source, destination):
@@ -201,11 +116,14 @@ def native_command(request, parameters):
     config = request.get("aracne_config_dir") or str(PACKAGE / "config")
     command = [str(PACKAGE / "bin/sjaracne.exe"),
                "-i", request["exp_file"], "-l", request["probe_file"], "-s", request["probe_file"],
-               "-p", str(parameters["p_value_bootstrap"]), "-a", "adaptive_partitioning",
-               "-u", parameters["subsample_spec"], "-H", config,
+               "-p", str(parameters["p_value_bootstrap"]), "-a", "adaptive_partitioning", "-H", config,
                "-N", str(parameters["depth"]), "-o", adjacency_name(seed), "-S", str(seed)]
-    if parameters["apmi_null_model"] is not None:
-        command += ["-M", parameters["apmi_null_model"]]
+    if parameters["sampling_method"] == "with-replacement":
+        command += ["-r", "1"]
+    else:
+        command += ["-u", parameters["subsample_spec"]]
+    if parameters["apmi_null_model"] == "pchip":
+        command += ["-M", "pchip"]
     if parameters["dynamic_dpi"]:
         command += ["--dynamic-dpi"]
         for name, flag in (("dpi_href", "--dpi-href"), ("dpi_slope", "--dpi-slope"), ("dpi_max", "--dpi-max")):

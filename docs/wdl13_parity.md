@@ -1,4 +1,10 @@
-# Standalone WDL 1.3: local scientific parity
+# Historical Step 1: standalone WDL 1.3 scientific parity
+
+This report records commit `d824d7a`, before promotion of the workflow defaults
+and addition of the default CLI adapter. Its measured results are preserved,
+not presented as measurements of the new defaults. See the
+[current-default validation report](default_profiles_validation.md) for the
+subsequent validation.
 
 Validation date: 2026-10-28. Implementation branch:
 `feat/wdl13-scientific-parity`, based on `develop` commit

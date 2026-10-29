@@ -55,14 +55,19 @@ inputs:
     default: 100
     label: Number of resampled networks to generate (legacy input name)
   subsample_spec:
-    type: string
-    default: "80%"
+    type: string?
     label: Fixed observation count or percentage sampled without replacement in every network
+  sample_number:
+    type: int?
+    label: Explicit legacy full-size replacement sampling; set subsample_spec to null when used
   final_out_dir_name:
     type: string
     label: final output directory name
 
 outputs:
+  consensus_network:
+    type: File
+    outputSource: consensus/consensus_network
   out_dir:
     type: File
     outputSource: consensus/out_dir
@@ -138,7 +143,23 @@ steps:
       dpi_max: dpi_max
       aracne_config_dir: aracne_config_dir
       npar_limit: depth
-      subsample_spec: subsample_spec
+      subsample_spec:
+        source: subsample_spec
+        valueFrom: |
+          ${
+            var hasSpec = self !== null && typeof self !== 'undefined';
+            var replacement = inputs.sample_number !== null &&
+                              typeof inputs.sample_number !== 'undefined' &&
+                              inputs.sample_number > 0;
+            if (replacement) {
+              if (hasSpec) {
+                throw new Error('Replacement sampling conflicts with subsample_spec');
+              }
+              return null;
+            }
+            return hasSpec ? self : '80%';
+          }
+      sample_number: sample_number
       output_file_name: create_adjmat_names/str_array
       seed: create_seeds/int_array
     scatter: [output_file_name, seed]
@@ -162,4 +183,4 @@ steps:
       p_thresh_arg: p_value_consensus
       exp_mat: ch_ending_exp/out_file
       output_dir: final_out_dir_name
-    out: [out_dir, bootstrap_info, parameter_info]
+    out: [out_dir, consensus_network, bootstrap_info, parameter_info]

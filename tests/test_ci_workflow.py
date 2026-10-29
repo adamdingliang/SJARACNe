@@ -49,3 +49,19 @@ class TestCIWorkflow(unittest.TestCase):
         self.assertEqual(artifact['if'], 'always()')
         self.assertEqual(artifact['with']['retention-days'], 7)
         self.assertIn('${{ env.REGRESSION_OUTPUT }}', artifact['with']['path'])
+
+    def test_installs_checksum_pinned_sprocket_before_regression(self):
+        steps = self.workflow['jobs']['regression']['steps']
+        candidates = [step for step in steps if 'sprocket/releases/download/' in step.get('run', '')]
+        self.assertEqual(len(candidates), 1)
+        install = candidates[0]
+        command = install['run']
+        self.assertIn('/v0.32.0/sprocket-v0.32.0-x86_64-unknown-linux-gnu.tar.gz', command)
+        self.assertIn('27dbf45e3ceaad9e13d416fdf44e8741af1a98c6a516723b27057e695cab0756', command)
+        self.assertIn('sha256sum --check --strict', command)
+        self.assertIn('$GITHUB_PATH', command)
+        self.assertIn('sprocket-version.txt', command)
+        self.assertNotIn('continue-on-error', install)
+        regression = next(step for step in steps
+                          if step.get('run', '').startswith('python tests/run_regression.py'))
+        self.assertLess(steps.index(install), steps.index(regression))

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Opt-in PCHIP integration tests with synthetic inputs and mocked workflows."""
+"""Native PCHIP integration and public workflow-profile regressions."""
 
 import importlib
 import importlib.util
+import json
 import math
 import os
 import re
@@ -246,18 +247,27 @@ class TestApmiNullWorkflowWiring(unittest.TestCase):
         spec.loader.exec_module(module)
         return module
 
-    def render_wrapper(self, *extra, hub_name="hubs.txt"):
+    def render_wrapper(self, *extra, hub_name="hubs.txt", network_type="TF"):
         module = self.load_wrapper()
         commands = []
         module.run_shell_command_call = commands.append
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            arguments = ["sjaracne", "local", "-e", str(root / "input.exp"),
-                         "-g", str(root / hub_name), "-o", str(root / "output"),
+            from test_sjaracne_acceptance import write_multihub_dpi_inputs
+            expression, original_hubs = write_multihub_dpi_inputs(root)
+            hubs = root / hub_name
+            hubs.write_bytes(original_hubs.read_bytes())
+            arguments = ["sjaracne", "local", "--engine", "cwl", "-e", str(expression),
+                         "-g", str(hubs), "-o", str(root / "output"),
                          "-tmp", str(root / "tmp"), *extra]
-            with mock.patch.object(os.sys, "argv", arguments):
+            if network_type is not None:
+                arguments += ['--network-type', network_type]
+            with mock.patch.object(os.sys, "argv", arguments), \
+                    mock.patch.object(module, 'runtime_fingerprint', return_value={}), \
+                    mock.patch.object(module, 'validate_cwl_outputs', return_value={}), \
+                    mock.patch.object(module, 'require_tool', side_effect=lambda name: name):
                 module.main()
-            rendered = (root / "output" / "sjaracne_workflow.yml").read_text()
+            rendered = json.loads((root / "output" / "sjaracne_workflow.yml").read_text())
         self.assertEqual(len(commands), 1)
         return rendered
 
@@ -278,50 +288,72 @@ class TestApmiNullWorkflowWiring(unittest.TestCase):
 
     def test_wrapper_forwards_pchip_without_file_staging(self):
         rendered = self.render_wrapper("-M", "pchip", "-pb", "0.001")
-        self.assertRegex(rendered, r'(?m)^apmi_null_model:\s*[\"\']?pchip[\"\']?\s*$')
-        self.assertNotIn("apmi_null_model:\n  class: File", rendered)
-        self.assertIn("p_value_bootstrap: 0.001", rendered)
+        self.assertEqual(rendered['apmi_null_model'], 'pchip')
+        self.assertIsInstance(rendered['apmi_null_model'], str)
+        self.assertEqual(rendered['p_value_bootstrap'], 0.001)
 
     def test_wrapper_accepts_explicit_rare_p_without_extra_flag(self):
         rendered = self.render_wrapper("-M", "pchip", "-pb", "1e-7")
-        self.assertRegex(rendered, r"(?mi)^p_value_bootstrap:\s*1e-0?7\s*$")
+        self.assertEqual(rendered['p_value_bootstrap'], 1e-7)
         self.assertNotIn("allow_rare_tail", rendered)
 
-    def test_wrapper_requires_explicit_pchip_probability_before_launch(self):
+    def test_wrapper_requires_network_type_before_launch_even_with_explicit_probability(self):
         module = self.load_wrapper()
         commands = []
         module.run_shell_command_call = commands.append
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            arguments = ["sjaracne", "local", "-e", str(root / "input.exp"),
-                         "-g", str(root / "hubs.txt"), "-o", str(root / "output"),
-                         "-tmp", str(root / "tmp"), "-M", "pchip"]
-            with mock.patch.object(os.sys, "argv", arguments), self.assertRaises(SystemExit):
+            from test_sjaracne_acceptance import write_multihub_dpi_inputs
+            expression, hubs = write_multihub_dpi_inputs(root)
+            arguments = ["sjaracne", "local", "--engine", "cwl", "-e", str(expression),
+                         "-g", str(hubs), "-o", str(root / "output"),
+                         "-tmp", str(root / "tmp"), "-M", "pchip", '-pb', '0.001']
+            with mock.patch.object(os.sys, "argv", arguments), \
+                    mock.patch.object(module, 'runtime_fingerprint', return_value={}), \
+                    mock.patch.object(module, 'validate_cwl_outputs', return_value={}), \
+                    mock.patch.object(module, 'require_tool', side_effect=lambda name: name), \
+                    self.assertRaises(SystemExit):
                 module.main()
+            self.assertFalse((root / 'output').exists())
+            self.assertFalse((root / 'tmp').exists())
         self.assertEqual(commands, [])
 
     def test_wrapper_accepts_explicit_preserve_all_probability(self):
         rendered = self.render_wrapper("-M", "pchip", "-pb", "1")
-        self.assertRegex(rendered, r"(?mi)^p_value_bootstrap:\s*1(?:\.0)?\s*$")
+        self.assertEqual(rendered['p_value_bootstrap'], 1)
 
     def test_wrapper_does_not_select_probability_from_tf_or_sig_filename(self):
         for hub_name in ("TF_hubs.txt", "SIG_hubs.txt"):
             with self.subTest(hub_name=hub_name):
-                legacy = self.render_wrapper(hub_name=hub_name)
-                self.assertRegex(legacy, r"(?mi)^p_value_bootstrap:\s*1e-0?7\s*$")
+                current = self.render_wrapper(hub_name=hub_name)
+                self.assertEqual(current['p_value_bootstrap'], 0.001)
                 explicit = self.render_wrapper("-M", "pchip", "-pb", "0.007", hub_name=hub_name)
-                self.assertRegex(explicit, r"(?mi)^p_value_bootstrap:\s*0\.007\s*$")
+                self.assertEqual(explicit['p_value_bootstrap'], 0.007)
+        sig = self.render_wrapper(network_type='SIG', hub_name='TF_named_but_explicit_SIG.txt')
+        self.assertEqual(sig['p_value_bootstrap'], 0.0005)
 
     def test_wrapper_rejects_removed_acknowledgement_option(self):
         with self.assertRaises(SystemExit):
             self.render_wrapper("-M", "pchip", "-pb", "1e-7", "--allow-rare-tail")
 
-    def test_wrapper_legacy_default_p_and_sampling_are_unchanged(self):
+    def test_wrapper_current_defaults_use_pchip_dynamic_and_unique_sampling(self):
         rendered = self.render_wrapper()
-        self.assertRegex(rendered, r"(?mi)^p_value_bootstrap:\s*1e-0?7\s*$")
-        self.assertIn('subsample_spec: "80%"', rendered)
-        self.assertNotIn("apmi_null_model:", rendered)
+        self.assertEqual(rendered['p_value_bootstrap'], 0.001)
+        self.assertEqual(rendered['subsample_spec'], '80%')
+        self.assertEqual(rendered['apmi_null_model'], 'pchip')
+        self.assertTrue(rendered['dynamic_dpi'])
         self.assertNotIn("allow_rare_tail", rendered)
+
+    def test_wrapper_explicit_legacy_profile_retains_historical_scientific_defaults(self):
+        rendered = self.render_wrapper('--profile', 'legacy', network_type=None)
+        self.assertEqual(rendered['p_value_bootstrap'], 1e-7)
+        self.assertIsNone(rendered.get('apmi_null_model'))
+        self.assertFalse(rendered['dynamic_dpi'])
+        self.assertEqual(rendered['tolerance'], 0)
+        self.assertEqual(rendered['p_value_consensus'], 1e-5)
+        self.assertIsNone(rendered.get('min_recurrence'))
+        self.assertIsNone(rendered.get('subsample_spec'))
+        self.assertEqual(rendered['sample_number'], 1)
 
     def test_wrapper_rejects_old_model_paths_and_unknown_selectors(self):
         for model in ("old-gpd.model", "unknown"):

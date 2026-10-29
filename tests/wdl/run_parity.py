@@ -208,7 +208,7 @@ class ParityRun:
             str(NATIVE.parent), str(Path(sys.executable).absolute().parent), self.env.get("PATH", ""),
         ))
         self.summary = {
-            "schema": "sjaracne-wdl13-parity-v1", "started_utc": now(), "complete": False,
+            "schema": "sjaracne-wdl13-parity-v2", "started_utc": now(), "complete": False,
             "passed": False, "failed_checks": 0, "checks": [], "commands": [], "cases": [],
             "source_root": str(ROOT), "python": sys.version,
             "scope": "tiny functional scientific parity only; no dataset benchmark",
@@ -321,7 +321,9 @@ class ParityRun:
         folder = self.output / "cases" / name / "wdl"
         folder.mkdir(parents=True)
         job = {"SJARACNe.exp_file": str(expression), "SJARACNe.probe_file": str(hubs),
-               "SJARACNe.aracne_config_dir": str(ROOT / "SJARACNe/config")}
+               "SJARACNe.aracne_config_dir": str(ROOT / "SJARACNe/config"),
+               "SJARACNe.prepare_memory": "1 GiB", "SJARACNe.inference_memory": "1 GiB",
+               "SJARACNe.consensus_memory": "1 GiB"}
         job.update({"SJARACNe." + key: value for key, value in options.items()})
         inputs = folder / "inputs.json"
         write_json(inputs, job)
@@ -363,7 +365,8 @@ class ParityRun:
             statistics = DPI_STATS.findall(stdout.read_text(encoding="utf-8"))
             self.check(name + ":seed{}:real_dpi".format(seed), len(statistics) == 1
                        and int(statistics[0][3]) == 1
-                       and int(statistics[0][1]) > 0 and int(statistics[0][2]) > 0
+                       and int(statistics[0][2]) > 0
+                       and (options.get("profile") == "legacy" or int(statistics[0][1]) > 0)
                        and int(statistics[0][0]) == int(statistics[0][1]) + int(statistics[0][2]))
         return result
 
@@ -376,7 +379,22 @@ class ParityRun:
                "probe_file": {"class": "File", "path": str(hubs)},
                "aracne_config_dir": {"class": "Directory", "path": str(ROOT / "SJARACNe/config")},
                "final_out_dir_name": "results"}
-        job.update(options)
+        # Resolve the selected scientific profile explicitly for the retained
+        # compatibility DAG; choosing CWL must not choose a different profile.
+        from SJARACNe.workflow_options import resolve_options
+        with expression.open(encoding="utf-8-sig") as handle:
+            observations = len(handle.readline().rstrip("\r\n").split("\t")) - 2
+        parameters = resolve_options(options, observations)
+        for key in ("bootstrap_num", "depth", "p_value_bootstrap", "min_recurrence",
+                    "p_value_consensus", "dynamic_dpi", "dpi_href", "dpi_slope", "dpi_max", "tolerance"):
+            if parameters.get(key) is not None:
+                job[key] = parameters[key]
+        job["apmi_null_model"] = (None if parameters["apmi_null_model"] == "affine"
+                                  else parameters["apmi_null_model"])
+        if parameters["sampling_method"] == "with-replacement":
+            job.update(sample_number=1, subsample_spec=None)
+        else:
+            job["subsample_spec"] = parameters["subsample_spec"]
         inputs = folder / "inputs.json"
         write_json(inputs, job)
         output = folder / "published"
@@ -406,7 +424,8 @@ class ParityRun:
         prefix = name + ":" + result["engine"] + ":independent:"
         self.check(prefix + "union_size", metadata.get("Total edge tested") == str(len(support)))
         count = options["bootstrap_num"]
-        if "p_value_consensus" not in options:
+        pc = options.get("p_value_consensus", 1e-5 if options.get("profile") == "legacy" else None)
+        if pc is None:
             k = options.get("min_recurrence", 6)
             expected_metadata = {
                 "Total edge tested": str(len(support)), "Consensus selection": "minimum recurrence",
@@ -427,9 +446,8 @@ class ParityRun:
             # this fixture only when no edge is close to the decision boundary.
             tails = {edge: 0.5 * math.erfc(((frequency - mu) / sigma if sigma else 100) / math.sqrt(2))
                      for edge, frequency in support.items()}
-            pc = options["p_value_consensus"]
             self.check(prefix + "legacy_gate_not_near_approximation_boundary",
-                       all(abs(value - pc) > 1e-5 for value in tails.values()))
+                       all(abs(value - pc) > max(1e-12, 0.01 * pc) for value in tails.values()))
             selected = {edge for edge, value in tails.items() if value < pc}
         expected = {edge: "{:.4f}".format(total_mi[edge] / support[edge]) for edge in sorted(selected)}
         for key in ("consensus_network", "out_dir"):
@@ -469,12 +487,17 @@ class ParityRun:
             self.preflight()
             expression, hubs, crlf_expression, crlf_hubs, bad_hubs = self.fixtures()
             cases = (
-                ("pchip_strict_default_k6", {"bootstrap_num": 6, "apmi_null_model": "pchip", "p_value_bootstrap": 0.001}),
-                ("pchip_positive_dynamic", {"bootstrap_num": 6, "apmi_null_model": "pchip", "p_value_bootstrap": 0.001,
+                ("pchip_strict_default_k6", {"bootstrap_num": 6, "network_type": "TF", "apmi_null_model": "pchip",
+                                             "p_value_bootstrap": 0.001, "dynamic_dpi": False}),
+                ("pchip_positive_dynamic", {"bootstrap_num": 6, "network_type": "TF", "apmi_null_model": "pchip", "p_value_bootstrap": 0.001,
                                             "dynamic_dpi": True, "dpi_href": 2, "dpi_slope": 0.1, "dpi_max": 0.3}),
-                ("affine_omitted_pb_default_k6", {"bootstrap_num": 6}),
-                ("explicit_legacy_consensus", {"bootstrap_num": 3, "apmi_null_model": "pchip", "p_value_bootstrap": 0.001,
-                                               "p_value_consensus": 0.01}),
+                ("affine_explicit_compatibility_k6", {"bootstrap_num": 6, "network_type": "TF", "apmi_null_model": "affine",
+                                                       "p_value_bootstrap": 1e-7, "dynamic_dpi": False}),
+                ("explicit_legacy_consensus", {"bootstrap_num": 3, "network_type": "TF", "apmi_null_model": "pchip", "p_value_bootstrap": 0.001,
+                                               "dynamic_dpi": False, "p_value_consensus": 0.01}),
+                ("current_tf_defaults", {"bootstrap_num": 6, "network_type": "TF"}),
+                ("current_sig_defaults", {"bootstrap_num": 6, "network_type": "SIG"}),
+                ("presampling_legacy_profile", {"bootstrap_num": 6, "profile": "legacy"}),
             )
             baseline = None
             for name, options in cases:
@@ -496,11 +519,52 @@ class ParityRun:
                         value = float(header_value(path.read_text(encoding="utf-8"), "DPI epsilon binary64"))
                         self.check(name + ":" + path.name + ":positive_epsilon", value > 0
                                    and math.isclose(value, expected, rel_tol=0, abs_tol=1e-15))
-                elif name == "affine_omitted_pb_default_k6":
+                elif name == "affine_explicit_compatibility_k6":
                     for path in wdl["adjacencies"]:
                         text = path.read_text(encoding="utf-8")
                         self.check(name + ":" + path.name + ":compatibility_pb",
                                    float(header_value(text, "MI P-value")) == 1e-7 and "PCHIP" not in text)
+                elif name in ("current_tf_defaults", "current_sig_defaults"):
+                    expected_pb = 0.001 if name == "current_tf_defaults" else 0.0005
+                    parameters = json.loads(wdl["parameters"].read_text(encoding="utf-8"))["parameters"]
+                    self.check(name + ":resolved_defaults", parameters["apmi_null_model"] == "pchip"
+                               and parameters["p_value_bootstrap"] == expected_pb
+                               and parameters["dynamic_dpi"] is True
+                               and parameters["sampling_method"] == "without-replacement"
+                               and parameters["subsample_spec"] == "80%"
+                               and parameters["min_recurrence"] == 6)
+                    for adjacency, provenance in zip(wdl["adjacencies"], wdl["run_provenance"]):
+                        text = adjacency.read_text(encoding="utf-8")
+                        argv = json.loads(provenance.read_text(encoding="utf-8"))["argv"]
+                        self.check(name + ":" + adjacency.name + ":native_defaults",
+                                   float(header_value(text, "MI P-value")) == expected_pb
+                                   and header_value(text, "MI threshold method") == "experimental PCHIP empirical cutoff"
+                                   and header_value(text, "DPI mode") == "experimental-dynamic"
+                                   and header_value(text, "AP-MI actual m") == "80"
+                                   and header_value(text, "DPI H_ref") == "479"
+                                   and "--dynamic-dpi" in argv and "-e" not in argv and "-r" not in argv)
+                elif name == "presampling_legacy_profile":
+                    parameters = json.loads(wdl["parameters"].read_text(encoding="utf-8"))["parameters"]
+                    self.check(name + ":resolved_defaults", parameters["apmi_null_model"] == "affine"
+                               and parameters["p_value_bootstrap"] == 1e-7
+                               and parameters["dynamic_dpi"] is False
+                               and parameters["sampling_method"] == "with-replacement"
+                               and parameters["subsample_spec"] is None
+                               and parameters["p_value_consensus"] == 1e-5
+                               and parameters["min_recurrence"] is None)
+                    expected_cutoff = (1.062 - math.log(1e-7)) / (48.7 + 0.634 * 100)
+                    for adjacency, provenance in zip(wdl["adjacencies"], wdl["run_provenance"]):
+                        text = adjacency.read_text(encoding="utf-8")
+                        argv = json.loads(provenance.read_text(encoding="utf-8"))["argv"]
+                        self.check(name + ":" + adjacency.name + ":native_legacy_sampling",
+                                   header_value(text, "Sampling method") == "legacy bootstrap with replacement"
+                                   and header_value(text, "Resample draws") == "100"
+                                   and header_value(text, "DPI tolerance") == "0"
+                                   and math.isclose(float(header_value(text, "MI threshold")), expected_cutoff,
+                                                    rel_tol=0, abs_tol=5e-7)
+                                   and "-r" in argv and argv[argv.index("-r") + 1] == "1"
+                                   and "-u" not in argv and "-M" not in argv and "--dynamic-dpi" not in argv
+                                   and argv[argv.index("-N") + 1] == "40")
 
             crlf_options = dict(cases[0][1])
             crlf = self.run_wdl("wdl_crlf_normalization", crlf_expression, crlf_hubs, crlf_options)
@@ -513,10 +577,10 @@ class ParityRun:
                 "WDL CRLF results compared to LF baseline; CWL's historical in-place line-ending helper is not a correctness oracle"
             )
 
-            missing_pb = self.run_wdl("invalid_pchip_missing_pb", expression, hubs,
-                                      {"bootstrap_num": 6, "apmi_null_model": "pchip"}, expect_failure=True)
-            message = failed_wdl_diagnostic(missing_pb)
-            self.check("invalid_pchip_missing_pb:diagnostic", "PCHIP requires explicit p_value_bootstrap" in message)
+            missing_type = self.run_wdl("invalid_current_missing_network_type", expression, hubs,
+                                        {"bootstrap_num": 6}, expect_failure=True)
+            message = failed_wdl_diagnostic(missing_type)
+            self.check("invalid_current_missing_network_type:diagnostic", "network_type" in message)
             zero_overlap = self.run_wdl("invalid_zero_overlap", expression, bad_hubs, dict(cases[0][1]), expect_failure=True)
             message = failed_wdl_diagnostic(zero_overlap)
             self.check("invalid_zero_overlap:diagnostic", "zero hub genes" in message)

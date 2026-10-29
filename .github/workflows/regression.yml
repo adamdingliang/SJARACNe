@@ -61,6 +61,21 @@ jobs:
           node --version > "$BOOTSTRAP_OUTPUT/node-version.txt"
           bats --version > "$BOOTSTRAP_OUTPUT/bats-version.txt"
 
+      - name: Install pinned Sprocket for WDL 1.3 regression
+        run: |
+          SPROCKET_DIR="$RUNNER_TEMP/sprocket-0.32.0"
+          mkdir -p "$SPROCKET_DIR"
+          curl --fail --location --retry 3 \
+            --output "$SPROCKET_DIR/sprocket.tar.gz" \
+            https://github.com/stjude-rust-labs/sprocket/releases/download/v0.32.0/sprocket-v0.32.0-x86_64-unknown-linux-gnu.tar.gz
+          printf '%s  %s\n' \
+            27dbf45e3ceaad9e13d416fdf44e8741af1a98c6a516723b27057e695cab0756 \
+            "$SPROCKET_DIR/sprocket.tar.gz" | sha256sum --check --strict
+          tar -xzf "$SPROCKET_DIR/sprocket.tar.gz" -C "$SPROCKET_DIR" sprocket
+          chmod +x "$SPROCKET_DIR/sprocket"
+          printf '%s\n' "$SPROCKET_DIR" >> "$GITHUB_PATH"
+          "$SPROCKET_DIR/sprocket" --version > "$BOOTSTRAP_OUTPUT/sprocket-version.txt"
+
       - name: Run complete small regression
         timeout-minutes: 15
         run: python tests/run_regression.py --jobs 4 --output-dir "$REGRESSION_OUTPUT"
