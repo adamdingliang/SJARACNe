@@ -125,13 +125,13 @@ explicit `-pb` override.
 
 Use a tab-separated text file: one gene or feature per row, with the first two
 header fields exactly `isoformId` and `geneSymbol`, followed by observations.
-The following illustrates the layout, not a runnable dataset:
+The following shows the column layout, not a runnable input file. The actual
+file must use tabs between fields:
 
-```text
-isoformId	geneSymbol	sample_1	sample_2	sample_3
-GENE_001	STAT1	2.1	3.4	1.8
-GENE_002	MYD88	1.5	2.2	2.9
-```
+| isoformId | geneSymbol | sample_1 | sample_2 | sample_3 |
+| --- | --- | --- | --- | --- |
+| GENE_001 | STAT1 | 2.1 | 3.4 | 1.8 |
+| GENE_002 | MYD88 | 1.5 | 2.2 | 2.9 |
 
 Values must already be prepared for network inference. SJARACNe does **not**
 normalize, log-transform or filter genes for you. With the default PCHIP model,
