@@ -1,12 +1,26 @@
 # Environments and deployment with uv
 
-Use uv **0.11.16** to prepare SJARACNe environments from the committed lockfile.
-This changes dependency management, not network-inference settings. Sprocket
-0.32.0 remains a separate executable, and setuptools retains the native C++
-build hook. The [migration validation report](uv_validation.md) records the
-installation, offline/cache and workflow checks.
+Use uv **0.11.16** to prepare reusable SJARACNe environments from the committed
+lockfile. uv installs the Python package and triggers its native C++ build;
+it **does not install Sprocket** or system build tools. Package installation
+and CLI help do not require Sprocket, but the default WDL workflow does.
 
-## Install and prepare
+This guide covers environment setup and deployment, not inference settings.
+See the [validation report](uv_validation.md) for the tested installation,
+cache and workflow checks.
+
+## Contents
+
+- [One-time setup on Ubuntu or Ubuntu in WSL](#one-time-setup-on-ubuntu-or-ubuntu-in-wsl)
+- [Install SJARACNe with uv](#install-sjaracne-with-uv)
+- [Prepare Sprocket for workflows](#prepare-sprocket-for-workflows)
+- [Choose a Python version](#choose-a-python-version)
+- [Dependency sources and optional tools](#dependency-sources-and-optional-tools)
+- [Native builds and cache invalidation](#native-builds-and-cache-invalidation)
+- [HPC and cloud precautions](#hpc-and-cloud-precautions)
+- [Ordinary pip alternative](#ordinary-pip-alternative)
+
+## One-time setup on Ubuntu or Ubuntu in WSL
 
 Use a Linux terminal, or **Ubuntu in WSL** on Windows. Git Bash and
 MSYS2/UCRT64 are not substitutes for WSL. A source installation needs Make and
@@ -30,25 +44,56 @@ For the standalone installer on Linux/WSL:
 curl -LsSf https://astral.sh/uv/0.11.16/install.sh | sh
 ```
 
-Open a new shell if needed so uv is on `PATH`, then run from the checkout:
+Open a new Ubuntu shell if needed, then check `uv --version`.
+
+## Install SJARACNe with uv
+
+Run these commands from the repository root (the directory containing
+`pyproject.toml` and `uv.lock`):
 
 ```bash
-uv --version
 uv sync --locked
 uv run --locked --no-sync sjaracne local --help
 ```
 
-`uv sync --locked` automatically builds the native programs when installing
-this source checkout, including its default editable installation. There is
-no separate Make step for normal installation. Missing Make or compiler tools
-stop installation with an actionable error rather than leaving a Python-only
-package. See the [native installation validation](native_build_installation.md).
+`uv sync --locked` installs SJARACNe and its Python dependencies into `.venv`,
+and automatically builds the native programs. No separate Make step is needed.
+Missing build tools stop installation with an actionable error; see the
+[native installation validation](native_build_installation.md).
 
-The normal project environment is `.venv`. Activate it with
-`source .venv/bin/activate` to use `sjaracne` directly. Without activation,
-`uv run --locked --no-sync sjaracne ...` uses the prepared environment without
-resynchronizing it. Do not use `--no-sync` as a substitute for initially
-preparing or deliberately updating that environment.
+**This does not install Sprocket.** The `--help` command checks the CLI, not
+whether the default workflow is ready to run. Complete the next section before
+launching a WDL workflow.
+
+Activate `.venv` with `source .venv/bin/activate` to use `sjaracne` directly.
+Alternatively, `uv run --locked --no-sync sjaracne ...` uses the prepared
+environment without activation or resynchronization. `--no-sync` is for an
+already-prepared environment, not initial installation or dependency updates.
+
+## Prepare Sprocket for workflows
+
+Install **Sprocket 0.32.0 separately** using the
+[official release](https://github.com/stjude-rust-labs/sprocket/releases/tag/v0.32.0).
+A prebuilt binary avoids compiling its Rust dependencies. Choose the correct
+platform and verify the checksum; the
+[WDL guide](../SJARACNe/wdl/README.md#local-use) records the Linux x86_64 checksum.
+
+Ensure its installation directory is on `PATH`, then check:
+
+```bash
+sprocket --version
+```
+
+The output must report version `0.32.0`. If a default Cargo installation is
+not found, add `export PATH="$HOME/.cargo/bin:$PATH"` to `~/.bashrc` and open a
+new shell. For a downloaded binary, use its actual installation directory.
+Alternatively, pass `--sprocket /absolute/path/to/sprocket` to `sjaracne local`.
+
+SJARACNe neither installs the engine automatically nor silently falls back to
+CWL. Once both the package and engine are ready, follow the
+[workflow examples](../SJARACNe/wdl/README.md#local-use).
+
+## Choose a Python version
 
 `.python-version` selects Python 3.14 by default. uv can download a compatible
 interpreter if one is missing. To use an existing interpreter explicitly:
@@ -88,12 +133,10 @@ warning from the checkout's default 3.14 preference when using `--no-sync`.
 | [`uv.lock`](../uv.lock) | Resolved package versions, sources and artifact hashes, including transitive dependencies. |
 | [`.python-version`](../.python-version) | Preferred interpreter family; not an installed Python binary. |
 
-The 3.11 lane retains NumPy 1.26.4, pandas 2.2.3, SciPy 1.13.1 and cwltool
-3.1.20240508115724. The 3.14 lane retains NumPy 2.4.6, pandas 2.3.3, SciPy
-1.17.1 and cwltool 3.3.20260925135507. Those are the previously validated
-top-level versions; see the [Python compatibility report](python_compatibility.md).
-The lock also fixes transitive versions instead of resolving them on each
-installation.
+The lock fixes direct and transitive dependency versions. The
+[Python compatibility report](python_compatibility.md) lists the validated
+numerical stacks and optional cwltool versions; cwltool is not installed by
+the default synchronization.
 
 No dependency groups are selected by default. Add optional CWL support with:
 
@@ -109,9 +152,8 @@ uv run --locked --no-sync python tests/run_regression.py --jobs 4
 ```
 
 The `regression` group includes the pinned `build` group. Neither installs
-Make, a C++ compiler, Node.js, Bats or Sprocket. See the
-[regression guide](../tests/README.md) and
-[Sprocket installation/checksum instructions](../SJARACNe/wdl/README.md#local-use).
+Make, a C++ compiler, Node.js, Bats or Sprocket. Prepare these external tools
+before running the complete suite; see the [regression guide](../tests/README.md).
 Use the same extras/groups when resynchronizing: an ordinary exact `uv sync`
 can remove packages that are no longer selected.
 
@@ -122,20 +164,14 @@ identical numerical output across operating systems, CPUs or compiler builds.
 
 ## Native builds and cache invalidation
 
-The setuptools backend invokes the native Makefile for both editable source
-installations and ordinary wheels built from source. Normal `uv sync --locked`
-and pip source installation therefore do not need a separate `make` command.
-uv manages Python environments and build invocation; it does not replace Make
-or install system compilers.
+Normal source installation builds C++ through setuptools and Make. For C++
+development, `make -C SJARACNe` remains available as an explicit rebuild.
+An unchanged cached `uv sync` does not necessarily recompile native programs.
 
-For advanced C++ development, `make -C SJARACNe` remains available as an
-explicit native rebuild command. An unchanged cached synchronization is not a
-promise that every invocation recompiles C++.
-The uv cache keys explicitly include native sources, headers, the Makefile,
-build metadata and runtime assets. Changes to those inputs invalidate the
-cached package build. A compiler/toolchain change should trigger an explicit
-native rebuild and package reinstallation, not rely only on source-file keys.
-In a dedicated environment with no running jobs, for example:
+Cache keys cover native sources, headers, the Makefile, build metadata and
+runtime assets. Edits invalidate the cached package build; a changed compiler
+or toolchain requires an explicit rebuild and reinstallation. In a dedicated
+environment with no running jobs:
 
 ```bash
 make -B -C SJARACNe
@@ -154,24 +190,24 @@ every resample task. For example, a job can invoke
 `/path/to/prepared-env/bin/sjaracne` directly; uv need not be installed in the
 runtime image solely to execute an already-installed package.
 
-- Use a dedicated environment, not a global Python, unrelated Conda
-  environment or shared environment that other running analyses may modify.
+- **Isolation:** use a dedicated environment, not global Python, an unrelated
+  Conda environment or an environment being modified by other analyses.
   Exact synchronization can remove unselected packages.
-- On shared filesystems, choose storage appropriate to the site's policy.
+- **Storage:** on shared filesystems, follow the site's policy.
   `UV_PROJECT_ENVIRONMENT` and `UV_CACHE_DIR` relocate the environment and
   cache; placing them on the same filesystem permits efficient linking.
   `UV_LINK_MODE=copy` avoids linking across separate filesystems at the cost of
   extra copying. Node-local scratch must be prepared per node or supplied by a
   container; it is not automatically visible to other compute nodes.
-- For offline compute nodes, prepare the interpreter, all runtime/build
+- **Offline nodes:** prepare the interpreter, all runtime/build
   dependencies and native executables in advance. `uv sync --locked --offline`
   works only when all required artifacts are already cached or available
   locally. A lockfile alone is not an offline package bundle. Using the
   prepared environment directly avoids synchronization entirely.
-- Build for the target operating system, CPU architecture and compatible
-  system libraries. Do not copy a workstation virtual environment to an
+- **Portability:** build for the target operating system, CPU architecture and
+  compatible system libraries. Do not copy a workstation virtual environment to an
   unrelated cluster or an x86_64 environment to ARM cloud instances.
-- For cloud/container deployment, install dependencies and compile the native
+- **Containers:** install dependencies and compile the native
   programs during image construction; use a non-editable installation so the
   runtime does not depend on a separate source checkout. Pin and test the
   image as well as the lockfile.
@@ -199,8 +235,9 @@ python -m pip install --no-build-isolation -c tests/requirements-ci-py314.txt -e
 sjaracne local --help
 ```
 
-The pip installation also builds the native executables automatically. It
-requires the same compiler/Make prerequisites as the uv installation.
+Pip also builds the native executables automatically. The same compiler/Make
+prerequisites apply; Sprocket still requires separate installation for WDL
+execution, and `--help` alone does not verify it.
 
 For Python 3.11, select that interpreter and use `tests/requirements-ci.txt`
 instead. These retained requirements files are **historical top-level
