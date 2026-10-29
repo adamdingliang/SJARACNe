@@ -211,7 +211,8 @@ sjaracne local --network-type TF -pb 0.002 --fixed-dpi \
 | Option | Meaning |
 | --- | --- |
 | `-pb VALUE` | Override the per-resample MI null-tail probability, not a biological false-discovery rate. |
-| `-n COUNT`, `-k COUNT` | Number of resampled networks and minimum edge recurrence; `1 <= k <= n`. |
+| `-n COUNT` | Number of resampled networks (default: 100). |
+| `-k COUNT` or `--min-recurrence COUNT` | Retain edges present in at least `COUNT` distinct resampled networks. Current-profile default: **K=6**; requires `1 <= K <= n`. |
 | `--subsample-fraction 0.8` or `--subsample-size 80` | Select a fraction or exact number of observations without replacement; use only one. |
 | `--fixed-dpi` or `--tolerance 0.1` | Use strict DPI (epsilon=0), or fixed positive epsilon. Larger epsilon relaxes pruning. |
 | `--dpi-href`, `--dpi-slope`, `--dpi-max` | Adjust the dynamic tolerance schedule; incompatible with fixed DPI. |
@@ -234,16 +235,20 @@ sjaracne local --profile legacy \
   -o results/brca100_tf_legacy
 ```
 
-Local CWL is optional. Install Node.js and add the extra to the prepared
-environment:
+CWL is a retained alternative for running the workflow locally with `cwltool`
+instead of WDL/Sprocket. Skip this setup if you use the default Sprocket engine.
+To use CWL, install Node.js separately and add the optional `cwltool` dependency
+to the prepared environment:
 
 ```bash
 uv sync --locked --extra cwl
 ```
 
-Then add `--engine cwl` to a workflow command. Engine choice and scientific
-profile are independent; choosing CWL alone does not restore legacy settings.
-CWLEXEC and the old `lsf` command have been removed.
+Select `--engine cwl` and omit the Sprocket-only `--jobs` and memory options
+from the examples above. Use `--serial` if you want CWL tasks to run one at a
+time. Engine choice and scientific profile are independent: choosing CWL alone
+does not restore legacy settings. CWLEXEC and the old `lsf` command have been
+removed.
 
 See [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) for the profile
 comparison, historical overrides and native API behavior.
