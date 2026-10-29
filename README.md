@@ -122,16 +122,19 @@ and records its settings and completion state in `sjaracne_run.json`.
 ### Full TF and SIG networks
 
 Omit `-n` and `-k` to use **100 resampled networks and minimum recurrence K=6**.
-These examples retain the same resource budgets:
+These examples allow up to three concurrent inference tasks with a 12-GiB
+scheduling budget. Use them on a host with at least three available CPUs and
+more than 12 GiB of RAM available to Linux/WSL; otherwise keep the smaller
+`--jobs 2 --memory "8 GiB"` settings above.
 
 ```bash
 sjaracne local --network-type TF \
   -e tests/inputs/BRCA100.exp -g tests/inputs/BRCA100_TF.txt \
-  -o results/brca100_tf --jobs 2 --memory "8 GiB"
+  -o results/brca100_tf --jobs 3 --memory "12 GiB"
 
 sjaracne local --network-type SIG \
   -e tests/inputs/BRCA100.exp -g tests/inputs/BRCA100_SIG.txt \
-  -o results/brca100_sig --jobs 2 --memory "8 GiB"
+  -o results/brca100_sig --jobs 3 --memory "12 GiB"
 ```
 
 For your own dataset, replace the example matrix and hub-list paths with your
