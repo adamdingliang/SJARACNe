@@ -137,6 +137,9 @@ sjaracne local --network-type SIG \
   -o results/brca100_sig --jobs 3 --memory "12 GiB"
 ```
 
+Run resource-heavy examples one at a time on memory-limited machines. Each
+Sprocket invocation has its own budget, not a shared machine-wide memory limit.
+
 For your own dataset, replace the example matrix and hub-list paths with your
 prepared inputs. `TF` selects the default per-resample probability
 `pb=0.001`; `SIG` selects `pb=0.0005`. It does **not** choose or modify your hub
@@ -202,10 +205,10 @@ requests; see [resources and outputs](SJARACNe/wdl/README.md#resources-outputs-a
 ### Common overrides
 
 ```bash
-# Example: change pb and use strict DPI, keeping the other current defaults.
+# Example: change pb and use strict DPI; keep other current scientific defaults.
 sjaracne local --network-type TF -pb 0.002 --fixed-dpi \
   -e tests/inputs/BRCA100.exp -g tests/inputs/BRCA100_TF.txt \
-  -o results/brca100_tf_strict
+  -o results/brca100_tf_strict --jobs 3 --memory "12 GiB"
 ```
 
 | Option | Meaning |
@@ -227,13 +230,16 @@ validation does not establish support for production LSF, Slurm or cloud runs.
 ### Backward compatibility
 
 Use the explicit legacy profile for the pre-sampling scientific settings,
-still running through Sprocket by default:
+still running through Sprocket by default. The profile does not change
+scheduling budgets; specify resources separately:
 
 ```bash
 sjaracne local --profile legacy \
   -e tests/inputs/BRCA100.exp -g tests/inputs/BRCA100_TF.txt \
-  -o results/brca100_tf_legacy
+  -o results/brca100_tf_legacy --jobs 3 --memory "12 GiB"
 ```
+
+If retrying a failed run, choose a new output directory; failure logs are retained.
 
 CWL is a retained alternative for running the workflow locally with `cwltool`
 instead of WDL/Sprocket. Skip this setup if you use the default Sprocket engine.
