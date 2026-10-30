@@ -235,9 +235,10 @@ token. Codecov upload errors and per-flag project/patch statuses are
 informational, PR comments are disabled, and old flag results are not carried
 forward as if they were fresh measurements.
 
-The maintainer must enable the repository in the
-[Codecov GitHub app](https://github.com/apps/codecov) before hosted reporting
-works; this is an account permission step, not performed by the runner. The
+Enable this repository in Codecov and authorize the
+[Codecov GitHub app](https://github.com/apps/codecov) if prompted. This account
+permission step is not performed by the runner. Codecov's default dashboard
+branch is set to `develop`; GitHub's default branch is not changed. The
 README badges filter `develop` by flag and show unknown until reports are
 successfully uploaded. See Codecov's [setup guide](https://docs.codecov.com/docs/quick-start)
 and [flag documentation](https://docs.codecov.com/docs/flags).

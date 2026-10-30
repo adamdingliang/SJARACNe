@@ -213,6 +213,7 @@ class TestCIWorkflow(unittest.TestCase):
                              + settings['flags'] + '.xml')
 
     def test_codecov_reports_are_informational_without_stale_flag_carryforward(self):
+        self.assertEqual(self.codecov['codecov']['branch'], 'develop')
         self.assertIs(self.codecov['comment'], False)
         self.assertEqual(set(self.codecov['flags']), {'python', 'cpp'})
         for flag in ('python', 'cpp'):

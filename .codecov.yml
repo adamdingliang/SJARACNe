@@ -1,4 +1,7 @@
 # Independent, informational Python and native-core reports; no coverage gate.
+codecov:
+  branch: develop
+
 coverage:
   status:
     project:
