@@ -35,6 +35,18 @@ FINAL_OUTPUTS = {
 
 
 def dpi_reference_hubs(value):
+    """Parse the positive, signed-32-bit reference hub count.
+
+    Args:
+        value: Integer text supplied by argparse.
+
+    Returns:
+        int: Reference hub count used by dynamic DPI.
+
+    Raises:
+        ValueError: The value cannot be converted to an integer.
+        argparse.ArgumentTypeError: The count is outside the supported range.
+    """
     parsed = int(value)
     if not 1 <= parsed <= 2147483647:
         raise argparse.ArgumentTypeError("DPI reference hub count must be within [1,2147483647]")
@@ -42,6 +54,18 @@ def dpi_reference_hubs(value):
 
 
 def dpi_positive_slope(value):
+    """Parse a finite, positive dynamic-DPI slope.
+
+    Args:
+        value: Numeric text supplied by argparse.
+
+    Returns:
+        float: Validated slope.
+
+    Raises:
+        ValueError: The value cannot be converted to a float.
+        argparse.ArgumentTypeError: The slope is nonfinite or nonpositive.
+    """
     parsed = float(value)
     if not math.isfinite(parsed) or parsed <= 0:
         raise argparse.ArgumentTypeError("DPI slope must be finite and positive")
@@ -49,6 +73,18 @@ def dpi_positive_slope(value):
 
 
 def dpi_maximum(value):
+    """Parse the dynamic-DPI cap in the half-open interval [0, 1).
+
+    Args:
+        value: Numeric text supplied by argparse.
+
+    Returns:
+        float: Validated DPI cap.
+
+    Raises:
+        ValueError: The value cannot be converted to a float.
+        argparse.ArgumentTypeError: The cap is nonfinite or outside [0, 1).
+    """
     parsed = float(value)
     if not math.isfinite(parsed) or not 0 <= parsed < 1:
         raise argparse.ArgumentTypeError("DPI maximum must be finite and within [0,1)")
@@ -56,6 +92,18 @@ def dpi_maximum(value):
 
 
 def sampling_fraction(value):
+    """Parse a subsampling fraction in the interval (0, 1].
+
+    Args:
+        value: Numeric text supplied by argparse.
+
+    Returns:
+        float: Validated fraction of observations to sample.
+
+    Raises:
+        ValueError: The value cannot be converted to a float.
+        argparse.ArgumentTypeError: The fraction is nonfinite or out of range.
+    """
     parsed = float(value)
     if not math.isfinite(parsed) or not 0 < parsed <= 1:
         raise argparse.ArgumentTypeError("subsample fraction must be within (0,1]")
@@ -63,6 +111,18 @@ def sampling_fraction(value):
 
 
 def sampling_size(value):
+    """Parse an exact subsample size of at least two observations.
+
+    Args:
+        value: Integer text supplied by argparse.
+
+    Returns:
+        int: Requested size; dataset-dependent bounds are checked later.
+
+    Raises:
+        ValueError: The value cannot be converted to an integer.
+        argparse.ArgumentTypeError: The size is less than two.
+    """
     parsed = int(value)
     if parsed < 2:
         raise argparse.ArgumentTypeError("subsample size must be at least 2")
@@ -70,6 +130,18 @@ def sampling_size(value):
 
 
 def minimum_recurrence(value):
+    """Parse a positive minimum number of distinct supporting networks.
+
+    Args:
+        value: Integer text supplied by argparse.
+
+    Returns:
+        int: Recurrence threshold; its upper bound is resolved with the profile.
+
+    Raises:
+        ValueError: The value cannot be converted to an integer.
+        argparse.ArgumentTypeError: The count is less than one.
+    """
     parsed = int(value)
     if parsed < 1:
         raise argparse.ArgumentTypeError("minimum recurrence must be at least 1")
@@ -77,6 +149,18 @@ def minimum_recurrence(value):
 
 
 def bootstrap_count(value):
+    """Parse a positive integer for count-valued CLI options.
+
+    Args:
+        value: Integer text supplied by argparse for networks, depth, or jobs.
+
+    Returns:
+        int: Validated positive count.
+
+    Raises:
+        ValueError: The value cannot be converted to an integer.
+        argparse.ArgumentTypeError: The count is less than one.
+    """
     parsed = int(value)
     if parsed < 1:
         raise argparse.ArgumentTypeError("bootstrap count must be at least 1")
@@ -84,6 +168,18 @@ def bootstrap_count(value):
 
 
 def consensus_probability(value):
+    """Parse a legacy consensus probability in the interval (0, 1].
+
+    Args:
+        value: Numeric text supplied by argparse.
+
+    Returns:
+        float: Validated probability, not a recurrence threshold.
+
+    Raises:
+        ValueError: The value cannot be converted to a float.
+        argparse.ArgumentTypeError: The probability is nonfinite or out of range.
+    """
     parsed = float(value)
     if not math.isfinite(parsed) or not 0 < parsed <= 1:
         raise argparse.ArgumentTypeError("consensus p-value must be within (0,1]")
@@ -91,6 +187,14 @@ def consensus_probability(value):
 
 
 def build_parser():
+    """Build the CLI without resolving dataset-dependent scientific options.
+
+    Scientific profiles, workflow engines, and scheduling resources are separate
+    choices. Additional cross-option and engine constraints are checked in main.
+
+    Returns:
+        argparse.ArgumentParser: Parser for the local command and its run alias.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("-e", "--exp-file", required=True, help="Expression matrix (ID, symbol, observations)")
@@ -133,6 +237,17 @@ def build_parser():
 
 
 def require_tool(name):
+    """Find the requested executable without selecting a fallback engine.
+
+    Args:
+        name: Executable name or path accepted by shutil.which.
+
+    Returns:
+        str: Located executable path.
+
+    Raises:
+        ValueError: The executable cannot be found.
+    """
     found = shutil.which(str(name))
     if not found:
         raise ValueError("Required executable not found: {}. Install it explicitly; no engine fallback is performed.".format(name))
@@ -140,6 +255,19 @@ def require_tool(name):
 
 
 def check_sprocket_version(executable):
+    """Require the tested Sprocket version from its combined version output.
+
+    Args:
+        executable: Path to the Sprocket executable.
+
+    Returns:
+        str: Stripped stdout and stderr from the version command.
+
+    Raises:
+        ValueError: The reported version does not match the pinned version.
+        OSError: The executable cannot be started.
+        subprocess.CalledProcessError: The version command exits unsuccessfully.
+    """
     result = subprocess.run([str(executable), "--version"], check=True, capture_output=True, text=True)
     version = (result.stdout + result.stderr).strip()
     if not re.search(r"^sprocket v?" + re.escape(SPROCKET_VERSION) + r"(?:\s|$)", version):
@@ -148,6 +276,17 @@ def check_sprocket_version(executable):
 
 
 def memory_bytes(value):
+    """Parse a positive memory quantity for scheduling-budget comparisons.
+
+    Args:
+        value: Quantity with a supported, case-sensitive binary or decimal unit.
+
+    Returns:
+        float: Quantity converted to bytes, without checking available host RAM.
+
+    Raises:
+        ValueError: The quantity has invalid syntax or is not positive.
+    """
     match = re.fullmatch(r"\s*([0-9]+(?:\.[0-9]+)?)\s*(B|KiB|MiB|GiB|TiB|KB|MB|GB|TB)\s*", value)
     if not match or float(match.group(1)) <= 0:
         raise ValueError("Memory must be a positive quantity such as '4 GiB'")
@@ -157,6 +296,19 @@ def memory_bytes(value):
 
 
 def local_config(jobs, memory):
+    """Render a trusted-host Sprocket backend and scatter configuration.
+
+    Jobs and total memory belong to engine configuration, not WDL inputs.
+    Per-task memory requests are supplied separately; neither these reservations
+    nor the backend budget impose a hard process-memory limit.
+
+    Args:
+        jobs: Positive local CPU and scatter-slot budget, already validated.
+        memory: Validated total scheduling-memory quantity, including its unit.
+
+    Returns:
+        str: TOML configuration with retries and task caching disabled.
+    """
     return ('# Generated trusted-host configuration; no container isolation.\n'
             '[run.backends.default]\ntype = "local"\ncpu = {}\nmemory = {}\n\n'
             '[run.workflow.scatter]\nconcurrency = {}\n\n'
@@ -164,6 +316,14 @@ def local_config(jobs, memory):
 
 
 def execution_env():
+    """Prepare engine subprocesses to use this package and numerical thread caps.
+
+    The parent environment is copied, not modified. Package binaries and the
+    active Python directory lead PATH, and the package parent leads PYTHONPATH.
+
+    Returns:
+        dict: Environment requesting one thread from OpenBLAS, OpenMP, and MKL.
+    """
     environment = os.environ.copy()
     environment["PATH"] = os.pathsep.join((str(PACKAGE / "bin"), str(Path(sys.executable).parent), environment.get("PATH", "")))
     environment["PYTHONPATH"] = os.pathsep.join(filter(None, (str(PACKAGE.parent), environment.get("PYTHONPATH", ""))))
@@ -173,7 +333,22 @@ def execution_env():
 
 
 def run_shell_command_call(cmd):
-    """Execute literal argv, teeing streams to this run's logs and console."""
+    """Run a command without a shell, retaining configured engine stream logs.
+
+    An execution context supplies the environment and log paths. Without log
+    paths, the child inherits the normal streams. With logs, both pipes are
+    drained concurrently; console failures do not discard retained output.
+
+    Args:
+        cmd: Argument sequence, or command text split into arguments by shlex.
+
+    Returns:
+        int: Zero after a successful command and successful stream retention.
+
+    Raises:
+        OSError: The child cannot start, or a configured stream log cannot be kept.
+        subprocess.CalledProcessError: The command exits with a nonzero status.
+    """
     argv = shlex.split(cmd) if isinstance(cmd, str) else [str(value) for value in cmd]
     context = _EXECUTION_CONTEXT.get() or {}
     if context.get("stdout") is None:
@@ -183,6 +358,13 @@ def run_shell_command_call(cmd):
                               stderr=subprocess.PIPE, text=True, bufsize=1) as process:
             errors = []
             def tee(source, log, destination):
+                """Drain one child pipe, keeping its log even if the console fails.
+
+                Args:
+                    source: Readable child-process text stream, closed on exit.
+                    log: Retained UTF-8 log stream.
+                    destination: Console text stream, or None to disable echoing.
+                """
                 try:
                     for line in source:
                         log.write(line)
@@ -200,6 +382,7 @@ def run_shell_command_call(cmd):
                     process.terminate()
                 finally:
                     source.close()
+            # Drain stdout and stderr together so a full pipe cannot stall the child.
             threads = [threading.Thread(target=tee, args=values) for values in (
                 (process.stdout, stdout_log, sys.stdout), (process.stderr, stderr_log, sys.stderr))]
             for thread in threads:
@@ -215,11 +398,32 @@ def run_shell_command_call(cmd):
 
 
 def ensure_empty_output(path):
+    """Reject output paths that would reuse existing content or a symlink.
+
+    Args:
+        path: pathlib.Path naming a new or empty output directory.
+
+    Raises:
+        ValueError: The path is a symlink, a non-directory, or a nonempty directory.
+        OSError: Existing directory contents cannot be inspected.
+    """
     if path.is_symlink() or (path.exists() and (not path.is_dir() or any(path.iterdir()))):
         raise ValueError("Output must be a new or empty directory; refusing to overwrite: " + str(path))
 
 
 def normalized_input(path, name):
+    """Resolve an input path and require an existing regular file.
+
+    Args:
+        path: Input path, optionally containing a user-home abbreviation.
+        name: Human-readable input label used in validation errors.
+
+    Returns:
+        pathlib.Path: Resolved absolute input path.
+
+    Raises:
+        ValueError: The resolved input is not an existing file.
+    """
     candidate = Path(path).expanduser().resolve()
     if not candidate.is_file():
         raise ValueError(name + " does not exist: " + str(candidate))
@@ -227,6 +431,21 @@ def normalized_input(path, name):
 
 
 def science_request(args):
+    """Extract explicit scientific options independently of engine resources.
+
+    None-valued options remain absent for resolve_options to fill from the profile;
+    parser-supplied defaults such as the profile itself are retained.
+    An explicit tolerance selects fixed DPI unless dynamic DPI was also requested.
+
+    Args:
+        args: Parsed CLI namespace, including sampling and DPI options.
+
+    Returns:
+        dict: Scientific request with a normalized subsampling specification.
+
+    Raises:
+        ValueError: Explicit fixed tolerance conflicts with explicit dynamic DPI.
+    """
     values = {name: getattr(args, name, None) for name in SCIENTIFIC_FIELDS}
     if args.subsample_size is not None:
         values["subsample_spec"] = str(args.subsample_size)
@@ -240,6 +459,21 @@ def science_request(args):
 
 
 def make_cwl_job(args, parameters, expression, hubs, config):
+    """Map resolved scientific settings into the retained CWL input contract.
+
+    Engine selection does not select the scientific profile. CWL's sampling and
+    null-model encodings are translated here; Sprocket budgets are not CWL inputs.
+
+    Args:
+        args: Parsed CLI namespace providing the final output directory name.
+        parameters: Validated scientific options returned by resolve_options.
+        expression: Resolved expression-matrix path.
+        hubs: Resolved source-ID file path.
+        config: Resolved ARACNe configuration directory.
+
+    Returns:
+        dict: CWL inputs with File and Directory objects and scientific settings.
+    """
     job = {"exp_file": {"class": "File", "path": str(expression)},
            "probe_file": {"class": "File", "path": str(hubs)},
            "aracne_config_dir": {"class": "Directory", "path": str(config)},
@@ -256,12 +490,33 @@ def make_cwl_job(args, parameters, expression, hubs, config):
 
 
 def write_json(path, data):
+    """Write deterministic, UTF-8 JSON without nonstandard numeric values.
+
+    Args:
+        path: Destination file; parent directories must already exist.
+        data: JSON-serializable value to write with sorted keys and a final newline.
+
+    Raises:
+        OSError: The destination cannot be written.
+        TypeError: A value cannot be serialized as JSON.
+        ValueError: A value is circular or contains NaN or infinity.
+    """
     with Path(path).open("w", encoding="utf-8", newline="\n") as output:
         json.dump(data, output, sort_keys=True, indent=2, allow_nan=False)
         output.write("\n")
 
 
 def path_within(path, root):
+    """Check resolved path containment, including symlink resolution.
+
+    Args:
+        path: Candidate file or directory path.
+        root: Expected containing directory.
+
+    Returns:
+        bool: Whether the candidate resolves inside or exactly to root; false for
+            paths whose common root cannot be compared, such as different drives.
+    """
     try:
         return os.path.commonpath((str(Path(path).resolve()), str(Path(root).resolve()))) == str(Path(root).resolve())
     except ValueError:
@@ -269,6 +524,26 @@ def path_within(path, root):
 
 
 def publish_sprocket_outputs(engine_root, output, expected_runtime=None, expected_parameters=None):
+    """Validate one completed execution and copy its final files without overwrite.
+
+    Every required source must resolve within this execution. When supplied,
+    expected runtime and scientific settings are compared with task-prepared
+    provenance before publication. All sources are checked before copying, but
+    publication is not transactional: a copy failure may leave partial evidence.
+
+    Args:
+        engine_root: Fresh Sprocket execution directory as a pathlib.Path.
+        output: Final output directory as a pathlib.Path.
+        expected_runtime: Optional CLI-preflight runtime fingerprint to verify.
+        expected_parameters: Optional resolved scientific settings to verify.
+
+    Returns:
+        tuple: Engine outputs.json path and published-file paths with SHA256 hashes.
+
+    Raises:
+        ValueError: Completion, provenance, containment, or overwrite checks fail.
+        OSError: Engine evidence cannot be read or final files cannot be copied.
+    """
     runs = engine_root / "runs/SJARACNe"
     candidates = [path / "outputs.json" for path in runs.iterdir()
                   if path.is_dir() and not path.name.startswith("_") and (path / "outputs.json").is_file()] if runs.is_dir() else []
@@ -298,6 +573,7 @@ def publish_sprocket_outputs(engine_root, output, expected_runtime=None, expecte
             raise ValueError("Refusing to overwrite published output: " + str(destination))
         sources[key] = (source, destination)
     published = {}
+    # Exclusive creation protects each destination even after the earlier check.
     for key, (source, destination) in sources.items():
         with source.open("rb") as reader, destination.open("xb") as writer:
             shutil.copyfileobj(reader, writer)
@@ -307,7 +583,18 @@ def publish_sprocket_outputs(engine_root, output, expected_runtime=None, expecte
 
 
 def validate_cwl_outputs(output):
-    """An engine exit status alone does not establish a completed workflow."""
+    """Require and hash CWL's final files rather than trusting engine exit alone.
+
+    Args:
+        output: Directory where CWL was instructed to publish final files.
+
+    Returns:
+        dict: Required output keys mapped to their file paths and SHA256 hashes.
+
+    Raises:
+        ValueError: A required final file is absent.
+        OSError: A final file cannot be read for hashing.
+    """
     published = {}
     for key, filename in FINAL_OUTPUTS.items():
         path = Path(output) / filename
@@ -318,6 +605,24 @@ def validate_cwl_outputs(output):
 
 
 def main(argv=None):
+    """Validate, execute, and publish one workflow while retaining run evidence.
+
+    Preflight resolves scientific settings separately from engine configuration
+    and checks inputs before creating final output artifacts. Once execution is
+    prepared, failures retain the manifest and any engine logs or work files
+    already created.
+    Existing output content is never deliberately cleared for a retry.
+
+    Args:
+        argv: Optional argument sequence; None uses sys.argv without the program.
+
+    Returns:
+        int: Zero for a completed workflow or an invocation with no arguments.
+
+    Raises:
+        SystemExit: Argparse handles help, invalid input, or a recorded run failure.
+        OSError: Output setup or failure-evidence writing cannot be completed.
+    """
     parser = build_parser()
     arguments = list(sys.argv[1:] if argv is None else argv)
     if not arguments:
@@ -332,6 +637,7 @@ def main(argv=None):
     logging.basicConfig(level=logging.INFO)
     try:
         engine = args.engine or "sprocket"
+        # Reject incompatible engine/concurrency options instead of ignoring them.
         if engine == "cwl" and args.sprocket_config is not None:
             raise ValueError("--sprocket-config is only valid with --engine sprocket")
         if engine == "cwl" and args.jobs is not None:
@@ -350,6 +656,7 @@ def main(argv=None):
         with expression.open(encoding="utf-8-sig") as handle:
             observations = len(handle.readline().rstrip("\r\n").split("\t")) - 2
         parameters = resolve_options(science_request(args), observations)
+        # A custom engine config owns its backend budget; task requests stay inputs.
         for value in (args.memory, args.prepare_memory, args.inference_memory, args.consensus_memory):
             memory_bytes(value)
         if engine == "sprocket" and args.sprocket_config is None:
@@ -360,12 +667,14 @@ def main(argv=None):
         version = check_sprocket_version(tool) if engine == "sprocket" else None
         if args.sprocket_config is not None:
             normalized_input(args.sprocket_config, "Sprocket configuration")
+        # Capture runtime/config identity for evidence and Sprocket publication checks.
         runtime = runtime_fingerprint(str(config))
         with tempfile.TemporaryDirectory(prefix="sjaracne-preflight-") as temporary:
             validate_inputs(str(expression), str(hubs), str(Path(temporary) / "validation.txt"))
     except (ValueError, OSError, subprocess.SubprocessError) as error:
         parser.error(str(error))
 
+    # Recheck after preflight without deleting anything created in the meantime.
     ensure_empty_output(output)
     output.mkdir(parents=True, exist_ok=True)
     manifest_path = output / "sjaracne_run.json"
@@ -385,6 +694,7 @@ def main(argv=None):
             record["engine_output_dir"] = str(engine_root)
             job = {"SJARACNe.exp_file": str(expression), "SJARACNe.probe_file": str(hubs), "SJARACNe.aracne_config_dir": str(config)}
             job.update({"SJARACNe." + name: value for name, value in parameters.items() if name in SCIENTIFIC_FIELDS})
+            # Only per-task requests enter WDL; --jobs/--memory configure the engine.
             for name in ("prepare_memory", "inference_memory", "consensus_memory"):
                 job["SJARACNe." + name] = getattr(args, name)
             if args.sprocket_config:
@@ -421,6 +731,7 @@ def main(argv=None):
         record["state"] = "complete"
         write_json(manifest_path, record)
     except (ValueError, OSError, subprocess.SubprocessError) as error:
+        # Keep failed-run artifacts for diagnosis; a retry needs a new/empty output.
         record.update(state="failed", error=str(error))
         write_json(manifest_path, record)
         parser.exit(1, "Workflow failed: {}\nEvidence retained: {}\n".format(error, output))
