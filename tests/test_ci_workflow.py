@@ -227,6 +227,22 @@ class TestCIWorkflow(unittest.TestCase):
                 self.assertIs(statuses[flag]['informational'], True)
                 self.assertNotIn('target', statuses[flag])
 
+    def test_project_badges_precede_ci_and_link_to_this_repository(self):
+        readme = (ROOT / 'README.md').read_text(encoding='utf-8')
+        badges = re.findall(r'\[!\[([^\]]+)\]\(([^)]+)\)\]\(([^)]+)\)', readme)
+        self.assertEqual([label for label, _, _ in badges[:6]],
+                         ['Status', 'Issues', 'Pull requests', 'CI',
+                          'Python coverage', 'C++ core coverage'])
+        repository = 'https://github.com/adamdingliang/SJARACNe'
+        expected = [
+            ('https://img.shields.io/badge/status-active-success.svg', repository),
+            ('https://img.shields.io/github/issues/adamdingliang/SJARACNe', repository + '/issues'),
+            ('https://img.shields.io/github/issues-pr/adamdingliang/SJARACNe', repository + '/pulls'),
+        ]
+        for (_, image, target), (expected_image, expected_target) in zip(badges[:3], expected):
+            self.assertEqual(image, expected_image)
+            self.assertEqual(target.split()[0], expected_target)
+
     def test_readme_badges_label_and_filter_each_develop_coverage_report(self):
         readme = (ROOT / 'README.md').read_text(encoding='utf-8')
         badges = re.findall(r'\[!\[([^\]]+)\]\((https://img\.shields\.io/codecov/[^)]+)\)\]',

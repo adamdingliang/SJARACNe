@@ -4,6 +4,9 @@ SJARACNe is a command-line tool for reconstructing gene regulatory networks
 from gene expression data. It builds transcription factor (TF) and signaling
 (SIG) networks for exploring candidate regulators and their target genes.
 
+[![Status](https://img.shields.io/badge/status-active-success.svg)](https://github.com/adamdingliang/SJARACNe "Active development")
+[![Issues](https://img.shields.io/github/issues/adamdingliang/SJARACNe)](https://github.com/adamdingliang/SJARACNe/issues "Open issues")
+[![Pull requests](https://img.shields.io/github/issues-pr/adamdingliang/SJARACNe)](https://github.com/adamdingliang/SJARACNe/pulls "Open pull requests")
 [![CI](https://img.shields.io/github/actions/workflow/status/adamdingliang/SJARACNe/regression.yml?branch=develop&event=push&label=CI)](https://github.com/adamdingliang/SJARACNe/actions/workflows/regression.yml?query=branch%3Adevelop "Regression status for develop")
 [![Python coverage](https://img.shields.io/codecov/c/github/adamdingliang/SJARACNe/develop?flag=python&label=Python)](https://codecov.io/gh/adamdingliang/SJARACNe "Python runtime coverage for develop")
 [![C++ core coverage](https://img.shields.io/codecov/c/github/adamdingliang/SJARACNe/develop?flag=cpp&label=C%2B%2B)](https://codecov.io/gh/adamdingliang/SJARACNe "C++ core coverage for develop")
