@@ -53,11 +53,13 @@ import os
 from pathlib import Path
 import sys
 import coverage
-os.environ["COVERAGE_PROCESS_START"] = CONFIG
+os.environ.pop("COVERAGE_PROCESS_CONFIG", None)
+os.environ.pop("COVERAGE_FILE", None)
+os.environ["COVERAGE_PROCESS_START"] = __SJARACNE_CONFIG_PATH__
 coverage.process_startup()
-(Path(AUDIT) / (str(os.getpid()) + ".json")).write_text(
+(Path(__SJARACNE_AUDIT_PATH__) / (str(os.getpid()) + ".json")).write_text(
     json.dumps({"pid": os.getpid(), "argv": sys.orig_argv}) + "\\n", encoding="utf-8")
-'''.replace("CONFIG", repr(str(config))).replace("AUDIT", repr(str(audit)))
+'''.replace("__SJARACNE_CONFIG_PATH__", repr(str(config))).replace("__SJARACNE_AUDIT_PATH__", repr(str(audit)))
     owned = {}
     try:
         for path, content in ((module, code), (hook, "import " + HOOK_MODULE + "\n")):
@@ -207,13 +209,23 @@ class CoverageSession:
 
     def report(self):
         """Create separate nonempty reports only after all strict tests finish."""
-        from coverage import Coverage
-
         if self.owned:
             raise RuntimeError("Remove coverage startup hooks before reporting")
+        previous = Path.cwd()
+        try:
+            # coverage.py anchors relative filenames during initialization.
+            os.chdir(self.root)
+            return self._report_in_root()
+        finally:
+            os.chdir(previous)
+
+    def _report_in_root(self):
+        """Generate reports with canonical repository-relative filenames."""
+        from coverage import Coverage
+
         self.details["persisted_task_coverage"] = persisted_task_coverage(
             self.data, self.audit, self.root / "SJARACNe")
-        coverage = Coverage(config_file=str(self.config))
+        coverage = Coverage(config_file=str(self.config), data_file=str(self.data / ".coverage"))
         coverage.combine(data_paths=[str(self.data)], strict=True, keep=True)
         coverage.save()
         coverage.xml_report(outfile=str(self.output / "python.xml"))

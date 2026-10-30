@@ -89,7 +89,7 @@ class TestStartupHook(unittest.TestCase):
                     support.write_hook(root, root / "coverage.rc", root / "audit")
             self.assertEqual(list(root.iterdir()), [])
 
-    def test_child_uses_the_same_absolute_config_with_missing_or_foreign_environment(self):
+    def test_child_ignores_foreign_coverage_settings_and_keeps_absolute_config(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             startup = root / "site-packages"
@@ -111,7 +111,11 @@ import sys
 import types
 coverage = types.ModuleType("coverage")
 def process_startup():
-    Path(sys.argv[2]).write_text(json.dumps({"config": os.environ["COVERAGE_PROCESS_START"]}), encoding="utf-8")
+    Path(sys.argv[2]).write_text(json.dumps({
+        "config": os.environ["COVERAGE_PROCESS_START"],
+        "process_config": os.environ.get("COVERAGE_PROCESS_CONFIG"),
+        "data_file": os.environ.get("COVERAGE_FILE"),
+    }), encoding="utf-8")
 coverage.process_startup = process_startup
 sys.modules["coverage"] = coverage
 site.addsitedir(sys.argv[1])
@@ -122,15 +126,21 @@ site.addsitedir(sys.argv[1])
                         proof = root / ("proof-%d.json" % index)
                         environment = os.environ.copy()
                         environment.pop("COVERAGE_PROCESS_START", None)
+                        environment.pop("COVERAGE_PROCESS_CONFIG", None)
+                        environment.pop("COVERAGE_FILE", None)
                         environment.pop("PYTHONPATH", None)
                         if inherited is not None:
                             environment["COVERAGE_PROCESS_START"] = inherited
+                            environment["COVERAGE_PROCESS_CONFIG"] = "foreign serialized configuration"
+                            environment["COVERAGE_FILE"] = str(root / "foreign.data")
                         result = subprocess.run(
                             [sys.executable, "-I", "-S", "-c", child, str(startup), str(proof)],
                             cwd=root, env=environment, capture_output=True, text=True, check=False,
                         )
                         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                        self.assertEqual(json.loads(proof.read_text(encoding="utf-8")), {"config": str(config)})
+                        self.assertEqual(json.loads(proof.read_text(encoding="utf-8")), {
+                            "config": str(config), "process_config": None, "data_file": None,
+                        })
                 markers = [json.loads(path.read_text(encoding="utf-8")) for path in audit.glob("*.json")]
                 self.assertEqual(len(markers), 2)
                 self.assertTrue(all(isinstance(marker["pid"], int) and marker["argv"] for marker in markers))
@@ -377,14 +387,63 @@ class TestCoverageSession(unittest.TestCase):
                 session.close()
 
     def test_report_requires_the_owned_hook_to_be_closed(self):
-        fake = types.ModuleType("coverage")
-        fake.Coverage = mock.Mock()
-        with tempfile.TemporaryDirectory() as temporary, mock.patch.dict(sys.modules, {"coverage": fake}):
+        with tempfile.TemporaryDirectory() as temporary, mock.patch.dict(sys.modules, {"coverage": None}):
             session = support.CoverageSession(temporary, temporary)
             session.owned = {Path(temporary) / "hook.pth": "owned"}
-            with self.assertRaisesRegex(RuntimeError, "Remove coverage startup hooks before reporting"):
-                session.report()
-        fake.Coverage.assert_not_called()
+            with mock.patch.object(session, "_report_in_root") as report:
+                with self.assertRaisesRegex(RuntimeError, "Remove coverage startup hooks before reporting"):
+                    session.report()
+            report.assert_not_called()
+
+    def test_report_runs_in_checkout_and_restores_callers_directory_after_success(self):
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            checkout, caller = root / "source", root / "report caller"
+            checkout.mkdir()
+            caller.mkdir()
+            session = support.CoverageSession(checkout, root)
+            expected = {"complete": True}
+
+            def report_in_root():
+                self.assertEqual(Path.cwd(), checkout)
+                return expected
+
+            try:
+                os.chdir(caller)
+                with mock.patch.dict(sys.modules, {"coverage": None}), \
+                        mock.patch.object(session, "_report_in_root", side_effect=report_in_root) as report:
+                    self.assertIs(session.report(), expected)
+                report.assert_called_once_with()
+                self.assertEqual(Path.cwd(), caller)
+            finally:
+                os.chdir(previous)
+
+    def test_report_restores_callers_directory_when_report_generation_raises(self):
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            checkout, caller = root / "source", root / "report caller"
+            checkout.mkdir()
+            caller.mkdir()
+            session = support.CoverageSession(checkout, root)
+            expected = RuntimeError("mock report failure")
+
+            def report_in_root():
+                self.assertEqual(Path.cwd(), checkout)
+                raise expected
+
+            try:
+                os.chdir(caller)
+                with mock.patch.dict(sys.modules, {"coverage": None}), \
+                        mock.patch.object(session, "_report_in_root", side_effect=report_in_root) as report:
+                    with self.assertRaises(RuntimeError) as raised:
+                        session.report()
+                self.assertIs(raised.exception, expected)
+                report.assert_called_once_with()
+                self.assertEqual(Path.cwd(), caller)
+            finally:
+                os.chdir(previous)
 
 
 if __name__ == "__main__":
