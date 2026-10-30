@@ -29,7 +29,6 @@ from urllib.parse import unquote, urlparse
 ROOT = Path(__file__).resolve().parents[2]
 WDL = ROOT / "SJARACNe/wdl/sjaracne.wdl"
 CWL = ROOT / "SJARACNe/cwl/sjaracne_workflow.cwl"
-CONFIG = ROOT / "SJARACNe/wdl/sprocket.local.toml"
 NATIVE = ROOT / "SJARACNe/bin/sjaracne.exe"
 SPROCKET_VERSION = "0.32.0"
 PATH_HEADER = re.compile(r"^(>\s+(?:Input file|Subnetwork file)\s+).*$")
@@ -207,11 +206,20 @@ class ParityRun:
         self.env["PATH"] = os.pathsep.join((
             str(NATIVE.parent), str(Path(sys.executable).absolute().parent), self.env.get("PATH", ""),
         ))
+        # Tiny fixtures need only two 1-GiB task reservations. Do not inherit the
+        # production 16-GiB backend budget on memory-limited hosted runners.
+        from SJARACNe.sjaracne import local_config
+        self.backend_config = self.output / "sprocket.test.toml"
+        self.backend_config.write_text(local_config(2, "2 GiB"), encoding="utf-8")
         self.summary = {
             "schema": "sjaracne-wdl13-parity-v2", "started_utc": now(), "complete": False,
             "passed": False, "failed_checks": 0, "checks": [], "commands": [], "cases": [],
             "source_root": str(ROOT), "python": sys.version,
             "scope": "tiny functional scientific parity only; no dataset benchmark",
+            "fixture_resources": {
+                "cpu": 2, "backend_memory": "2 GiB", "task_memory": "1 GiB",
+                "config": str(self.backend_config), "config_sha256": sha256(self.backend_config),
+            },
             "path_normalization": {
                 "native_headers": ["Input file", "Subnetwork file"],
                 "parameter_info": ["Input file", "Subnetwork file", "Output network"],
@@ -256,7 +264,7 @@ class ParityRun:
         return entry
 
     def sprocket_command(self, action):
-        return [self.sprocket, "--skip-config-search", "--config", CONFIG, action]
+        return [self.sprocket, "--skip-config-search", "--config", self.backend_config, action]
 
     def preflight(self):
         if platform.system() != "Linux":
@@ -273,7 +281,7 @@ class ParityRun:
                               for name in ("node", "nodejs") if shutil.which(name, path=self.env["PATH"])), None)
         if not tools["node"]:
             raise RuntimeError("Node.js is required for the real CWL workflow")
-        for path in (WDL, CWL, CONFIG):
+        for path in (WDL, CWL, self.backend_config):
             if not path.is_file():
                 raise RuntimeError("Missing workflow/configuration file: " + str(path))
         self.summary["versions"] = {
@@ -588,6 +596,8 @@ class ParityRun:
             self.check("tested_sources_unchanged", self.summary["source_sha256"] == source_hashes())
             self.check("tested_native_unchanged", self.summary["native_sha256"] == sha256(NATIVE))
             self.check("tested_sprocket_unchanged", self.summary["sprocket_sha256"] == sha256(self.sprocket))
+            self.check("fixture_config_unchanged",
+                       self.summary["fixture_resources"]["config_sha256"] == sha256(self.backend_config))
             self.summary.update(passed=True, complete=True, completed_utc=now())
             self.persist()
             print("PASS: {} checks, 0 failed; {}".format(len(self.summary["checks"]), self.output / "summary.json"), flush=True)

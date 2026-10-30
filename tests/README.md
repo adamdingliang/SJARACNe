@@ -136,6 +136,11 @@ GitHub Actions installs a checksum-verified Sprocket and therefore executes
 both real default CLI runs and the paired engine matrix. No production dataset
 benchmarks are launched by either check.
 
+The tiny Sprocket fixtures use two worker slots, a 2-GiB backend budget and
+1-GiB per-task requests, rather than inheriting production resource defaults.
+The parity runner saves its generated configuration and hash in the evidence.
+These test-only scheduling settings do not change scientific profile defaults.
+
 ## GitHub Actions
 
 `.github/workflows/regression.yml` runs this same strict small regression on

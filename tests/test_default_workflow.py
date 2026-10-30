@@ -73,7 +73,10 @@ class TestDefaultWorkflow(unittest.TestCase):
         if engine is not None:
             command += ["--engine", engine]
         if engine in (None, "sprocket"):
-            command += ["--sprocket", self.sprocket, "--jobs", "2"]
+            # Tiny-fixture resource overrides leave scientific defaults unchanged.
+            command += ["--sprocket", self.sprocket, "--jobs", "2", "--memory", "2 GiB",
+                        "--prepare-memory", "1 GiB", "--inference-memory", "1 GiB",
+                        "--consensus-memory", "1 GiB"]
         command += list(options)
         process = subprocess.run(command, cwd=ROOT, env=self.env, capture_output=True, text=True)
         return process, output

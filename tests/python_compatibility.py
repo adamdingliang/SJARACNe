@@ -202,8 +202,11 @@ class CompatibilityRun:
     def run_case(self, label, name, options, expression, hubs):
         python = self.pythons[label]
         output = self.output / "cases" / name / label
+        # Tiny-fixture resource overrides leave scientific defaults unchanged.
         argv = [python, "-m", "SJARACNe.sjaracne", "local", "--sprocket", self.sprocket,
-                "--jobs", "2", "-e", expression, "-g", hubs, "-n", "6", "-o", output]
+                "--jobs", "2", "--memory", "2 GiB", "--prepare-memory", "1 GiB",
+                "--inference-memory", "1 GiB", "--consensus-memory", "1 GiB",
+                "-e", expression, "-g", hubs, "-n", "6", "-o", output]
         self.command(name + "_" + label, argv + list(options), self.environment(python))
         manifest = json.loads((output / "sjaracne_run.json").read_text(encoding="utf-8"))
         if manifest["state"] != "complete" or manifest["engine"] != "sprocket":
