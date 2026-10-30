@@ -1,0 +1,32 @@
+# Independent, informational Python and native-core reports; no coverage gate.
+coverage:
+  status:
+    project:
+      default: false
+      python:
+        flags: [python]
+        informational: true
+      cpp:
+        flags: [cpp]
+        informational: true
+    patch:
+      default: false
+      python:
+        flags: [python]
+        informational: true
+      cpp:
+        flags: [cpp]
+        informational: true
+
+flags:
+  python:
+    paths:
+      - SJARACNe/*.py
+      - SJARACNe/bin/*.py
+    carryforward: false
+  cpp:
+    paths:
+      - SJARACNe/src/
+    carryforward: false
+
+comment: false

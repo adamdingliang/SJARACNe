@@ -154,7 +154,9 @@ Both lanes install uv **0.11.16**, sync the same committed `uv.lock` with
 `--locked --group regression --extra cwl`, and must pass independently
 (`fail-fast: false`, no allowed failures). Python markers retain the previously
 validated numerical/CWL versions for each lane; these are environment pins, not
-new published runtime dependency minimums. CI prepares one environment per lane
+new published runtime dependency minimums. Only the 3.14 lane also selects
+`--group coverage` and runs the regression with `--coverage`; 3.11 remains
+uninstrumented. CI prepares one environment per lane
 under `RUNNER_TEMP`, then runs tests with `--no-sync` so execution does not
 silently update dependencies. It does not share mutable runtime environments or
 depend on a restored dependency cache.
@@ -170,15 +172,75 @@ Sprocket's external binary remains pinned to
 0.32.0 and its release-archive SHA256. The lock/metadata hashes, complete
 requirements export, `pip freeze`, tool versions, test logs, counts and
 source/binary hashes are saved as a version-specific seven-day Actions artifact.
-Actions are pinned by commit SHA, permissions are read-only, and no repository
-secret is required. None of this claims hosted or cluster success before the
-corresponding workflow actually runs.
+Actions are pinned by commit SHA. Repository contents remain read-only; the
+regression job additionally allows `id-token: write` for Codecov's OIDC upload,
+not repository writes. No upload secret is required. None of this claims hosted
+or cluster success before the corresponding workflow actually runs.
 
 The job is bounded to 20 minutes (15 minutes for regression), cancels superseded
 runs, and does not invoke manual examples or large biological benchmark batches.
 Manual dispatch is also available once the workflow is present on the default
 branch. GitHub's regular PR event tests its merge revision; the run metadata
 records the tested SHA and event.
+
+## Execution coverage
+
+The Python 3.14 CI lane collects separate Python and C++ core reports after the
+same strict tests, CWL validation, Bats utilities and real engine parity checks.
+The 3.11 lane remains the ordinary, uninstrumented compatibility check. The
+optional `coverage` group pins coverage.py **7.17.0** and gcovr **8.8**; neither
+is a published runtime requirement or installed by default.
+
+For a local measurement, use a **dedicated checkout** and a **new environment
+outside that checkout**, not an environment used by analyses:
+
+```bash
+export UV_PROJECT_ENVIRONMENT=/absolute/path/sjaracne-coverage-env
+uv sync --locked --python 3.14 --group regression --group coverage --extra cwl
+uv run --locked --no-sync python tests/run_regression.py --coverage --jobs 4 \
+  --output-dir /absolute/path/new-coverage-evidence
+```
+
+Coverage mode rebuilds native programs with GCC `-O0`, compile/link `--coverage`
+and atomic counter updates. It does not restore ordinary `-O3` binaries
+afterward; rebuild normally before using that checkout for analyses. The runner
+requires a virtual environment outside the checkout and temporarily installs
+its owned Python startup hook there, with checked cleanup on exit. This captures
+Python tasks even when CWL scrubs the environment. It never installs a hook in
+the package or system Python. CI's independent fresh-install/cache probes run
+before the hook is enabled.
+
+After successful tests, `coverage/python.xml`, `coverage/cpp.xml` and
+`coverage/summary.json` are written under the evidence directory. Python uses
+the package's nine runtime modules, not tests, developer tools or dependencies.
+C++ core coverage includes `SJARACNe/src` and executable header lines, excluding
+the generated coefficient table and the separate null-generator command source.
+The shared AP-MI implementation is exercised by both inference and generator
+tests. WDL/CWL and frozen model data are not Python executable statements.
+Fresh packaging-test environments outside the measured source tree are not
+silently counted as instrumented runtime executions.
+
+Line and branch coverage have different denominators. GCC branch counts can
+include compiler-generated and exception paths; they are not directly comparable
+to Python decisions. These are execution measurements from an instrumented
+testing build, not biological accuracy, model calibration or production `-O3`
+numerical validation. Inspect missing paths before choosing coverage thresholds.
+
+CI uploads the explicit XML files separately with Codecov flags `python` and
+`cpp`; report auto-discovery is disabled. Uploads use OIDC after successful
+regression, without a `CODECOV_TOKEN` secret. Fork PRs still collect and preserve
+reports but skip uploads. The job keeps repository contents read-only; its
+`id-token: write` permission allows the upload action to request an identity
+token. Codecov upload errors and per-flag project/patch statuses are
+informational, PR comments are disabled, and old flag results are not carried
+forward as if they were fresh measurements.
+
+The maintainer must enable the repository in the
+[Codecov GitHub app](https://github.com/apps/codecov) before hosted reporting
+works; this is an account permission step, not performed by the runner. The
+README badges filter `develop` by flag and show unknown until reports are
+successfully uploaded. See Codecov's [setup guide](https://docs.codecov.com/docs/quick-start)
+and [flag documentation](https://docs.codecov.com/docs/flags).
 
 ## Ordinary pip and fresh-source installation
 

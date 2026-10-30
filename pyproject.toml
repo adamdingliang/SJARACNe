@@ -34,6 +34,7 @@ version = {attr = "version.__version__"}
 [dependency-groups]
 build = ["pip==26.2.2", "setuptools==84.2.1", "wheel==0.48.0", "build==1.6.1"]
 regression = [{include-group = "build"}]
+coverage = ["coverage==7.17.0", "gcovr==8.8"]
 
 [tool.uv]
 required-version = "==0.11.16"
@@ -67,3 +68,4 @@ cache-keys = [
 [tool.uv.dependency-groups]
 build = {requires-python = ">=3.11"}
 regression = {requires-python = ">=3.11"}
+coverage = {requires-python = ">=3.11"}

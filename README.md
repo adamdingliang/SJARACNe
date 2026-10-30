@@ -5,6 +5,8 @@ from gene expression data. It builds transcription factor (TF) and signaling
 (SIG) networks for exploring candidate regulators and their target genes.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/adamdingliang/SJARACNe/regression.yml?branch=develop&event=push&label=CI)](https://github.com/adamdingliang/SJARACNe/actions/workflows/regression.yml?query=branch%3Adevelop "Regression status for develop")
+[![Python coverage](https://img.shields.io/codecov/c/github/adamdingliang/SJARACNe/develop?flag=python&label=Python)](https://codecov.io/gh/adamdingliang/SJARACNe "Python runtime coverage for develop")
+[![C++ core coverage](https://img.shields.io/codecov/c/github/adamdingliang/SJARACNe/develop?flag=cpp&label=C%2B%2B)](https://codecov.io/gh/adamdingliang/SJARACNe "C++ core coverage for develop")
 
 [Installation](#installation) · [Quick start](#quick-start) ·
 [Inputs](#inputs) · [Configuration](#configuration) ·
@@ -301,6 +303,7 @@ linked benchmark reports for the evidence and its limitations.
 | [Workflow guide](SJARACNe/wdl/README.md) | WDL inputs, dynamic DPI formula, resources, outputs and provenance. |
 | [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) | Legacy profile, local CWL and low-level native behavior. |
 | [Regression guide](tests/README.md) | Test prerequisites, execution and retained evidence. |
+| [Execution coverage](tests/README.md#execution-coverage) | Separate Python/C++ coverage, Codecov setup and measurement limits. |
 | [Environment and deployment guide](docs/uv.md) | uv lockfile, pip alternative, native builds and offline/HPC/cloud precautions. |
 | [Native installation validation](docs/native_build_installation.md) | Automatic C++ builds during source installation and missing-tool diagnostics. |
 | [Current validation report](docs/default_profiles_validation.md) | Default-profile and engine-parity checks, with validation limits. |
@@ -328,9 +331,12 @@ support. Sprocket, Node.js, Bats and the compiler remain system prerequisites.
 
 It tests native correctness, real CLI execution and WDL/CWL scientific parity,
 without launching full dataset benchmark batches. GitHub Actions runs the
-suite on Python 3.11 and 3.14 for PRs into and pushes to `develop` and `master` when the workflow is
-present on the branch. The badge above reports **develop's** push status, not
-this feature branch's validation.
+suite on Python 3.11 and 3.14 for PRs into and pushes to `develop` and `master`
+when the workflow is present on the branch. The CI badge reports **develop's**
+push status; the separate Python and C++ badges report its uploaded execution
+coverage. They do not measure biological accuracy. Coverage may show as unknown
+until Codecov is enabled and a successful upload reaches `develop`; see the
+[coverage guide](tests/README.md#execution-coverage).
 
 ## Support and contributions
 

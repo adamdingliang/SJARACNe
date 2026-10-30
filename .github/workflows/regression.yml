@@ -19,12 +19,17 @@ jobs:
     name: Small regression (Linux, Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # Codecov OIDC only; no repository write access or upload secret.
     strategy:
       fail-fast: false
       matrix:
         include:
           - python-version: '3.11'
+            coverage: false
           - python-version: '3.14'
+            coverage: true
     env:
       PYTHONDONTWRITEBYTECODE: '1'
       PYTHONNOUSERSITE: '1'
@@ -63,8 +68,12 @@ jobs:
       - name: Install locked regression environment and this checkout
         run: |
           mkdir -p "$BOOTSTRAP_OUTPUT"
-          uv sync --locked --python '${{ matrix.python-version }}' --group regression --extra cwl
-          uv export --locked --group regression --extra cwl --no-emit-project --no-hashes --output-file "$BOOTSTRAP_OUTPUT/locked-requirements.txt"
+          coverage_args=()
+          if [[ '${{ matrix.coverage }}' == 'true' ]]; then
+            coverage_args+=(--group coverage)
+          fi
+          uv sync --locked --python '${{ matrix.python-version }}' --group regression --extra cwl "${coverage_args[@]}"
+          uv export --locked --group regression --extra cwl "${coverage_args[@]}" --no-emit-project --no-hashes --output-file "$BOOTSTRAP_OUTPUT/locked-requirements.txt"
           uv run --locked --no-sync python -m pip check
           uv run --locked --no-sync python -m pip freeze --all > "$BOOTSTRAP_OUTPUT/pip-freeze.txt"
           uv run --locked --no-sync python --version > "$BOOTSTRAP_OUTPUT/python-version.txt"
@@ -107,7 +116,34 @@ jobs:
 
       - name: Run complete small regression
         timeout-minutes: 15
-        run: uv run --locked --no-sync python tests/run_regression.py --jobs 4 --output-dir "$REGRESSION_OUTPUT"
+        run: |
+          coverage_args=()
+          if [[ '${{ matrix.coverage }}' == 'true' ]]; then
+            coverage_args+=(--coverage)
+          fi
+          uv run --locked --no-sync python tests/run_regression.py --jobs 4 --output-dir "$REGRESSION_OUTPUT" "${coverage_args[@]}"
+
+      - name: Upload Python coverage to Codecov
+        if: matrix.coverage && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          use_oidc: true
+          files: ${{ env.REGRESSION_OUTPUT }}/coverage/python.xml
+          flags: python
+          disable_search: true
+          plugins: noop
+          fail_ci_if_error: false
+
+      - name: Upload C++ core coverage to Codecov
+        if: matrix.coverage && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          use_oidc: true
+          files: ${{ env.REGRESSION_OUTPUT }}/coverage/cpp.xml
+          flags: cpp
+          disable_search: true
+          plugins: noop
+          fail_ci_if_error: false
 
       - name: Preserve regression evidence
         if: always()

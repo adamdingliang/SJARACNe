@@ -3,7 +3,8 @@ from pathlib import Path
 import tempfile
 
 from run_regression import (strict_success, collect_test_ids, build_command,
-                            verify_installed_runtime, source_hashes)
+                            verify_installed_runtime, source_hashes, ROOT)
+from coverage_support import NATIVE_OVERRIDES
 
 
 class TestStrictRunner(unittest.TestCase):
@@ -15,10 +16,25 @@ class TestStrictRunner(unittest.TestCase):
 
     def test_native_build_is_forced_including_both_targets(self):
         command = build_command(2)
-        self.assertEqual(command[0], 'make')
-        self.assertIn('-B', command)
-        self.assertEqual(command[-1], 'all')
-        self.assertEqual(command[command.index('-j') + 1], 2)
+        self.assertEqual(command, ['make', '-B', '-C', ROOT / 'SJARACNe', '-j', 2, 'all'])
+        self.assertEqual(build_command(2, coverage=False), command)
+
+    def test_coverage_build_preserves_forced_targets_and_compile_and_link_flags(self):
+        ordinary = build_command(2)
+        instrumented = build_command(2, coverage=True)
+        self.assertEqual(instrumented, ordinary[:-1] + list(NATIVE_OVERRIDES) + ['all'])
+        self.assertIn('CC=g++', instrumented)
+        compiler_flags = next(value.split('=', 1)[1] for value in instrumented
+                              if isinstance(value, str) and value.startswith('CFLAGS='))
+        linker_flags = next(value.split('=', 1)[1] for value in instrumented
+                            if isinstance(value, str) and value.startswith('LIB='))
+        self.assertIn('-O0', compiler_flags.split())
+        self.assertNotIn('-O3', compiler_flags.split())
+        self.assertIn('--coverage', compiler_flags.split())
+        self.assertIn('-fprofile-abs-path', compiler_flags.split())
+        self.assertIn('-fprofile-update=atomic', compiler_flags.split())
+        self.assertIn('--coverage', linker_flags.split())
+        self.assertEqual(build_command(2), ordinary)
 
     def test_foreign_or_missing_installed_runtime_cannot_pass(self):
         with tempfile.TemporaryDirectory() as directory:

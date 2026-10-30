@@ -22,6 +22,8 @@ import tempfile
 import time
 import unittest
 
+from coverage_support import CoverageSession, NATIVE_OVERRIDES
+
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGES = ("numpy", "pandas", "scipy", "cwltool")
@@ -48,10 +50,13 @@ def strict_success(result, discovered):
                 and not result.skipped and not result.expectedFailures)
 
 
-def build_command(jobs):
+def build_command(jobs, coverage=False):
     # Force a clean compilation decision independently of Make's dependency
     # tracking and uv's cached package rebuild decisions.
-    return ["make", "-B", "-C", ROOT / "SJARACNe", "-j", jobs, "all"]
+    command = ["make", "-B", "-C", ROOT / "SJARACNe", "-j", jobs]
+    if coverage:
+        command.extend(NATIVE_OVERRIDES)
+    return command + ["all"]
 
 
 def source_hashes():
@@ -59,6 +64,7 @@ def source_hashes():
                                      ".python-version", "version.py", "MANIFEST.in",
                                      "requirements.txt")]
     paths.append(ROOT / "SJARACNe/Makefile")
+    paths.append(ROOT / ".codecov.yml")
     for folder in ("SJARACNe/src", "SJARACNe/config", "SJARACNe/cwl", "SJARACNe/wdl", "tests", "tools", ".github/workflows"):
         paths.extend(path for path in (ROOT / folder).rglob("*")
                      if path.is_file() and "__pycache__" not in path.parts
@@ -132,7 +138,7 @@ def preflight(env):
             "installed_python_runtime": verify_installed_runtime(Path(imported))}
 
 
-def run(output, jobs):
+def run(output, jobs, coverage=False):
     output.mkdir(parents=True, exist_ok=False)
     env = os.environ.copy()
     env.update({"PYTHONDONTWRITEBYTECODE": "1", "PYTHONNOUSERSITE": "1",
@@ -151,6 +157,7 @@ def run(output, jobs):
                 "source_root": str(ROOT), "started_at_utc": now(), "python": sys.version,
                 "controller_sha256": sha256(__file__), "steps": [],
                 "scope": "small functional/native/CWL regression; no dataset benchmark resampling"}
+    instrumentation = CoverageSession(ROOT, output) if coverage else None
     if os.environ.get("GITHUB_ACTIONS") == "true":
         manifest["github"] = {key: os.environ.get(key) for key in (
             "GITHUB_REPOSITORY", "GITHUB_SHA", "GITHUB_REF", "GITHUB_EVENT_NAME",
@@ -180,7 +187,10 @@ def run(output, jobs):
         env["SJARACNE_TEST_SPROCKET"] = manifest["environment"]["tools"]["sprocket"]
         manifest["sprocket_sha256"] = sha256(env["SJARACNE_TEST_SPROCKET"])
         manifest["source_sha256"] = source_hashes()
-        command("build", build_command(jobs))
+        if instrumentation is not None:
+            instrumentation.prepare()
+            manifest["coverage_setup"] = instrumentation.details
+        command("build", build_command(jobs, coverage=coverage))
         manifest["native_sha256"] = {key: sha256(path) for key, path in native.items()}
         command("python_tests", [sys.executable, __file__, "--suite-only", "--output-dir", output])
         documents = sorted((ROOT / "SJARACNe/cwl").glob("*.cwl"))
@@ -198,6 +208,9 @@ def run(output, jobs):
         command("wdl_parity", [sys.executable, ROOT / "tests/wdl/run_parity.py",
                                "--sprocket", env["SJARACNE_TEST_SPROCKET"],
                                "--output-dir", output / "wdl_parity"])
+        if instrumentation is not None:
+            instrumentation.close()
+            manifest["coverage"] = instrumentation.report()
         if source_hashes() != manifest["source_sha256"]:
             raise RuntimeError("Source or fixtures changed during regression")
         manifest["complete"] = True
@@ -205,6 +218,12 @@ def run(output, jobs):
         manifest["error"] = str(error)
         print("FAIL: " + str(error), file=sys.stderr)
     finally:
+        if instrumentation is not None:
+            try:
+                instrumentation.close()
+            except Exception as error:
+                manifest.update(complete=False, coverage_cleanup_error=str(error))
+                print("FAIL: coverage cleanup: " + str(error), file=sys.stderr)
         manifest["finished_at_utc"] = now()
         persist()
         print("Evidence: " + str(output), flush=True)
@@ -216,10 +235,14 @@ def main():
     parser.add_argument("--jobs", type=int, default=min(4, os.cpu_count() or 1), help="Native build workers")
     parser.add_argument("--output-dir", type=Path, help="New evidence directory; default is under the system temp directory")
     parser.add_argument("--suite-only", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--coverage", action="store_true",
+                        help="Collect separate Python/C++ reports; requires an external disposable venv and coverage dependency group")
     args = parser.parse_args()
     if args.jobs < 1:
         parser.error("--jobs must be positive")
     if args.suite_only:
+        if args.coverage:
+            parser.error("--coverage belongs to the complete runner, not --suite-only")
         if args.output_dir is None:
             parser.error("Internal suite mode requires --output-dir")
         return python_suite(args.output_dir)
@@ -227,7 +250,7 @@ def main():
     if output is None:
         output = Path(tempfile.mkdtemp(prefix="sjaracne-regression-")) / "evidence"
     try:
-        return run(output.resolve(), args.jobs)
+        return run(output.resolve(), args.jobs, coverage=args.coverage)
     except (OSError, RuntimeError) as error:
         parser.error(str(error))
 
