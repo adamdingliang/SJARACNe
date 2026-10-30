@@ -1,5 +1,5 @@
-# CI-only numerical/CWL baseline for Python 3.11, not new runtime minimums.
-# Transitive dependencies are resolved by pip and recorded in the CI artifact.
+# Historical Python 3.11 validation snapshot / ordinary pip fallback.
+# Active CI uses pyproject.toml/uv.lock, including transitive dependencies.
 numpy==1.26.4
 pandas==2.2.3
 scipy==1.13.1

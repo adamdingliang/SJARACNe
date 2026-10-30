@@ -32,6 +32,7 @@ INSTALLBINDIR := /usr/local/bin
 SRCEXT := cpp
 HEADEXT := h
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
+HEADERS := $(shell find $(SRCDIR) -type f -name '*.$(HEADEXT)')
 OBJECTS := $(patsubst $(SRCDIR)/%, $(BUILDDIR)/%, $(SOURCES:.$(SRCEXT)=.o))
 
 # Folder Lists
@@ -71,6 +72,11 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 $(NULL_OBJECT): $(TOOLDIR)/apmi_null_generator.cpp $(SRCDIR)/apmi.h
 	@mkdir -p $(BUILDDIR)/tools
 	@echo "Compiling $<..."; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
+
+# A cached Python package rebuild must not reuse stale native objects after a
+# header-only edit or a change to compiler flags in this Makefile. Keep this
+# after the tool's source prerequisite so its recipe's $< remains the .cpp.
+$(OBJECTS) $(NULL_OBJECT): $(HEADERS) Makefile
 
 $(BUILDDIR)/apmi_null_model.o: $(SRCDIR)/apmi_null_model.h $(SRCDIR)/apmi_pchip_data.h
 

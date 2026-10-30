@@ -49,14 +49,17 @@ def strict_success(result, discovered):
 
 
 def build_command(jobs):
-    # The native Makefile does not track every header dependency. Never let a
-    # header-only edit pass against yesterday's incremental binary.
+    # Force a clean compilation decision independently of Make's dependency
+    # tracking and uv's cached package rebuild decisions.
     return ["make", "-B", "-C", ROOT / "SJARACNe", "-j", jobs, "all"]
 
 
 def source_hashes():
-    paths = [ROOT / "setup.py", ROOT / "requirements.txt", ROOT / "SJARACNe/Makefile"]
-    for folder in ("SJARACNe/src", "SJARACNe/config", "SJARACNe/cwl", "tests", "tools", ".github/workflows"):
+    paths = [ROOT / name for name in ("setup.py", "pyproject.toml", "uv.lock",
+                                     ".python-version", "version.py", "MANIFEST.in",
+                                     "requirements.txt")]
+    paths.append(ROOT / "SJARACNe/Makefile")
+    for folder in ("SJARACNe/src", "SJARACNe/config", "SJARACNe/cwl", "SJARACNe/wdl", "tests", "tools", ".github/workflows"):
         paths.extend(path for path in (ROOT / folder).rglob("*")
                      if path.is_file() and "__pycache__" not in path.parts
                      and path.suffix not in (".pyc", ".pyo"))
@@ -110,18 +113,22 @@ def preflight(env):
     if platform.system() != "Linux":
         raise RuntimeError("Use Linux or WSL for the complete native/CWL/Bats regression.")
     tools = {}
-    for command in ("make", "g++", "cwltool", "bats"):
+    for command in ("make", "g++", "cwltool", "bats", "sprocket"):
         path = shutil.which(command, path=env["PATH"])
         if not path:
             raise RuntimeError("Required command not found: " + command)
         tools[command] = path
     if not any(shutil.which(command, path=env["PATH"]) for command in ("node", "nodejs")):
         raise RuntimeError("Node.js is required by the CWL JavaScript expressions.")
+    sprocket_version = subprocess.check_output([tools["sprocket"], "--version"], env=env, text=True).strip()
+    if not re.search(r"^sprocket v?0\.32\.0(?:\s|$)", sprocket_version):
+        raise RuntimeError("The WDL regression requires Sprocket 0.32.0, got " + sprocket_version)
     imported = subprocess.check_output([
         sys.executable, "-I", "-c",
         "import pathlib,SJARACNe; print(pathlib.Path(SJARACNe.__file__).resolve().parent)"
     ], cwd=tempfile.gettempdir(), env=env, text=True).strip()
-    return {"tools": tools, "packages": {name: importlib.metadata.version(name) for name in PACKAGES},
+    return {"tools": tools, "sprocket_version": sprocket_version,
+            "packages": {name: importlib.metadata.version(name) for name in PACKAGES},
             "installed_python_runtime": verify_installed_runtime(Path(imported))}
 
 
@@ -170,6 +177,8 @@ def run(output, jobs):
 
     try:
         manifest["environment"] = preflight(env)
+        env["SJARACNE_TEST_SPROCKET"] = manifest["environment"]["tools"]["sprocket"]
+        manifest["sprocket_sha256"] = sha256(env["SJARACNE_TEST_SPROCKET"])
         manifest["source_sha256"] = source_hashes()
         command("build", build_command(jobs))
         manifest["native_sha256"] = {key: sha256(path) for key, path in native.items()}
@@ -186,6 +195,9 @@ def run(output, jobs):
         if len(plans) != 1 or not passed or passed != int(plans[0]) or re.search(r"#\s*skip\b", tap, re.I):
             raise RuntimeError("Bats must run a nonempty plan with every test passing and no skips")
         manifest["bats_passed"] = passed
+        command("wdl_parity", [sys.executable, ROOT / "tests/wdl/run_parity.py",
+                               "--sprocket", env["SJARACNE_TEST_SPROCKET"],
+                               "--output-dir", output / "wdl_parity"])
         if source_hashes() != manifest["source_sha256"]:
             raise RuntimeError("Source or fixtures changed during regression")
         manifest["complete"] = True

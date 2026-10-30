@@ -1,0 +1,69 @@
+[build-system]
+# Retain the custom setuptools -> Make native build hook in setup.py.
+# Ordinary pip installation remains supported without uv.
+requires = ["setuptools>=67.8", "wheel>=0.42"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "SJARACNe"
+dynamic = ["version"]
+description = "Gene network reverse engineering from big data"
+readme = "README.md"
+# Historical metadata retained, not a new validation claim for Python <3.11.
+requires-python = ">=3.7.6"
+license = {text = "See LICENSE.md"}
+authors = [
+    {name = "Liang Ding", email = "liang.ding@stjude.org"},
+    {name = "Jiyang Yu", email = "jiyang.yu@stjude.org"},
+]
+dependencies = ["numpy>=1.20.1", "pandas>=1.2.3", "scipy>=1.7.3"]
+
+[project.optional-dependencies]
+cwl = ["cwltool>=3.0.20201117141248"]
+
+[project.scripts]
+sjaracne = "SJARACNe.sjaracne:main"
+
+[project.urls]
+Homepage = "https://github.com/adamdingliang/SJARACNe"
+Issues = "https://github.com/adamdingliang/SJARACNe/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "version.__version__"}
+
+[dependency-groups]
+build = ["pip==26.2.2", "setuptools==84.2.1", "wheel==0.48.0", "build==1.6.1"]
+regression = [{include-group = "build"}]
+
+[tool.uv]
+required-version = "==0.11.16"
+default-groups = []
+# The lock is for the maintained developer/runtime range, not the historical
+# published minimum. Only Python 3.11 and 3.14 are regression-tested.
+environments = ["python_version >= '3.11' and python_version < '3.15'"]
+constraint-dependencies = [
+    "numpy==1.26.4; python_version < '3.14'",
+    "pandas==2.2.3; python_version < '3.14'",
+    "scipy==1.13.1; python_version < '3.14'",
+    "cwltool==3.1.20240508115724; python_version < '3.14'",
+    "numpy==2.4.6; python_version >= '3.14'",
+    "pandas==2.3.3; python_version >= '3.14'",
+    "scipy==1.17.1; python_version >= '3.14'",
+    "cwltool==3.3.20260925135507; python_version >= '3.14'",
+]
+build-constraint-dependencies = ["setuptools==84.2.1", "wheel==0.48.0"]
+# Include defaults as well as native sources/headers and installed assets.
+# uv does not infer changes to these from Python import dependencies.
+cache-keys = [
+    {file = "pyproject.toml"}, {file = "setup.py"}, {file = "version.py"},
+    {file = "MANIFEST.in"}, {file = "README.md"},
+    {file = "SJARACNe/Makefile"}, {file = "SJARACNe/src/*.cpp"},
+    {file = "SJARACNe/src/*.h"}, {file = "tools/apmi_null_generator.cpp"},
+    {file = "SJARACNe/*.py"}, {file = "SJARACNe/bin/*.py"},
+    {file = "SJARACNe/config/*"}, {file = "SJARACNe/cwl/*.cwl"},
+    {file = "SJARACNe/wdl/*"},
+]
+
+[tool.uv.dependency-groups]
+build = {requires-python = ">=3.11"}
+regression = {requires-python = ">=3.11"}

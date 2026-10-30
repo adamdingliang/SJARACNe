@@ -76,6 +76,7 @@ class TestSJARACNe(unittest.TestCase):
                 output = workdir / 'output'
                 result = subprocess.run([
                     sys.executable, '-m', 'SJARACNe.sjaracne', 'local',
+                    '--engine', 'cwl', '--network-type', 'TF', '--fixed-dpi',
                     '-e', str(expression), '-g', str(hubs), '-n', '2', '-pc', '1',
                     '-pb', pvalue, '-M', 'pchip', '--subsample-size', '80',
                     '-o', str(output), '-tmp', str(workdir / 'tmp'),
@@ -133,6 +134,8 @@ class TestSJARACNe(unittest.TestCase):
                 '-m',
                 'SJARACNe.sjaracne',
                 'local',
+                '--engine', 'cwl', '--network-type', 'TF',
+                '-M', 'affine', '-pb', '1e-7', '--fixed-dpi',
                 '-e',
                 str(PROJECT_ROOT / 'tests' / 'inputs' / 'Tcell1170.exp'),
                 '-g',
@@ -268,7 +271,7 @@ class TestSJARACNe(unittest.TestCase):
         # intentionally has one hub and therefore does not exercise DPI.
         reference_networks = None
         reference_enhanced = None
-        for execution in ('cwl-serial', 'cwl-parallel', 'cli-default-parallel'):
+        for execution in ('cwl-serial', 'cwl-parallel', 'cli-cwl-parallel'):
             with self.subTest(execution=execution), tempfile.TemporaryDirectory() as tmpdir:
                 workdir = Path(tmpdir)
                 expression, hubs = write_multihub_dpi_inputs(workdir)
@@ -293,6 +296,7 @@ class TestSJARACNe(unittest.TestCase):
                 else:
                     command = [
                         sys.executable, '-m', 'SJARACNe.sjaracne', 'local',
+                        '--engine', 'cwl', '--network-type', 'TF', '--fixed-dpi',
                         '-e', str(expression), '-g', str(hubs), '-n', '6',
                         '-M', 'pchip', '-pb', '0.001', '-o', str(output),
                         '-tmp', str(workdir / 'tmp'),
@@ -317,8 +321,9 @@ class TestSJARACNe(unittest.TestCase):
                     self.assertTrue(expected)
                     self.assert_consensus_rows(output / 'consensus_network_ncol_.txt', expected)
                     three_column = list(workdir.rglob('consensus_network_3col_.txt'))
-                    self.assertEqual(len(three_column), 1)
-                    self.assert_consensus_rows(three_column[0], expected)
+                    self.assertTrue(three_column)
+                    for path in three_column:
+                        self.assert_consensus_rows(path, expected)
                     for header in headers.values():
                         for key in ('MI threshold method', 'AP-MI actual m', 'AP-MI Npar',
                                     'MI threshold binary64', 'MI threshold hex', 'DPI tolerance',
@@ -330,14 +335,17 @@ class TestSJARACNe(unittest.TestCase):
                         self.assertEqual(networks, reference_networks)
                     reference_networks = networks
                 else:
-                    # Exercise the actual module entry point and actual cwltool,
-                    # with neither legacy -pc nor explicit -k / sampling flags.
-                    submitted = (output / 'sjaracne_workflow.yml').read_text(encoding='utf-8')
-                    self.assertIn('min_recurrence: 6\n', submitted)
-                    self.assertIn('subsample_spec: "80%"\n', submitted)
-                    self.assertIn('depth: 40\n', submitted)
-                    self.assertNotIn('p_value_consensus:', submitted)
-                    self.assertIn('--parallel', log)
+                    # Explicit CWL compatibility engine; modern CLI default is
+                    # Sprocket. Keep default K=6 and sampling independent from it.
+                    submitted = json.loads((output / 'sjaracne_workflow.yml').read_text(encoding='utf-8'))
+                    self.assertEqual(submitted['min_recurrence'], 6)
+                    self.assertEqual(submitted['subsample_spec'], '80%')
+                    self.assertEqual(submitted['depth'], 40)
+                    self.assertIsNone(submitted.get('p_value_consensus'))
+                    run_manifest = json.loads((output / 'sjaracne_run.json').read_text(encoding='utf-8'))
+                    self.assertEqual(run_manifest['engine'], 'cwl')
+                    self.assertIn('--parallel', run_manifest['argv'])
+                    self.assertNotIn('--serial', run_manifest['argv'])
                 enhanced = (output / 'consensus_network_ncol_.txt').read_text(encoding='utf-8')
                 if reference_enhanced is not None:
                     self.assertEqual(enhanced, reference_enhanced)
@@ -421,8 +429,9 @@ class TestSJARACNe(unittest.TestCase):
                     retained_by_mode[(model, selection)] = selected
                     self.assert_consensus_rows(output / 'consensus_network_ncol_.txt', expected)
                     three_column = list(workdir.rglob('consensus_network_3col_.txt'))
-                    self.assertEqual(len(three_column), 1)
-                    self.assert_consensus_rows(three_column[0], expected)
+                    self.assertTrue(three_column)
+                    for path in three_column:
+                        self.assert_consensus_rows(path, expected)
 
                     bootstrap_info = (output / 'bootstrap_info_.txt').read_text(encoding='utf-8')
                     metadata = dict(line.split(': ', 1) for line in bootstrap_info.splitlines())

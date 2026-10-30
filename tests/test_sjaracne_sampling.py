@@ -2,6 +2,7 @@
 
 import math
 import importlib.util
+import json
 import os
 import re
 import subprocess
@@ -364,45 +365,52 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
+            from test_sjaracne_acceptance import write_multihub_dpi_inputs
+            expression, hubs = write_multihub_dpi_inputs(root)
             output = root / "output"
             temp_dir = root / "tmp"
             arguments = [
                 "sjaracne",
                 "local",
+                "--engine", "cwl", "--network-type", "TF",
                 "-e",
-                str(root / "input.exp"),
+                str(expression),
                 "-g",
-                str(root / "hubs.txt"),
+                str(hubs),
                 "-o",
                 str(output),
                 "-tmp",
                 str(temp_dir),
                 *sampling_args,
             ]
-            with mock.patch.object(os.sys, "argv", arguments):
+            with mock.patch.object(os.sys, "argv", arguments), \
+                    mock.patch.object(module, 'runtime_fingerprint', return_value={}), \
+                    mock.patch.object(module, 'validate_cwl_outputs', return_value={}), \
+                    mock.patch.object(module, 'require_tool', side_effect=lambda name: name):
                 module.main()
-            workflow = (output / "sjaracne_workflow.yml").read_text(
-                encoding="utf-8"
-            )
+            workflow = json.loads((output / "sjaracne_workflow.yml").read_text(encoding="utf-8"))
         self.assertEqual(len(commands), 1)
         return workflow
 
     def test_wrapper_defaults_to_eighty_percent(self):
         workflow = self.run_wrapper()
-        self.assertIn('subsample_spec: "80%"\n', workflow)
+        self.assertEqual(workflow['subsample_spec'], '80%')
+        self.assertEqual(workflow['p_value_bootstrap'], 0.001)
+        self.assertEqual(workflow['apmi_null_model'], 'pchip')
+        self.assertTrue(workflow['dynamic_dpi'])
 
     def test_wrapper_defaults_to_minimum_recurrence_six(self):
         workflow = self.run_wrapper()
-        self.assertIn('min_recurrence: 6\n', workflow)
-        self.assertNotIn('p_value_consensus:', workflow)
+        self.assertEqual(workflow['min_recurrence'], 6)
+        self.assertIsNone(workflow.get('p_value_consensus'))
 
     def test_wrapper_serializes_recurrence_or_explicit_legacy_probability(self):
         recurrence = self.run_wrapper('--min-recurrence', '8')
         legacy = self.run_wrapper('--p-value-consensus', '0.01')
-        self.assertIn('min_recurrence: 8\n', recurrence)
-        self.assertNotIn('p_value_consensus:', recurrence)
-        self.assertIn('p_value_consensus: 0.01\n', legacy)
-        self.assertNotIn('min_recurrence:', legacy)
+        self.assertEqual(recurrence['min_recurrence'], 8)
+        self.assertIsNone(recurrence.get('p_value_consensus'))
+        self.assertEqual(legacy['p_value_consensus'], 0.01)
+        self.assertIsNone(legacy.get('min_recurrence'))
 
         with self.assertRaises(SystemExit):
             self.run_wrapper(
@@ -415,32 +423,28 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
     def test_wrapper_preserves_explicit_brca100_bootstrap_probabilities(self):
         tf = self.run_wrapper('--p-value-bootstrap', '1e-3')
         sig = self.run_wrapper('--p-value-bootstrap', '5e-4')
-        self.assertIn('p_value_bootstrap: 1e-3\n', tf)
-        self.assertIn('p_value_bootstrap: 5e-4\n', sig)
+        self.assertEqual(tf['p_value_bootstrap'], 1e-3)
+        self.assertEqual(sig['p_value_bootstrap'], 5e-4)
 
     def test_wrapper_keeps_mi_and_consensus_selection_independent(self):
-        for model in (None, "pchip"):
+        for model in ("affine", "pchip"):
             for consensus_probability in (None, "0.01"):
                 with self.subTest(model=model, consensus_probability=consensus_probability):
-                    arguments = ["--bootstrap-num", "6"]
-                    if model is not None:
-                        arguments += ["-M", model, "-pb", "0.001"]
+                    arguments = ["--bootstrap-num", "6", "-M", model, "-pb", "0.001"]
                     if consensus_probability is not None:
                         arguments += ["--p-value-consensus", consensus_probability]
                     workflow = self.run_wrapper(*arguments)
                     if consensus_probability is None:
-                        self.assertIn("min_recurrence: 6\n", workflow)
-                        self.assertNotIn("p_value_consensus:", workflow)
+                        self.assertEqual(workflow['min_recurrence'], 6)
+                        self.assertIsNone(workflow.get('p_value_consensus'))
                     else:
-                        self.assertIn("p_value_consensus: 0.01\n", workflow)
-                        self.assertNotIn("min_recurrence:", workflow)
-                    if model is None:
-                        self.assertNotIn("apmi_null_model:", workflow)
-                        self.assertRegex(workflow, r"(?m)^p_value_bootstrap: 1e-0?7$")
+                        self.assertEqual(workflow['p_value_consensus'], 0.01)
+                        self.assertIsNone(workflow.get('min_recurrence'))
+                    if model == 'affine':
+                        self.assertIn(workflow.get('apmi_null_model'), (None, 'affine'))
                     else:
-                        self.assertRegex(workflow, r'(?m)^apmi_null_model: "pchip"$')
-                        self.assertNotIn("class: File\n  path: pchip", workflow)
-                        self.assertIn("p_value_bootstrap: 0.001\n", workflow)
+                        self.assertEqual(workflow['apmi_null_model'], 'pchip')
+                    self.assertEqual(workflow['p_value_bootstrap'], 0.001)
 
     def test_wrapper_accepts_feasible_k1_with_either_mi_selection(self):
         for model_args in ((), ("-M", "pchip", "-pb", "0.001")):
@@ -448,9 +452,9 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
                 workflow = self.run_wrapper(
                     "--bootstrap-num", "2", "--min-recurrence", "1", *model_args
                 )
-                self.assertIn("bootstrap_num: 2\n", workflow)
-                self.assertIn("min_recurrence: 1\n", workflow)
-                self.assertNotIn("p_value_consensus:", workflow)
+                self.assertEqual(workflow['bootstrap_num'], 2)
+                self.assertEqual(workflow['min_recurrence'], 1)
+                self.assertIsNone(workflow.get('p_value_consensus'))
 
     def test_invalid_recurrence_or_network_count_fails_before_launch_or_output(self):
         invalid_arguments = [
@@ -471,14 +475,19 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
                     module.run_shell_command_call = mock.Mock()
                     with tempfile.TemporaryDirectory() as temporary:
                         root = Path(temporary)
+                        from test_sjaracne_acceptance import write_multihub_dpi_inputs
+                        expression, hubs = write_multihub_dpi_inputs(root)
                         output = root / "output"
                         temp_dir = root / "tmp"
                         arguments = [
-                            "sjaracne", "local", "-e", str(root / "input.exp"),
-                            "-g", str(root / "hubs.txt"), "-o", str(output),
+                            "sjaracne", "local", "--engine", "cwl", "--network-type", "TF",
+                            "-e", str(expression), "-g", str(hubs), "-o", str(output),
                             "-tmp", str(temp_dir), *model_args, *invalid,
                         ]
-                        with mock.patch.object(os.sys, "argv", arguments):
+                        with mock.patch.object(os.sys, "argv", arguments), \
+                                mock.patch.object(module, 'runtime_fingerprint', return_value={}), \
+                                mock.patch.object(module, 'validate_cwl_outputs', return_value={}), \
+                                mock.patch.object(module, 'require_tool', side_effect=lambda name: name):
                             with self.assertRaises(SystemExit):
                                 module.main()
                         module.run_shell_command_call.assert_not_called()
@@ -496,14 +505,14 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
         legacy = self.run_wrapper(
             '--bootstrap-num', '5', '--p-value-consensus', '0.01'
         )
-        self.assertIn('bootstrap_num: 5\n', legacy)
-        self.assertIn('p_value_consensus: 0.01\n', legacy)
+        self.assertEqual(legacy['bootstrap_num'], 5)
+        self.assertEqual(legacy['p_value_consensus'], 0.01)
 
     def test_wrapper_serializes_fraction_or_exact_size(self):
         fraction = self.run_wrapper("--subsample-fraction", "0.64")
-        exact = self.run_wrapper("--subsample-size", "7")
-        self.assertIn('subsample_spec: "64%"\n', fraction)
-        self.assertIn('subsample_spec: "7"\n', exact)
+        exact = self.run_wrapper("--subsample-size", "7", "-M", "affine", "--fixed-dpi")
+        self.assertEqual(fraction['subsample_spec'], '64%')
+        self.assertEqual(exact['subsample_spec'], '7')
 
     def test_cwl_defaults_and_wiring_use_unique_sampling(self):
         workflow = (PROJECT_ROOT / "SJARACNe" / "cwl" / "sjaracne_workflow.cwl").read_text(
@@ -512,8 +521,14 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
         command = (PROJECT_ROOT / "SJARACNe" / "cwl" / "sjaracne.cwl").read_text(
             encoding="utf-8"
         )
-        self.assertIn('default: "80%"', workflow)
-        self.assertIn("subsample_spec: subsample_spec", workflow)
+        # Resolve the old CWL omission to 80% only when replacement sampling
+        # was not requested. A top-level default would also replace an explicit
+        # null in some CWL engines and accidentally forward both -r and -u.
+        self.assertIn("subsample_spec:\n    type: string?", workflow)
+        self.assertIn("source: subsample_spec", workflow)
+        self.assertIn("return hasSpec ? self : '80%'", workflow)
+        self.assertIn("Replacement sampling conflicts with subsample_spec", workflow)
+        self.assertIn("sample_number: sample_number", workflow)
         self.assertIn("prefix: -u", command)
         sample_section = command.split("  sample_number:", 1)[1].split(
             "  subsample_spec:", 1
@@ -546,8 +561,9 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
         )
         self.assertIn("outputSource: consensus/bootstrap_info", workflow)
         self.assertIn("outputSource: consensus/parameter_info", workflow)
+        self.assertIn("outputSource: consensus/consensus_network", workflow)
         self.assertIn(
-            "out: [out_dir, bootstrap_info, parameter_info]",
+            "out: [out_dir, consensus_network, bootstrap_info, parameter_info]",
             workflow,
         )
 
