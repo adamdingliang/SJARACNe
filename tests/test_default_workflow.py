@@ -65,10 +65,10 @@ class TestDefaultWorkflow(unittest.TestCase):
         cls.env["PATH"] = os.pathsep.join((str(Path(sys.executable).parent),
                                           str(ROOT / "SJARACNe/bin"), cls.env.get("PATH", "")))
 
-    def run_cli(self, folder, expression, hubs, *options, engine=None):
+    def run_cli(self, folder, expression, hubs, *options, engine=None, bootstrap_num=20):
         output = folder / "output"
         command = [sys.executable, "-m", "SJARACNe.sjaracne", "local",
-                   "-e", str(expression), "-g", str(hubs), "-n", "6",
+                   "-e", str(expression), "-g", str(hubs), "-n", str(bootstrap_num),
                    "-o", str(output), "-tmp", str(folder / "scratch")]
         if engine is not None:
             command += ["--engine", engine]
@@ -81,8 +81,9 @@ class TestDefaultWorkflow(unittest.TestCase):
         process = subprocess.run(command, cwd=ROOT, env=self.env, capture_output=True, text=True)
         return process, output
 
-    def successful_run(self, folder, expression, hubs, *options, engine=None):
-        process, output = self.run_cli(folder, expression, hubs, *options, engine=engine)
+    def successful_run(self, folder, expression, hubs, *options, engine=None, bootstrap_num=20):
+        process, output = self.run_cli(folder, expression, hubs, *options, engine=engine,
+                                       bootstrap_num=bootstrap_num)
         self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
         manifest_path = output / "sjaracne_run.json"
         self.assertTrue(manifest_path.is_file(), process.stdout + process.stderr)
@@ -109,7 +110,7 @@ class TestDefaultWorkflow(unittest.TestCase):
             outputs = None
         return output, manifest, outputs
 
-    def test_default_tf_and_sig_use_sprocket_pchip_dynamic_and_k6(self):
+    def test_default_tf_and_sig_use_sprocket_pchip_dynamic_and_k20(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             fixture = root / "input files"
@@ -129,13 +130,13 @@ class TestDefaultWorkflow(unittest.TestCase):
                     self.assertEqual(options["sampling_method"], "without-replacement")
                     self.assertEqual(options["subsample_spec"], "80%")
                     self.assertEqual(options["depth"], 40)
-                    self.assertEqual(options["min_recurrence"], 6)
+                    self.assertEqual(options["min_recurrence"], 20)
                     self.assertIsNone(options["p_value_consensus"])
                     adjacencies = [Path(value) for value in outputs["SJARACNe.adjacencies"]]
                     records = [Path(value) for value in outputs["SJARACNe.run_provenance"]]
                     self.assertEqual([path.name for path in adjacencies],
-                                     ["TF_run_%03d.adj" % seed for seed in range(1, 7)])
-                    self.assertEqual(len(records), 6)
+                                     ["TF_run_%03d.adj" % seed for seed in range(1, 21)])
+                    self.assertEqual(len(records), 20)
                     for seed, (adjacency, record) in enumerate(zip(adjacencies, records), 1):
                         text = adjacency.read_text(encoding="utf-8")
                         provenance = json.loads(record.read_text(encoding="utf-8"))
@@ -157,7 +158,8 @@ class TestDefaultWorkflow(unittest.TestCase):
                         self.assertEqual(float(header(text, "DPI epsilon binary64")), 0)
                     metadata = (output / "bootstrap_info_.txt").read_text(encoding="utf-8")
                     self.assertIn("Consensus selection: minimum recurrence\n", metadata)
-                    self.assertIn("Minimum recurrence: 6\n", metadata)
+                    self.assertIn("Bootstrap networks: 20\n", metadata)
+                    self.assertIn("Minimum recurrence: 20\n", metadata)
                     self.assertGreater(len((output / "consensus_network_ncol_.txt").read_bytes().splitlines()), 1)
             self.assertEqual((sha256(expression), sha256(hubs)), original_hashes)
 
@@ -166,7 +168,7 @@ class TestDefaultWorkflow(unittest.TestCase):
             root = Path(temporary)
             expression, hubs = write_multihub_dpi_inputs(root)
             wdl_output, manifest, outputs = self.successful_run(
-                root / "wdl", expression, hubs, "--profile", "legacy")
+                root / "wdl", expression, hubs, "--profile", "legacy", bootstrap_num=6)
             options = manifest["scientific_options"]
             self.assertEqual(options["profile"], "legacy")
             self.assertEqual(options["sampling_method"], "with-replacement")
@@ -191,7 +193,7 @@ class TestDefaultWorkflow(unittest.TestCase):
                 self.assertTrue(math.isclose(float(header(text, "MI threshold")), expected_cutoff,
                                              rel_tol=0, abs_tol=5e-7))
             cwl_output, cwl_manifest, _ = self.successful_run(
-                root / "cwl", expression, hubs, "--profile", "legacy", engine="cwl")
+                root / "cwl", expression, hubs, "--profile", "legacy", engine="cwl", bootstrap_num=6)
             self.assertEqual(cwl_manifest["scientific_options"], options)
             for name in FINAL_FILES[:3]:
                 self.assertEqual((wdl_output / name).read_bytes(), (cwl_output / name).read_bytes(), name)

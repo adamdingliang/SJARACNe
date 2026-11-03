@@ -18,7 +18,7 @@ inputs:
     inputBinding:
       position: 2
       prefix: -k
-    doc: Minimum number of distinct bootstrap networks containing an edge; defaults to 6 when both cutoff inputs are null
+    doc: Minimum number of distinct bootstrap networks containing an edge; defaults to 20 when both cutoff inputs are null
 
   p_thresh_arg:
     type: float?

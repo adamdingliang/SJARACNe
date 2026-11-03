@@ -17,7 +17,7 @@ inputs:
     label: file with a list of symbols annotated as transcription factors (hub genes) for constructing subnetworks
   min_recurrence:
     type: int?
-    label: Minimum number of distinct resampled networks containing an edge; defaults to 6 when both cutoff inputs are null
+    label: Minimum number of distinct resampled networks containing an edge; defaults to 20 when both cutoff inputs are null
   p_value_consensus:
     type: float?
     label: Deprecated legacy normal-approximation P-value threshold in building consensus network

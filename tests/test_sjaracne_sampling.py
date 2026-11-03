@@ -399,9 +399,9 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
         self.assertEqual(workflow['apmi_null_model'], 'pchip')
         self.assertTrue(workflow['dynamic_dpi'])
 
-    def test_wrapper_defaults_to_minimum_recurrence_six(self):
+    def test_wrapper_defaults_to_minimum_recurrence_twenty(self):
         workflow = self.run_wrapper()
-        self.assertEqual(workflow['min_recurrence'], 6)
+        self.assertEqual(workflow['min_recurrence'], 20)
         self.assertIsNone(workflow.get('p_value_consensus'))
 
     def test_wrapper_serializes_recurrence_or_explicit_legacy_probability(self):
@@ -433,6 +433,8 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
                     arguments = ["--bootstrap-num", "6", "-M", model, "-pb", "0.001"]
                     if consensus_probability is not None:
                         arguments += ["--p-value-consensus", consensus_probability]
+                    else:
+                        arguments += ["--min-recurrence", "6"]
                     workflow = self.run_wrapper(*arguments)
                     if consensus_probability is None:
                         self.assertEqual(workflow['min_recurrence'], 6)

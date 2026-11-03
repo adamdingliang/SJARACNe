@@ -1,5 +1,8 @@
 # Historical Step 1: standalone WDL 1.3 scientific parity
 
+Its measured K6 results remain historical. Current consensus defaults to K20;
+see the [active workflow guide](../SJARACNe/wdl/README.md).
+
 This report records commit `d824d7a`, before promotion of the workflow defaults
 and addition of the default CLI adapter. Its measured results are preserved,
 not presented as measurements of the new defaults. See the

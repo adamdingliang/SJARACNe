@@ -434,7 +434,7 @@ class ParityRun:
         count = options["bootstrap_num"]
         pc = options.get("p_value_consensus", 1e-5 if options.get("profile") == "legacy" else None)
         if pc is None:
-            k = options.get("min_recurrence", 6)
+            k = options.get("min_recurrence", 20)
             expected_metadata = {
                 "Total edge tested": str(len(support)), "Consensus selection": "minimum recurrence",
                 "Bootstrap networks": str(count), "Minimum recurrence": str(k),
@@ -495,16 +495,18 @@ class ParityRun:
             self.preflight()
             expression, hubs, crlf_expression, crlf_hubs, bad_hubs = self.fixtures()
             cases = (
-                ("pchip_strict_default_k6", {"bootstrap_num": 6, "network_type": "TF", "apmi_null_model": "pchip",
+                ("pchip_strict_compatibility_k6", {"bootstrap_num": 6, "min_recurrence": 6,
+                                             "network_type": "TF", "apmi_null_model": "pchip",
                                              "p_value_bootstrap": 0.001, "dynamic_dpi": False}),
                 ("pchip_positive_dynamic", {"bootstrap_num": 6, "network_type": "TF", "apmi_null_model": "pchip", "p_value_bootstrap": 0.001,
-                                            "dynamic_dpi": True, "dpi_href": 2, "dpi_slope": 0.1, "dpi_max": 0.3}),
-                ("affine_explicit_compatibility_k6", {"bootstrap_num": 6, "network_type": "TF", "apmi_null_model": "affine",
+                                            "min_recurrence": 6, "dynamic_dpi": True, "dpi_href": 2, "dpi_slope": 0.1, "dpi_max": 0.3}),
+                ("affine_explicit_compatibility_k6", {"bootstrap_num": 6, "min_recurrence": 6,
+                                                       "network_type": "TF", "apmi_null_model": "affine",
                                                        "p_value_bootstrap": 1e-7, "dynamic_dpi": False}),
                 ("explicit_legacy_consensus", {"bootstrap_num": 3, "network_type": "TF", "apmi_null_model": "pchip", "p_value_bootstrap": 0.001,
                                                "dynamic_dpi": False, "p_value_consensus": 0.01}),
-                ("current_tf_defaults", {"bootstrap_num": 6, "network_type": "TF"}),
-                ("current_sig_defaults", {"bootstrap_num": 6, "network_type": "SIG"}),
+                ("current_tf_defaults", {"bootstrap_num": 20, "network_type": "TF"}),
+                ("current_sig_defaults", {"bootstrap_num": 20, "network_type": "SIG"}),
                 ("presampling_legacy_profile", {"bootstrap_num": 6, "profile": "legacy"}),
             )
             baseline = None
@@ -512,9 +514,9 @@ class ParityRun:
                 cwl = self.run_cwl(name, expression, hubs, options)
                 wdl = self.run_wdl(name, expression, hubs, options)
                 self.compare(name, cwl, wdl, options)
-                if name == "pchip_strict_default_k6":
+                if name == "pchip_strict_compatibility_k6":
                     baseline = wdl
-                    self.check(name + ":nonempty_default_consensus", len(wdl["consensus_network"].read_bytes().splitlines()) > 1)
+                    self.check(name + ":nonempty_compatibility_consensus", len(wdl["consensus_network"].read_bytes().splitlines()) > 1)
                     for path in wdl["adjacencies"]:
                         text = path.read_text(encoding="utf-8")
                         self.check(name + ":" + path.name + ":pchip",
@@ -540,7 +542,7 @@ class ParityRun:
                                and parameters["dynamic_dpi"] is True
                                and parameters["sampling_method"] == "without-replacement"
                                and parameters["subsample_spec"] == "80%"
-                               and parameters["min_recurrence"] == 6)
+                               and parameters["min_recurrence"] == 20)
                     for adjacency, provenance in zip(wdl["adjacencies"], wdl["run_provenance"]):
                         text = adjacency.read_text(encoding="utf-8")
                         argv = json.loads(provenance.read_text(encoding="utf-8"))["argv"]

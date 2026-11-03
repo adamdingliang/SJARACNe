@@ -126,7 +126,7 @@ and records its settings and completion state in `sjaracne_run.json`.
 
 ### Full TF and SIG networks
 
-Omit `-n` and `-k` to use **100 resampled networks and minimum recurrence K=6**.
+Omit `-n` and `-k` to use **100 resampled networks and minimum recurrence K=20**.
 These examples allow up to three concurrent inference tasks with a 12-GiB
 scheduling budget. Use them on a host with at least three available CPUs and
 more than 12 GiB of RAM available to Linux/WSL; otherwise keep the smaller
@@ -199,13 +199,21 @@ normalizes line endings on staged copies without modifying the original inputs.
 | Per-resample probability `pb` | TF: `0.001`; SIG: `0.0005` |
 | Mutual information (MI) cutoff | Experimental empirical PCHIP conversion; Npar=40 |
 | Data processing inequality (DPI) pruning | Experimental dynamic tolerance; Href=479, slope=0.05, cap=0.30 |
-| Consensus | Retain edges present in at least six distinct resampled networks (K=6) |
+| Consensus | Retain edges present in at least 20 distinct resampled networks (K=20 of 100) |
 | Local scheduling | Four task slots; 16 GiB memory budget |
 
 These are **workflow defaults**, not the defaults of every bare native
 executable invocation. Memory settings are scheduling requests, not a guarantee
 that a dataset fits. Larger datasets may need higher budgets and task memory
 requests; see [resources and outputs](SJARACNe/wdl/README.md#resources-outputs-and-provenance).
+
+K=20 is a practical consensus setting, not a biological false-discovery-rate
+guarantee or an optimum for every dataset. Inspect target coverage; the bundled
+BRCA100 example becomes sparse at K20. For **scRNA-seq**, a smaller user-selected
+K may be appropriate, but neither a single-cell default nor a dynamic K rule
+has been validated yet. Override with `-k COUNT` as needed; `-k 6` restores the
+previous recurrence cutoff, not the full legacy workflow. See the
+[benchmark summary](https://github.com/adamdingliang/sjaracne_benchmark/pull/4).
 
 ### Common overrides
 
@@ -220,7 +228,7 @@ sjaracne local --network-type TF -pb 0.002 --fixed-dpi \
 | --- | --- |
 | `-pb VALUE` | Override the per-resample MI null-tail probability, not a biological false-discovery rate. |
 | `-n COUNT` | Number of resampled networks (default: 100). |
-| `-k COUNT` or `--min-recurrence COUNT` | Retain edges present in at least `COUNT` distinct resampled networks. Current-profile default: **K=6**; requires `1 <= K <= n`. |
+| `-k COUNT` or `--min-recurrence COUNT` | Retain edges present in at least `COUNT` distinct resampled networks. Current-profile default: **K=20**; requires `1 <= K <= n`. If `n < 20`, supply a smaller K explicitly. |
 | `--subsample-fraction 0.8` or `--subsample-size 80` | Select a fraction or exact number of observations without replacement; use only one. |
 | `--fixed-dpi` or `--tolerance 0.1` | Use strict DPI (epsilon=0), or fixed positive epsilon. Larger epsilon relaxes pruning. |
 | `--dpi-href`, `--dpi-slope`, `--dpi-max` | Adjust the dynamic tolerance schedule; incompatible with fixed DPI. |

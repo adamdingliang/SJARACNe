@@ -41,7 +41,7 @@ class TestWdlParameters(unittest.TestCase):
             "sampling_method": "without-replacement",
             "p_value_bootstrap": 0.001, "apmi_null_model": "pchip",
             "dynamic_dpi": True,
-            "min_recurrence": 6, "p_value_consensus": None,
+            "min_recurrence": 20, "p_value_consensus": None,
         }.items():
             self.assertEqual(values[name], expected, name)
         self.assertNotIn('tolerance', values)
@@ -107,6 +107,9 @@ class TestWdlParameters(unittest.TestCase):
         self.assertEqual(values["depth"], 1)
 
     def test_consensus_default_and_explicit_legacy_selection(self):
+        self.assertEqual(validate_current({"bootstrap_num": 20}, 100)["min_recurrence"], 20)
+        with self.assertRaisesRegex(ValueError, "minimum recurrence exceeds bootstrap_num"):
+            validate_current({"bootstrap_num": 19}, 100)
         values = validate_current({"bootstrap_num": 2, "min_recurrence": 1}, 100)
         self.assertEqual(values["min_recurrence"], 1)
         values = validate_current({"bootstrap_num": 2, "p_value_consensus": 1e-5}, 100)

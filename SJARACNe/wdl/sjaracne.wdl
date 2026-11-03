@@ -55,7 +55,7 @@ workflow SJARACNe {
         Float? p_value_bootstrap
         String? apmi_null_model
 
-        # Mutually exclusive: current defaults to K=6 distinct-network support
+        # Mutually exclusive: current defaults to K=20 distinct-network support
         # (inclusive), whereas legacy uses the historical pc=1e-5 calculation.
         Int? min_recurrence
         Float? p_value_consensus

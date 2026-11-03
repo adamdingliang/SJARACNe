@@ -70,7 +70,7 @@ class TestWorkflowCli(unittest.TestCase):
         job = self.read_job()
         for key, value in {"profile": "current", "network_type": "TF", "apmi_null_model": "pchip",
                            "p_value_bootstrap": 0.001, "dynamic_dpi": True,
-                           "subsample_spec": "80%", "min_recurrence": 6}.items():
+                           "subsample_spec": "80%", "min_recurrence": 20}.items():
             self.assertEqual(job["SJARACNe." + key], value)
         self.assertEqual(job["SJARACNe.exp_file"], str(self.expression))
         self.assertIn("cpu = 4", (self.output / "sprocket.toml").read_text())
@@ -80,6 +80,18 @@ class TestWorkflowCli(unittest.TestCase):
         for filename in CLI.FINAL_OUTPUTS.values():
             self.assertTrue((self.output / filename).is_file())
         self.assertEqual(len(record["published_outputs"]), 4)
+
+    def test_explicit_smaller_k_remains_supported(self):
+        self.invoke(self.base + ["-n", "6", "-k", "6"])
+        self.assertEqual(self.read_job()["SJARACNe.min_recurrence"], 6)
+        self.assertEqual(self.read_job()["SJARACNe.bootstrap_num"], 6)
+
+    def test_default_k20_rejects_fewer_resamples_before_launch(self):
+        with mock.patch.object(CLI, "run_shell_command_call") as launch:
+            with self.assertRaises(SystemExit):
+                CLI.main(self.base + ["-n", "19"])
+        launch.assert_not_called()
+        self.assertFalse(self.output.exists())
 
     def test_sig_probability_and_explicit_override(self):
         arguments = self.base.copy()
