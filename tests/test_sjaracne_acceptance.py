@@ -248,7 +248,7 @@ class TestSJARACNe(unittest.TestCase):
                 'pearson', 'spearman', 'slope', 'p-value',
             ])
             rows = list(reader)
-        self.assertTrue(rows, 'The enhanced default-K6 network must be nonempty')
+        self.assertTrue(rows, 'The enhanced explicit-K6 compatibility network must be nonempty')
         genes = {'H0', 'H1', 'H2', 'T0', 'T1', 'N'}
         for row in rows:
             self.assertIn(row['source'], {'H0', 'H1', 'H2'})
@@ -265,9 +265,10 @@ class TestSJARACNe(unittest.TestCase):
             self.assertLessEqual(float(row['p-value']), 1)
         return statistics, metadata, parameters
 
-    def test_multihub_pchip_default_k6_real_cwl_and_cli(self):
-        # Retain real CWL artifacts for a native-to-consensus audit. Defaults
-        # supply Npar=40, 80% sampling and K=6; the earlier recurrence matrix
+    def test_multihub_pchip_explicit_k6_real_cwl_and_cli(self):
+        # Retain real CWL artifacts for a native-to-consensus audit. Npar=40
+        # and 80% sampling stay default; explicit K=6 preserves the historical
+        # six-resample compatibility fixture. The earlier recurrence matrix
         # intentionally has one hub and therefore does not exercise DPI.
         reference_networks = None
         reference_enhanced = None
@@ -282,7 +283,7 @@ class TestSJARACNe(unittest.TestCase):
                         'probe_file': {'class': 'File', 'path': str(hubs)},
                         'aracne_config_dir': {
                             'class': 'Directory', 'path': str(PROJECT_ROOT / 'SJARACNe/config')},
-                        'bootstrap_num': 6, 'p_value_bootstrap': 0.001,
+                        'bootstrap_num': 6, 'min_recurrence': 6, 'p_value_bootstrap': 0.001,
                         'apmi_null_model': 'pchip', 'final_out_dir_name': 'results',
                     }
                     job_file = workdir / 'job.json'
@@ -297,7 +298,7 @@ class TestSJARACNe(unittest.TestCase):
                     command = [
                         sys.executable, '-m', 'SJARACNe.sjaracne', 'local',
                         '--engine', 'cwl', '--network-type', 'TF', '--fixed-dpi',
-                        '-e', str(expression), '-g', str(hubs), '-n', '6',
+                        '-e', str(expression), '-g', str(hubs), '-n', '6', '-k', '6',
                         '-M', 'pchip', '-pb', '0.001', '-o', str(output),
                         '-tmp', str(workdir / 'tmp'),
                     ]
@@ -336,7 +337,7 @@ class TestSJARACNe(unittest.TestCase):
                     reference_networks = networks
                 else:
                     # Explicit CWL compatibility engine; modern CLI default is
-                    # Sprocket. Keep default K=6 and sampling independent from it.
+                    # Sprocket. Keep explicit compatibility K=6 independent of sampling.
                     submitted = json.loads((output / 'sjaracne_workflow.yml').read_text(encoding='utf-8'))
                     self.assertEqual(submitted['min_recurrence'], 6)
                     self.assertEqual(submitted['subsample_spec'], '80%')
@@ -367,7 +368,7 @@ class TestSJARACNe(unittest.TestCase):
             pchip_cutoff = get_mi_cutoff(80, probability)
 
         for model in (None, 'pchip'):
-            for selection in ('default-k6', 'explicit-pc'):
+            for selection in ('explicit-k6', 'explicit-pc'):
                 with self.subTest(model=model or 'affine', selection=selection), \
                         tempfile.TemporaryDirectory() as tmpdir:
                     workdir = Path(tmpdir)
@@ -384,6 +385,8 @@ class TestSJARACNe(unittest.TestCase):
                         job['apmi_null_model'] = model
                     if selection == 'explicit-pc':
                         job['p_value_consensus'] = 1
+                    else:
+                        job['min_recurrence'] = 6
                     job_file = workdir / 'job.json'
                     job_file.write_text(json.dumps(job), encoding='ascii')
                     result = subprocess.run([
@@ -414,7 +417,7 @@ class TestSJARACNe(unittest.TestCase):
                     variance = sum((float(len(network)) / len(support)) *
                                    (1.0 - float(len(network)) / len(support))
                                    for network in networks)
-                    if selection == 'default-k6':
+                    if selection == 'explicit-k6':
                         selected = {edge for edge, count in support.items() if count >= 6}
                     else:
                         if variance:
@@ -438,7 +441,7 @@ class TestSJARACNe(unittest.TestCase):
                     self.assertEqual(metadata['Total edge tested'], str(len(support)))
                     parameter_info = (output / 'parameter_info_.txt').read_text(encoding='utf-8')
                     self.assertIn('>  Bootstrap No: 6\n', parameter_info)
-                    if selection == 'default-k6':
+                    if selection == 'explicit-k6':
                         self.assertEqual(metadata, {
                             'Total edge tested': str(len(support)),
                             'Consensus selection': 'minimum recurrence',
@@ -483,12 +486,12 @@ class TestSJARACNe(unittest.TestCase):
                         self.assertEqual(log.count('using the legacy affine threshold'), 6)
                         self.assertNotIn('PCHIP cutoff binary64=', log)
                     if selection == 'explicit-pc':
-                        self.assertNotEqual(retained_by_mode[(model, 'default-k6')], selected)
+                        self.assertNotEqual(retained_by_mode[(model, 'explicit-k6')], selected)
                     print('\nRECURRENCE_MATRIX_PASS=' + json.dumps({
                         'model': model or 'affine',
-                        'consensus': 'default_k6' if selection == 'default-k6' else 'legacy_pc',
-                        'B': len(networks), 'K': 6 if selection == 'default-k6' else None,
-                        'K_over_B': 1 if selection == 'default-k6' else None,
+                        'consensus': 'explicit_k6' if selection == 'explicit-k6' else 'legacy_pc',
+                        'B': len(networks), 'K': 6 if selection == 'explicit-k6' else None,
+                        'K_over_B': 1 if selection == 'explicit-k6' else None,
                         'p_value_consensus': 1 if selection == 'explicit-pc' else None,
                         'actual_m': 80, 'cutoff': pchip_cutoff if model else affine_cutoff,
                         'observed_edges': len(support), 'selected_edges': len(selected),

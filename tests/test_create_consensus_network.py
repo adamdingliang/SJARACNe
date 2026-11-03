@@ -4,6 +4,8 @@ import argparse
 import importlib
 import unittest
 import tempfile
+import subprocess
+import sys
 from pathlib import Path
 from unittest import mock
 from SJARACNe.bin.create_consensus_network import create_consensus_network as cn
@@ -20,6 +22,23 @@ FIXTURES = Path(__file__).resolve().parent
 
 
 class TestConsensusNetwork(unittest.TestCase):
+    def test_direct_source_script_finds_its_uninstalled_checkout(self):
+        # A distinct staged constant proves the script finds its own checkout,
+        # rather than an older installed SJARACNe on the interpreter's path.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            package = root / 'SJARACNe'
+            script = package / 'bin/create_consensus_network.py'
+            script.parent.mkdir(parents=True)
+            (package / '__init__.py').write_text('', encoding='utf-8')
+            (package / 'workflow_options.py').write_text(
+                'DEFAULT_MIN_RECURRENCE = 73\n', encoding='utf-8')
+            script.write_bytes(Path(CONSENSUS_MODULE.__file__).read_bytes())
+            result = subprocess.run([sys.executable, '-I', str(script), '--help'],
+                                    cwd=root, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn('default: 73', result.stdout)
+
     @classmethod
     def setUpClass(self):
         self.folder = tempfile.TemporaryDirectory()
@@ -94,7 +113,7 @@ class TestMinimumRecurrenceConsensus(unittest.TestCase):
                 edges.append(("D", 0.3))
             self.write_bootstrap(run_number, edges)
 
-    def test_default_k6_is_inclusive_and_skips_probability_calculation(self):
+    def test_explicit_k6_is_inclusive_and_skips_probability_calculation(self):
         self.write_boundary_fixture()
         output = self.workdir / "output"
 
@@ -103,7 +122,7 @@ class TestMinimumRecurrenceConsensus(unittest.TestCase):
             "uprob",
             side_effect=AssertionError("K mode must not calculate a probability"),
         ):
-            cn(self.adjacency_dir, out_dir=output)
+            cn(self.adjacency_dir, out_dir=output, min_recurrence=6)
 
         network = (output / "consensus_network_3col_.txt").read_text(
             encoding="utf-8"
@@ -135,6 +154,41 @@ class TestMinimumRecurrenceConsensus(unittest.TestCase):
         self.assertIn(">  Consensus selection minimum recurrence\n", parameters)
         self.assertIn(">  Minimum recurrence 6 of 7\n", parameters)
         self.assertIn(">  Minimum recurrence fraction 0.857142857143\n", parameters)
+
+    def test_default_k20_is_inclusive_deduplicated_directed_and_skips_probability(self):
+        for run_number in range(1, 22):
+            edges = [("B", 0.1 + run_number * 0.01)]
+            if run_number <= 20:
+                edges.append(("C", 0.2))
+            if run_number <= 19:
+                # Duplicate occurrences cannot turn nineteen runs into K20.
+                edges.extend((("D", 0.3), ("D", 0.3)))
+            self.write_bootstrap(run_number, edges)
+            if run_number <= 19:
+                path = self.adjacency_dir / "run_{:03d}.adj".format(run_number)
+                with path.open("a", encoding="utf-8") as handle:
+                    handle.write("B\tA\t0.9\n")
+        output = self.workdir / "default_k20"
+        with mock.patch.object(CONSENSUS_MODULE, "uprob",
+                               side_effect=AssertionError("K mode must not calculate a probability")), \
+                self.assertLogs(level="WARNING") as logs:
+            cn(self.adjacency_dir, out_dir=output)
+        self.assertEqual(len(logs.output), 19)
+        self.assertTrue(all("Ignored 1 duplicate edge occurrence(s)" in line
+                            for line in logs.output))
+        self.assertEqual(
+            (output / "consensus_network_3col_.txt").read_text(encoding="utf-8"),
+            "source\ttarget\tMI\nA\tB\t0.2100\nA\tC\t0.2000\n",
+        )
+        metadata = (output / "bootstrap_info_.txt").read_text(encoding="utf-8")
+        self.assertEqual(metadata, "Total edge tested: 4\n"
+                         "Consensus selection: minimum recurrence\n"
+                         "Bootstrap networks: 21\nMinimum recurrence: 20\n"
+                         "Minimum recurrence fraction: 0.952380952381\n")
+        self.assertNotIn("mu:", metadata)
+        self.assertNotIn("sigma:", metadata)
+        parameters = (output / "parameter_info_.txt").read_text(encoding="utf-8")
+        self.assertIn(">  Minimum recurrence 20 of 21\n", parameters)
 
     def test_explicit_k1_retains_every_observed_ordered_edge(self):
         self.write_bootstrap(1, [("B", 0.5), ("C", 0.2)])
@@ -185,7 +239,7 @@ class TestMinimumRecurrenceConsensus(unittest.TestCase):
                 edges.append(("C", 0.2))
             self.write_bootstrap(run_number, edges)
         output = self.workdir / "output"
-        cn(self.adjacency_dir, out_dir=output)
+        cn(self.adjacency_dir, out_dir=output, min_recurrence=6)
         self.assertEqual(
             (output / "consensus_network_3col_.txt").read_text(encoding="utf-8"),
             "source\ttarget\tMI\nA\tB\t0.5000\n",
@@ -270,7 +324,7 @@ class TestMinimumRecurrenceConsensus(unittest.TestCase):
         default_output = self.workdir / "default_too_large"
         with self.assertRaisesRegex(
             ValueError,
-            "minimum recurrence 6 exceeds the number of bootstrap networks 1",
+            "minimum recurrence 20 exceeds the number of bootstrap networks 1",
         ):
             cn(self.adjacency_dir, out_dir=default_output)
         self.assertFalse(default_output.exists())
@@ -520,8 +574,8 @@ class TestEmptyConsensusNetwork(unittest.TestCase):
             (self.output_dir / "consensus_network_3col_.txt").exists()
         )
 
-    def test_default_k6_empty_networks_produce_headers_and_recurrence_metadata(self):
-        for run_number in range(6):
+    def test_default_k20_empty_networks_produce_headers_and_recurrence_metadata(self):
+        for run_number in range(20):
             self.write_empty_bootstrap("run_{}.adj".format(run_number))
 
         with mock.patch.object(
@@ -545,14 +599,14 @@ class TestEmptyConsensusNetwork(unittest.TestCase):
             (self.output_dir / "bootstrap_info_.txt").read_text(encoding="utf-8"),
             "Total edge tested: 0\n"
             "Consensus selection: minimum recurrence\n"
-            "Bootstrap networks: 6\n"
-            "Minimum recurrence: 6\n"
+            "Bootstrap networks: 20\n"
+            "Minimum recurrence: 20\n"
             "Minimum recurrence fraction: 1\n",
         )
         parameters = (self.output_dir / "parameter_info_.txt").read_text(encoding="utf-8")
-        self.assertIn(">  Bootstrap No: 6\n", parameters)
+        self.assertIn(">  Bootstrap No: 20\n", parameters)
         self.assertIn(">  Consensus selection minimum recurrence\n", parameters)
-        self.assertIn(">  Minimum recurrence 6 of 6\n", parameters)
+        self.assertIn(">  Minimum recurrence 20 of 20\n", parameters)
         self.assertIn(">  Minimum recurrence fraction 1\n", parameters)
 
 if __name__ == '__main__':

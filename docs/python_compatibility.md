@@ -1,5 +1,8 @@
 # Python 3.11 and 3.14 compatibility
 
+The K6 workflow measurements below are historical; current consensus defaults
+to K20. See the [active configuration guide](../README.md#configuration).
+
 This report records the **pre-uv** validation at `8a4f9f1`; its measurements and
 requirements-file provenance are retained unchanged. The subsequent
 [uv migration](uv.md) centralizes active dependencies in `pyproject.toml` and

@@ -202,18 +202,19 @@ class CompatibilityRun:
     def run_case(self, label, name, options, expression, hubs):
         python = self.pythons[label]
         output = self.output / "cases" / name / label
+        resamples = 6 if name == "legacy_probability" else 20
         # Tiny-fixture resource overrides leave scientific defaults unchanged.
         argv = [python, "-m", "SJARACNe.sjaracne", "local", "--sprocket", self.sprocket,
                 "--jobs", "2", "--memory", "2 GiB", "--prepare-memory", "1 GiB",
                 "--inference-memory", "1 GiB", "--consensus-memory", "1 GiB",
-                "-e", expression, "-g", hubs, "-n", "6", "-o", output]
+                "-e", expression, "-g", hubs, "-n", str(resamples), "-o", output]
         self.command(name + "_" + label, argv + list(options), self.environment(python))
         manifest = json.loads((output / "sjaracne_run.json").read_text(encoding="utf-8"))
         if manifest["state"] != "complete" or manifest["engine"] != "sprocket":
             raise AssertionError("Incomplete or incorrect workflow engine")
         outputs = json.loads(Path(manifest["engine_outputs_json"]).read_text(encoding="utf-8"))
         adjacencies = [file_path(value) for value in outputs["SJARACNe.adjacencies"]]
-        expected_names = ["TF_run_{:03d}.adj".format(seed) for seed in range(1, 7)]
+        expected_names = ["TF_run_{:03d}.adj".format(seed) for seed in range(1, resamples + 1)]
         if [path.name for path in adjacencies] != expected_names:
             raise AssertionError("Unexpected native seed order")
         records = [file_path(value) for value in outputs["SJARACNe.run_provenance"]]
@@ -252,7 +253,8 @@ class CompatibilityRun:
             raise AssertionError("Normalized scientific parameter metadata differs")
         compare_metadata(a["metadata"], b["metadata"])
         enhanced = compare_enhanced(a["enhanced"], b["enhanced"])
-        self.summary["cases"].append({"name": name, "passed": True, "resamples_per_environment": 6,
+        self.summary["cases"].append({"name": name, "passed": True,
+                                      "resamples_per_environment": len(baseline["adjacencies"]),
                                       "native": native, "enhanced": enhanced,
                                       "independent_selection": baseline["independent_selection"],
                                       "files": {label: {key: {"path": str(path), "sha256": sha256(path)}

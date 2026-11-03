@@ -1,5 +1,10 @@
 # Current defaults and pre-sampling compatibility: validation
 
+Historical validation snapshot: its measured K6 results are preserved below.
+The current consensus default is now K20; see the
+[active configuration guide](../README.md#configuration). Historical small-run
+counts and numerical results have not been relabeled as K20 measurements.
+
 Validation date: 2026-10-28 (America/New_York). Work is on the existing
 `feat/wdl13-scientific-parity` branch, following Step 1 commit `d824d7a`.
 

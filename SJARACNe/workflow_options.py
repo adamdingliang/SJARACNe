@@ -5,6 +5,8 @@ execution. Engine selection and scheduler resources are configured elsewhere;
 neither selects a scientific profile implicitly.
 
 Attributes:
+    DEFAULT_MIN_RECURRENCE (int): Inclusive consensus support threshold for
+        current workflows and the standalone consensus API.
     OPTION_NAMES (set[str]): Scientific keys accepted in profile requests.
     NETWORK_PROBABILITIES (dict[str, float]): Current-profile default null-tail
         probabilities for TF and SIG networks, not biological FDR estimates.
@@ -19,6 +21,7 @@ OPTION_NAMES = {
     "dynamic_dpi", "dpi_href", "dpi_slope", "dpi_max",
 }
 NETWORK_PROBABILITIES = {"TF": 0.001, "SIG": 0.0005}
+DEFAULT_MIN_RECURRENCE = 20
 
 
 def integer(value, name, minimum=1, maximum=2147483647):
@@ -108,7 +111,7 @@ def resolve_options(parameters, observation_count):
     """Resolve profile defaults and reject incompatible scientific settings.
 
     The current profile requires an explicit TF/SIG network type and defaults
-    to 80% sampling without replacement, PCHIP cutoffs, dynamic DPI and K=6.
+    to 80% sampling without replacement, PCHIP cutoffs, dynamic DPI and K=20.
     The legacy profile defaults to full-size sampling with replacement, affine
     cutoffs with ``pb=1e-7``, strict DPI and consensus ``pc=1e-5``. It selects
     retained compatibility behavior in the current executable, not an old
@@ -203,7 +206,7 @@ def resolve_options(parameters, observation_count):
     if profile == "legacy" and pc is None:
         pc = 1e-5
     if pc is None:
-        k = integer(6 if k is None else k, "min_recurrence")
+        k = integer(DEFAULT_MIN_RECURRENCE if k is None else k, "min_recurrence")
         if k > n:
             raise ValueError("minimum recurrence exceeds bootstrap_num")
     else:

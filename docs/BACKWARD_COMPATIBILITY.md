@@ -17,7 +17,7 @@ change.
 | Per-resample `pb` | TF `0.001`; SIG `0.0005` | `1e-7` |
 | AP-MI Npar limit | 40 | 40 |
 | DPI | Experimental dynamic epsilon; Href=479, slope=0.05, cap=0.30 | Fixed strict tolerance, native `-e 0` |
-| Consensus | Distinct-network recurrence K=6 | Explicit legacy normal-approximation `pc=1e-5` |
+| Consensus | Distinct-network recurrence K=20 | Explicit legacy normal-approximation `pc=1e-5` |
 | Reconstruction/annotation | Same full hub list supplied to native `-s` and `-l` | Same |
 
 The legacy settings were checked against pre-sampling revision
@@ -68,12 +68,16 @@ than silently ignored. Use the current profile for mixed modern configurations.
 The current profile also supports explicit `-M affine`, `--fixed-dpi`,
 `--tolerance`, `-pb` and `-pc` settings. Selecting **one** old option does not
 restore every historical setting. For example, `-M affine` still leaves the
-current TF/SIG probability, without-replacement sampling, dynamic DPI and K=6 in
+current TF/SIG probability, without-replacement sampling, dynamic DPI and K=20 in
 place unless you explicitly change them.
 
-Raw saved CWL jobs retain the previous `develop` defaults: affine `pb=1e-7`,
-strict DPI, 80% **without** replacement and K=6. Those defaults are not the
-pre-sampling legacy profile. The public CLI injects its complete resolved profile
+Raw saved CWL jobs retain the older affine `pb=1e-7`, strict DPI and 80%
+**without** replacement settings, but an omitted consensus cutoff now resolves
+to K20. Set `min_recurrence: 6` explicitly to preserve the prior recurrence
+cutoff. Likewise, use CLI `-k 6` to recover the previous current-profile cutoff;
+it does not restore the pre-sampling legacy profile. Requests with fewer than
+20 networks need a smaller explicit K unless legacy probability selection is
+active. The public CLI injects its complete resolved profile
 into CWL. A raw legacy CWL job must explicitly set `sample_number: 1`,
 `subsample_spec: null`, affine mode, fixed tolerance and the legacy consensus
 probability. Do not set native replacement and unique-sampling inputs together.

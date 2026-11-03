@@ -1,5 +1,9 @@
 # uv migration validation
 
+The measured six-resample/default-K6 workflow checks below are historical.
+Current consensus defaults to K20; see the
+[active configuration guide](../README.md#configuration).
+
 Scope: `feat/wdl13-scientific-parity`, following `8a4f9f1`, on October 29,
 2026 (America/New_York). This changes package/environment management and native
 build freshness, not sampling, MI estimation, PCHIP coefficients, DPI or

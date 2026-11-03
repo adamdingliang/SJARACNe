@@ -12,8 +12,12 @@ import re
 from scipy import stats
 import pandas as pd
 
+# Direct source-file execution also needs the checkout root on the import path.
+if __package__ in (None, ''):
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
-DEFAULT_MIN_RECURRENCE = 6
+from SJARACNe.workflow_options import DEFAULT_MIN_RECURRENCE
+
 _UNSET = object()
 
 
@@ -50,7 +54,7 @@ def main():
         '-k', '--min-recurrence', metavar='INT', type=minimum_recurrence,
         help=(
             'minimum number of distinct bootstrap networks containing an edge; '
-            'default: 6'
+            'default: {}'.format(DEFAULT_MIN_RECURRENCE)
         ),
     )
     selection_group.add_argument(
@@ -105,7 +109,8 @@ def create_consensus_network(
         out_dir: output directory
         min_recurrence: minimum number of distinct bootstrap networks that
             must contain an ordered edge. When neither selection mode is
-            supplied, defaults to 6.
+            supplied, defaults to 20. Explicit legacy p_value selection is
+            unaffected.
     Returns:
         none
     """

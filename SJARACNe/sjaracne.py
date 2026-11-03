@@ -17,10 +17,9 @@ import threading
 
 from SJARACNe.bin.QC_input import validate_inputs
 from SJARACNe.bin.wdl_workflow import runtime_fingerprint, sha256
-from SJARACNe.workflow_options import resolve_options
+from SJARACNe.workflow_options import DEFAULT_MIN_RECURRENCE, resolve_options
 
 PACKAGE = Path(__file__).resolve().parent
-DEFAULT_MIN_RECURRENCE = 6
 SPROCKET_VERSION = "0.32.0"
 _EXECUTION_CONTEXT = ContextVar("sjaracne_cli_execution", default=None)
 SCIENTIFIC_FIELDS = (
@@ -210,7 +209,8 @@ def build_parser():
     common.add_argument("-d", "--depth", type=bootstrap_count, help="AP-MI Npar limit (default40)")
     common.add_argument("-c", "--config-dir", help="ARACNe configuration directory; default bundled")
     consensus = common.add_mutually_exclusive_group()
-    consensus.add_argument("-k", "--min-recurrence", type=minimum_recurrence, help="Current default K=6")
+    consensus.add_argument("-k", "--min-recurrence", type=minimum_recurrence,
+                           help="Minimum distinct-network support (current default K={})".format(DEFAULT_MIN_RECURRENCE))
     consensus.add_argument("-pc", "--p-value-consensus", type=consensus_probability, help="Legacy normal-approximation consensus probability")
     sampling = common.add_mutually_exclusive_group()
     sampling.add_argument("-sf", "--subsample-fraction", type=sampling_fraction, help="Fraction without replacement; current default.8")

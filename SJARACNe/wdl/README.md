@@ -47,7 +47,7 @@ The same full hub list supplies native `-s` and `-l`.
 | MI conversion | Experimental PCHIP |
 | Per-resample probability | TF `0.001`; SIG `0.0005` |
 | DPI | Experimental dynamic epsilon, Href=479, slope=0.05, cap=0.30 |
-| Consensus | Distinct-network recurrence K=6, inclusive |
+| Consensus | Distinct-network recurrence K=20, inclusive; 20 of 100 by default |
 
 Dynamic tolerance is one scalar for each reconstruction:
 
@@ -70,7 +70,7 @@ extrapolating or selecting another model.
 ## Explicit alternatives
 
 ```bash
-# Current sampling and K=6, but strict fixed DPI:
+# Current sampling and K=20, but strict fixed DPI:
 sjaracne local --network-type TF --fixed-dpi \
   -e /absolute/path/input.exp -g /absolute/path/hubs.txt -o strict_tf
 
@@ -99,7 +99,8 @@ Example JSON for a six-resample functional check:
   "SJARACNe.exp_file": "/absolute/path/input.exp",
   "SJARACNe.probe_file": "/absolute/path/hubs.txt",
   "SJARACNe.network_type": "TF",
-  "SJARACNe.bootstrap_num": 6
+  "SJARACNe.bootstrap_num": 6,
+  "SJARACNe.min_recurrence": 6
 }
 ```
 
@@ -115,7 +116,9 @@ sprocket --skip-config-search --config SJARACNe/wdl/sprocket.local.toml \
 ```
 
 Omitted scientific options resolve through the same shared profile code used by
-the CLI. Set `profile` to `legacy` to use that profile; its network type is
+the CLI. The reduced example explicitly uses K6; otherwise the current default
+is K20 and fewer than 20 resamples require a smaller explicit K. This is not an
+automatic support-fraction rule. Set `profile` to `legacy` to use that profile; its network type is
 optional. Optional inputs include `aracne_config_dir`, `subsample_spec`, `depth`,
 `p_value_bootstrap`, `apmi_null_model`, `min_recurrence`, `p_value_consensus`,
 `tolerance`, `dynamic_dpi`, `dpi_href`, `dpi_slope` and `dpi_max`. Explicit sampling
@@ -123,8 +126,11 @@ mode uses `sampling_method`; conflicting replacement/unique inputs are rejected.
 
 Do not copy the old standalone document's defaults from historical reports.
 Omissions now select the current profile, not affine/strict settings. Raw CWL
-defaults intentionally retain their previous behavior; engine selection through
-the public CLI always forwards a fully resolved scientific profile.
+keeps its older MI/sampling/DPI defaults, but an omitted consensus cutoff now
+uses K20; specify `min_recurrence: 6` to retain its prior recurrence cutoff.
+Engine selection through the public CLI always forwards a fully resolved
+scientific profile. A smaller K may be appropriate for scRNA-seq, but neither
+a scRNA-seq default nor dynamic K has been validated; inspect target coverage.
 
 ## Resources, outputs and provenance
 
@@ -179,7 +185,7 @@ enhancement, with independent recurrence/mean-MI checks. Current TF/SIG defaults
 explicit fixed/dynamic settings and the legacy profile are covered. CRLF and
 invalid-input checks are separate from biological accuracy.
 
-See the [current validation report](../../docs/default_profiles_validation.md).
+See the [historical default-profile validation report](../../docs/default_profiles_validation.md).
 The [initial standalone parity report](../../docs/wdl13_parity.md) records the
 earlier opt-in defaults and is historical evidence, not a description of the new
 default profile. Cluster/cloud, container, production-scale memory, cache and
