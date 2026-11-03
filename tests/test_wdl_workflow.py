@@ -246,6 +246,12 @@ class TestWdlNativeCommand(unittest.TestCase):
 
 
 class TestWdlFiles(unittest.TestCase):
+    def test_workflow_shell_blocks_use_lf_after_windows_checkout(self):
+        workflow = WDL.PACKAGE / "wdl/sjaracne.wdl"
+        self.assertNotIn(b"\r", workflow.read_bytes())
+        attributes = (WDL.PACKAGE.parent / ".gitattributes").read_text(encoding="utf-8")
+        self.assertIn("*.wdl text eol=lf", attributes)
+
     def test_lf_normalization_preserves_bytes_order_and_source(self):
         block = 1024 * 1024
         cases = [b"already\nLF\n", b"a\r\nb\rc\nlast\r", b"", b"\r\n\r\n",

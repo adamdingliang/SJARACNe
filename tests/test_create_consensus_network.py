@@ -4,6 +4,8 @@ import argparse
 import importlib
 import unittest
 import tempfile
+import subprocess
+import sys
 from pathlib import Path
 from unittest import mock
 from SJARACNe.bin.create_consensus_network import create_consensus_network as cn
@@ -20,6 +22,23 @@ FIXTURES = Path(__file__).resolve().parent
 
 
 class TestConsensusNetwork(unittest.TestCase):
+    def test_direct_source_script_finds_its_uninstalled_checkout(self):
+        # A distinct staged constant proves the script finds its own checkout,
+        # rather than an older installed SJARACNe on the interpreter's path.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            package = root / 'SJARACNe'
+            script = package / 'bin/create_consensus_network.py'
+            script.parent.mkdir(parents=True)
+            (package / '__init__.py').write_text('', encoding='utf-8')
+            (package / 'workflow_options.py').write_text(
+                'DEFAULT_MIN_RECURRENCE = 73\n', encoding='utf-8')
+            script.write_bytes(Path(CONSENSUS_MODULE.__file__).read_bytes())
+            result = subprocess.run([sys.executable, '-I', str(script), '--help'],
+                                    cwd=root, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn('default: 73', result.stdout)
+
     @classmethod
     def setUpClass(self):
         self.folder = tempfile.TemporaryDirectory()

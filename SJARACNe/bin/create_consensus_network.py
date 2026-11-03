@@ -12,6 +12,10 @@ import re
 from scipy import stats
 import pandas as pd
 
+# Direct source-file execution also needs the checkout root on the import path.
+if __package__ in (None, ''):
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
+
 from SJARACNe.workflow_options import DEFAULT_MIN_RECURRENCE
 
 _UNSET = object()
