@@ -1,4 +1,4 @@
-# SJARACNe
+# SJARACNe2
 
 SJARACNe is a command-line tool for reconstructing gene regulatory networks
 from gene expression data. It builds transcription factor (TF) and signaling
