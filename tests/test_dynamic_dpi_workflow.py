@@ -33,7 +33,8 @@ class TestDynamicDpiWrapper(unittest.TestCase):
             output, scratch = root / 'output', root / 'scratch'
             expression, hubs = write_multihub_dpi_inputs(root)
             args = ['sjaracne', 'local', '--engine', 'cwl', '--network-type', 'TF',
-                    '-e', str(expression), '-g', str(hubs), '-o', str(output), '-tmp', str(scratch)]
+                    '-e', str(expression), '-g', str(hubs), '-o', str(output), '-tmp', str(scratch),
+                    '--consensus-order', 'dpi-first']
             args += list(extra)
             with mock.patch.object(module, 'run_shell_command_call') as launch, \
                     mock.patch.object(module, 'runtime_fingerprint', return_value={}), \
@@ -186,6 +187,7 @@ class TestDynamicDpiRealCwl(unittest.TestCase):
             result = subprocess.run([
                 sys.executable, '-m', 'SJARACNe.sjaracne', 'local',
                 '--engine', 'cwl', '--network-type', 'TF',
+                '--consensus-order', 'dpi-first',
                 '-e', str(expression), '-g', str(hubs), '-n', '2', '--min-recurrence', '1',
                 '-pb', '1', '--dynamic-dpi', '--dpi-href', '2',
                 '--dpi-slope', '0.1', '--dpi-max', '0.3',

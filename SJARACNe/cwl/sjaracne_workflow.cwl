@@ -43,6 +43,9 @@ inputs:
   dpi_max:
     type: double?
     label: Optional dynamic epsilon cap; native default 0.30
+  dpi_offset:
+    type: double?
+    label: Additive dynamic-DPI offset before the cap; requires dynamic_dpi
   depth:
     type: int
     default: 40
@@ -141,6 +144,7 @@ steps:
       dpi_href: dpi_href
       dpi_slope: dpi_slope
       dpi_max: dpi_max
+      dpi_offset: dpi_offset
       aracne_config_dir: aracne_config_dir
       npar_limit: depth
       subsample_spec:

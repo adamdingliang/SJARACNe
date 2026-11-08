@@ -59,14 +59,15 @@ class Matrix
 public:
    Matrix()
       : nmv(), adjacencyRowsPresent(), writeTriangular(false),
-        writeReduced(false), writeEmptyGenes(false) { }
+        writeReduced(false), writeEmptyGenes(false), writeCanonicalSourceRows(false) { }
 
    AdjacencyRows nmv;
    std::vector<bool> adjacencyRowsPresent;
 
    bool writeTriangular; // if true, only triangular half of matrix will be written
    bool writeReduced;    // if true, intermediate nodes will be written
-   bool writeEmptyGenes; // if true, empty lines will be written
+   bool writeEmptyGenes; // if true, empty active/control lines will be written
+   bool writeCanonicalSourceRows; // new native modes retain every requested row
 
    void saveNode(int i, int j, double mi);
 

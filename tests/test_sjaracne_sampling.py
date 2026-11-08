@@ -373,6 +373,7 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
                 "sjaracne",
                 "local",
                 "--engine", "cwl", "--network-type", "TF",
+                "--consensus-order", "dpi-first",
                 "-e",
                 str(expression),
                 "-g",

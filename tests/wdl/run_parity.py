@@ -394,7 +394,7 @@ class ParityRun:
             observations = len(handle.readline().rstrip("\r\n").split("\t")) - 2
         parameters = resolve_options(options, observations)
         for key in ("bootstrap_num", "depth", "p_value_bootstrap", "min_recurrence",
-                    "p_value_consensus", "dynamic_dpi", "dpi_href", "dpi_slope", "dpi_max", "tolerance"):
+                    "p_value_consensus", "dynamic_dpi", "dpi_href", "dpi_slope", "dpi_max", "dpi_offset", "tolerance"):
             if parameters.get(key) is not None:
                 job[key] = parameters[key]
         job["apmi_null_model"] = (None if parameters["apmi_null_model"] == "affine"
@@ -509,6 +509,8 @@ class ParityRun:
                 ("current_sig_defaults", {"bootstrap_num": 20, "network_type": "SIG"}),
                 ("presampling_legacy_profile", {"bootstrap_num": 6, "profile": "legacy"}),
             )
+            cases = tuple((name, {"consensus_order": "dpi-first", **options}) for name, options in cases)
+            self.summary["consensus_order_scope"] = "Explicit retained DPI-first parity; native consensus-first defaults are exercised by test_default_workflow.py"
             baseline = None
             for name, options in cases:
                 cwl = self.run_cwl(name, expression, hubs, options)

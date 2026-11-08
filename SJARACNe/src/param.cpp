@@ -52,6 +52,36 @@ void checkParameter(Parameter &p)
    if (p.infile == "")
       throw std::string("No input file specified!");
 
+   if (p.minRecurrenceSpecified && p.consensusInputs.empty())
+      throw std::string("Option '--min-recurrence' requires '--consensus-inputs'.");
+   if (p.minRecurrence < 1)
+      throw std::string("Minimum recurrence must be a positive integer.");
+   if (!std::isfinite(p.dpiOffset) || p.dpiOffset < 0.0 || p.dpiOffset >= 1.0)
+      throw std::string("Dynamic DPI '--dpi-offset' must be finite and in [0,1).");
+   if (p.rawMi)
+   {
+      if (!p.consensusInputs.empty() || !p.adjfile.empty())
+         throw std::string("Option '--raw-mi' cannot be combined with adjacency or consensus input.");
+      if (p.subnetfile.empty() || !p.hub.empty())
+         throw std::string("Option '--raw-mi' requires a source list '-s'.");
+      if (p.dynamicDpi || p.eps != 1.0)
+         throw std::string("Option '--raw-mi' requires DPI to be disabled; omit dynamic DPI and use '-e 1'.");
+      if (!p.controlId.empty())
+         throw std::string("Option '--raw-mi' does not support conditional reconstruction '-c'.");
+   }
+   if (!p.consensusInputs.empty())
+   {
+      if (!p.adjfile.empty() || p.rawMi)
+         throw std::string("Consensus input cannot be combined with '-j' or '--raw-mi'.");
+      if (p.subnetfile.empty() || !p.hub.empty() || p.annotfile.empty())
+         throw std::string("Option '--consensus-inputs' requires '-i', '-s' and '-l'.");
+      if (p.sample > 0 || !p.subsampleSpec.empty() || !p.controlId.empty() ||
+          !p.nullModelFile.empty() || p.pvalue != 1.0 || p.threshold != 0.0 ||
+          p.mean != 0.0 || p.cv != 0.0 || p.correction != 0.0)
+         throw std::string("Consensus input cannot resample, estimate MI, filter genes, or rethreshold MI; "
+                           "omit '-r', '-u', '-c', '-M', '-f', '-n' and use '-p 1 -t 0'.");
+   }
+
    if (p.hub != "")
       p.hub = "_" + p.hub;
 
@@ -126,7 +156,7 @@ void checkParameter(Parameter &p)
          throw std::string("Experimental '--dynamic-dpi' does not support conditional "
                            "reconstruction '-c'; use an unconditional expression workflow.");
       // Reuse the formula validator before reading expression or opening output.
-      resolveDynamicDpiEpsilon(1, p.dpiHref, p.dpiSlope, p.dpiMax);
+      resolveDynamicDpiEpsilon(1, p.dpiHref, p.dpiSlope, p.dpiMax, p.dpiOffset);
    }
 
    if (!p.dpiWitnessFile.empty() && !p.dynamicDpi && p.eps == 1.0)
@@ -166,7 +196,7 @@ void checkParameter(Parameter &p)
 // The experimental schedule changes one scalar tolerance per reconstruction;
 // sourceRows must count constructed rows, not nonempty rows or retained edges.
 double resolveDynamicDpiEpsilon(std::size_t sourceRows, int referenceHubs,
-                                double slope, double maximum)
+                                double slope, double maximum, double offset)
 {
    if (sourceRows == 0)
       throw std::string("Dynamic DPI requires a positive reconstructed source-row count.");
@@ -176,10 +206,12 @@ double resolveDynamicDpiEpsilon(std::size_t sourceRows, int referenceHubs,
       throw std::string("Dynamic DPI '--dpi-slope' must be finite and positive.");
    if (!std::isfinite(maximum) || maximum < 0.0 || maximum >= 1.0)
       throw std::string("Dynamic DPI '--dpi-max' must be finite and in [0,1).");
-   if (sourceRows <= static_cast<std::size_t>(referenceHubs))
-      return 0.0;
-   return std::min(maximum, slope * std::log2(
-      static_cast<double>(sourceRows) / static_cast<double>(referenceHubs)));
+   if (!std::isfinite(offset) || offset < 0.0 || offset >= 1.0)
+      throw std::string("Dynamic DPI '--dpi-offset' must be finite and in [0,1).");
+   const double increase = sourceRows <= static_cast<std::size_t>(referenceHubs)
+      ? 0.0 : slope * std::log2(static_cast<double>(sourceRows) /
+                               static_cast<double>(referenceHubs));
+   return std::min(maximum, offset + increase);
 }
 
 //------------------------------------------------------------------------------------

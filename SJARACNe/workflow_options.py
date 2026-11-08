@@ -18,7 +18,7 @@ import re
 OPTION_NAMES = {
     "profile", "network_type", "sampling_method", "bootstrap_num", "subsample_spec", "depth",
     "p_value_bootstrap", "apmi_null_model", "min_recurrence", "p_value_consensus", "tolerance",
-    "dynamic_dpi", "dpi_href", "dpi_slope", "dpi_max",
+    "dynamic_dpi", "dpi_href", "dpi_slope", "dpi_max", "dpi_offset", "consensus_order",
 }
 NETWORK_PROBABILITIES = {"TF": 0.001, "SIG": 0.0005}
 DEFAULT_MIN_RECURRENCE = 20
@@ -111,7 +111,8 @@ def resolve_options(parameters, observation_count):
     """Resolve profile defaults and reject incompatible scientific settings.
 
     The current profile requires an explicit TF/SIG network type and defaults
-    to 80% sampling without replacement, PCHIP cutoffs, dynamic DPI and K=20.
+    to 80% sampling without replacement, PCHIP cutoffs, K=20 consensus before
+    dynamic DPI, and an additive tolerance offset of 0.025.
     The legacy profile defaults to full-size sampling with replacement, affine
     cutoffs with ``pb=1e-7``, strict DPI and consensus ``pc=1e-5``. It selects
     retained compatibility behavior in the current executable, not an old
@@ -133,7 +134,8 @@ def resolve_options(parameters, observation_count):
         dict[str, object]: A new mapping with resolved scientific settings.
             Exactly one of ``min_recurrence`` and ``p_value_consensus`` is active;
             replacement sampling has a null ``subsample_spec``. Optional
-            dynamic-DPI tuning keys remain absent unless explicitly supplied.
+            dynamic-DPI offset is resolved explicitly; other tuning keys remain
+            absent unless explicitly supplied.
 
     Raises:
         ValueError: If keys, values, profile combinations, sampling counts or
@@ -151,6 +153,11 @@ def resolve_options(parameters, observation_count):
     profile = values.get("profile", "current")
     if profile not in ("current", "legacy"):
         raise ValueError("profile must be current or legacy")
+    order = values.get("consensus_order", "dpi-first" if profile == "legacy" else "consensus-first")
+    if order not in ("consensus-first", "dpi-first"):
+        raise ValueError("consensus_order must be consensus-first or dpi-first")
+    if profile == "legacy" and order != "dpi-first":
+        raise ValueError("The legacy profile requires consensus_order dpi-first")
     network = values.get("network_type")
     if isinstance(network, str):
         network = network.upper()
@@ -211,7 +218,12 @@ def resolve_options(parameters, observation_count):
             raise ValueError("minimum recurrence exceeds bootstrap_num")
     else:
         pc = finite_number(pc, "p_value_consensus", 0, 1, lower_inclusive=False)
-    tuning = {key: values[key] for key in ("dpi_href", "dpi_slope", "dpi_max") if key in values}
+    if order == "consensus-first" and pc is not None:
+        raise ValueError("consensus-first requires min_recurrence; use consensus_order dpi-first for p_value_consensus")
+    if dynamic:
+        values["dpi_offset"] = finite_number(values.get("dpi_offset", 0.025 if order == "consensus-first" else 0),
+                                              "dpi_offset", 0, 1, upper_inclusive=False)
+    tuning = {key: values[key] for key in ("dpi_href", "dpi_slope", "dpi_max", "dpi_offset") if key in values}
     if tuning and not dynamic:
         raise ValueError("DPI tuning parameters require dynamic_dpi")
     if "dpi_href" in tuning:
@@ -224,6 +236,6 @@ def resolve_options(parameters, observation_count):
         values["tolerance"] = finite_number(values.get("tolerance", 0), "tolerance", 0, 1)
     values.update(profile=profile, network_type=network, sampling_method=method,
                   bootstrap_num=n, depth=depth, subsample_spec=spec,
-                  p_value_bootstrap=pb, dynamic_dpi=dynamic,
+                  p_value_bootstrap=pb, dynamic_dpi=dynamic, consensus_order=order,
                   min_recurrence=k, p_value_consensus=pc, apmi_null_model=model)
     return values

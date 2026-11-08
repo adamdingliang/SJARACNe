@@ -37,6 +37,11 @@
 #endif
 #include "apmi.h"
 #include "matrix.h"
+#ifdef _WIN32
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
 #include "util.h"
 
 int maxNpar = 0; // maximum observed value of npar
@@ -503,7 +508,7 @@ void Matrix::writeGeneLine(std::ostream& out, const Microarray_Set& data, int ge
 
    const Marker& marker = data.markerset[geneId];
 
-   if (row.size() == 0 &&
+   if (row.size() == 0 && !writeCanonicalSourceRows &&
        (!writeEmptyGenes || !marker.isActive && !marker.isControl))
       return;
 
@@ -591,9 +596,30 @@ void Matrix::write(const Microarray_Set& data, const std::vector<int>& ids,
    if (!writeFull)
       return;
 
-   std::ofstream out(p.outfile.c_str());
+   const bool completePrecision = p.rawMi || !p.consensusInputs.empty();
+   std::string writePath = p.outfile;
+   if (completePrecision)
+   {
+#ifdef _WIN32
+      const int processId = _getpid();
+#else
+      const int processId = getpid();
+#endif
+      std::ostringstream temporary;
+      temporary << p.outfile << ".tmp." << processId << "." << std::clock();
+      writePath = temporary.str();
+      std::ifstream existing(writePath.c_str());
+      if (existing.good())
+         throw std::string("Refusing to replace existing temporary output: ") + writePath;
+   }
+   std::ofstream out(writePath.c_str());
    if (!out.is_open())
-      throw "Unable to open " + p.outfile;
+      throw "Unable to open " + writePath;
+   if (completePrecision)
+   {
+      out << std::setprecision(std::numeric_limits<double>::max_digits10);
+      writeCanonicalSourceRows = true;
+   }
 
    std::cout << "Writing matrix: " << p.outfile << std::endl;
 
@@ -628,16 +654,40 @@ void Matrix::write(const Microarray_Set& data, const std::vector<int>& ids,
       out.precision(savedPrecision);
    }
    out << ">  DPI tolerance   " << p.eps        << std::endl;
+   if (completePrecision)
+      out << ">  MI output precision 17" << std::endl;
+   if (p.rawMi)
+   {
+      out << ">  DPI mode disabled-raw-mi" << std::endl;
+      out << ">  Raw MI mode above-cutoff-pre-DPI" << std::endl;
+      out << ">  Raw MI source row order supplied-hub-list-including-empty" << std::endl;
+      out << ">  Raw MI source rows H " << sourceRowCount() << std::endl;
+   }
+   if (!p.consensusInputs.empty())
+   {
+      out << ">  Consensus input runs B " << p.consensusRuns << std::endl;
+      out << ">  Consensus minimum recurrence K " << p.minRecurrence << std::endl;
+      out << ">  Consensus union edges " << p.consensusUnionEdges << std::endl;
+      out << ">  Consensus candidate edges " << p.consensusCandidateEdges << std::endl;
+      out << ">  Consensus final edges " << dpiEdgeStatistics(ids).postEdges << std::endl;
+      out << ">  Consensus MI aggregation supporting-run arithmetic mean" << std::endl;
+      out << ">  Consensus input manifest " << p.consensusInputs << std::endl;
+      out << ">  Consensus source rows H " << sourceRowCount() << std::endl;
+      if (!p.dynamicDpi)
+         out << ">  DPI epsilon binary64 " << p.eps << std::endl;
+   }
    if (p.dynamicDpi)
    {
       const std::streamsize savedPrecision = out.precision();
       const std::ios::fmtflags savedFlags = out.flags();
       out << ">  DPI mode experimental-dynamic" << std::endl;
-      out << ">  DPI dynamic rule log2-hub-ratio-v1" << std::endl;
+      out << ">  DPI dynamic rule "
+          << (p.dpiOffset == 0.0 ? "log2-hub-ratio-v1" : "offset-log2-hub-ratio-v1") << std::endl;
       out << ">  DPI H policy unique-reconstructed-rows-including-empty" << std::endl;
       out << ">  DPI source rows H " << p.dpiActualH << std::endl;
       out << ">  DPI H_ref " << p.dpiHref << std::endl;
       out << ">  DPI slope " << std::setprecision(17) << p.dpiSlope << std::endl;
+      out << ">  DPI offset " << p.dpiOffset << std::endl;
       out << ">  DPI epsilon max " << p.dpiMax << std::endl;
       out << ">  DPI epsilon binary64 " << p.eps << std::endl;
       out << ">  DPI epsilon hex " << std::hexfloat << p.eps << std::endl;
@@ -671,6 +721,17 @@ void Matrix::write(const Microarray_Set& data, const std::vector<int>& ids,
    write(out, data, ids);
 
    out.close();
+   if (!out)
+   {
+      if (completePrecision)
+         std::remove(writePath.c_str());
+      throw std::string("Unable to finish writing matrix: ") + writePath;
+   }
+   if (completePrecision && std::rename(writePath.c_str(), p.outfile.c_str()) != 0)
+   {
+      std::remove(writePath.c_str());
+      throw std::string("Unable to publish completed matrix: ") + p.outfile;
+   }
 
    std::cout << "Maximum observed npar: " << maxNpar << std::endl;
 }

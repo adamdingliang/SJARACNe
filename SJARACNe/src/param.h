@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <cstddef>
+#include <cstdint>
 
 //------------------------------------------------------------------------------------
 
@@ -41,8 +42,15 @@ struct Parameter
    int    dpiHref;            // reference count of reconstructed source rows
    double dpiSlope;           // epsilon increase per doubling above dpiHref
    double dpiMax;             // upper bound of experimental dynamic epsilon
+   double dpiOffset;          // optional dynamic epsilon offset, default zero
    std::size_t dpiActualH;    // unique reconstructed rows, including empty rows
 
+   bool rawMi;               // above-cutoff MI output before DPI, full precision
+   bool minRecurrenceSpecified;
+   int minRecurrence;
+   std::size_t consensusRuns;
+   std::uint64_t consensusUnionEdges, consensusCandidateEdges;
+   std::string consensusInputs;
    std::string verbose, infile, outfile, adjfile, hub;
    std::string dpiWitnessFile;
    std::string subnetfile, annotfile, controlId, condition, home_dir;
@@ -60,7 +68,10 @@ struct Parameter
         nparLimit(default_nparLimit), seed(default_seed), samplingPopulation(0),
         samplingSize(0), thresholdSpecified(false), epsSpecified(false),
         dynamicDpi(false), dynamicDpiParametersSpecified(false), dpiHref(479),
-        dpiSlope(0.05), dpiMax(0.30), dpiActualH(0),
+        dpiSlope(0.05), dpiMax(0.30), dpiOffset(0.0), dpiActualH(0),
+        rawMi(false), minRecurrenceSpecified(false), minRecurrence(20),
+        consensusRuns(0), consensusUnionEdges(0), consensusCandidateEdges(0),
+        consensusInputs(""),
         verbose("off"), infile(""), outfile(""), adjfile(""),
         hub(""), dpiWitnessFile(""), subnetfile(""), annotfile(""), controlId(""), condition(""),
         home_dir("./"), subsampleSpec(""), samplingMethod(""), nullModelFile(""),
@@ -77,6 +88,6 @@ void displayParameter(Parameter &p);
 void createOutfileName(Parameter &p );
 int resolveSubsampleSize(const std::string& spec, int populationSize);
 double resolveDynamicDpiEpsilon(std::size_t sourceRows, int referenceHubs,
-                                double slope, double maximum);
+                                double slope, double maximum, double offset=0.0);
 
 #endif

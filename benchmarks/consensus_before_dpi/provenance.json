@@ -1,0 +1,780 @@
+{
+  "schema_version": 1,
+  "snapshot_date": "2026-11-08",
+  "scope": "Historical workflow results only; native C++ feature equivalence pending.",
+  "source_files": [
+    {
+      "path": "D:\\GitHub\\local_runs\\dream_size_coverage_20261108\\per_dataset.tsv",
+      "sha256": "813a30454b7fbd5841f1bdf875b2b54dc4966f659e4bcbd5aac98719f879701e"
+    },
+    {
+      "path": "D:\\GitHub\\local_runs\\dream_size_coverage_20261108\\weighted_summary.tsv",
+      "sha256": "b809bb852f010de5eb8480d28dac43b5541f0e8189348c242c99e969faccde48"
+    },
+    {
+      "path": "D:\\GitHub\\local_runs\\dream_size_coverage_20261108\\bulk_existing_comparison.tsv",
+      "sha256": "a5d030dcc5363716ef238e09c561f2fa78989b243189c807be3f929f49b88996"
+    },
+    {
+      "path": "D:\\GitHub\\local_runs\\dream_size_coverage_20261108\\analysis.json",
+      "sha256": "cf6387516f539a583fdf9b282b6f774f16b30a4b37f294136e18f1445c2a50f7"
+    },
+    {
+      "path": "D:\\GitHub\\local_runs\\dream_size_coverage_20261108\\analyze.py",
+      "sha256": "68a629a717841c58662a311414564f1529f0fa611ce99c42c792587407e7f794"
+    },
+    {
+      "path": "D:\\GitHub\\local_runs\\dream_size_coverage_20261108\\report.py",
+      "sha256": "65e5ed246b9c1768fa42bac999ae4b4cd1f081314a3def8e221b4a3b8ce3a85b"
+    },
+    {
+      "path": "D:\\GitHub\\local_runs\\dream_size_coverage_20261108\\REPORT.md",
+      "sha256": "f0173a2b2f4aed9e0691ef899f6fd485b012247116e1bd6078dbe00f09ebe232"
+    },
+    {
+      "path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\comparison.tsv",
+      "sha256": "c13e540be2dca2d40dc1d7ad5c18a3473935060c54b0d19c71240f9a56b72b08"
+    },
+    {
+      "path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\controls.tsv",
+      "sha256": "a23043eaa3d63b0518958845ab6607c6222ac2b30234d2f9038c28897ab25bc6"
+    },
+    {
+      "path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\manifest.json",
+      "sha256": "42e26f180545c9a38df0fb2a8e693cfb98d1191c9b1b9859850174cd29358b9a"
+    },
+    {
+      "path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\full_comparison.tsv",
+      "sha256": "d9a6088109ee1dc2a17ab8f6fc6534312fda543d38db6eec00e941036c3f3aed"
+    },
+    {
+      "path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\metrics.tsv",
+      "sha256": "fc84f2af9ce0f0efcfc1a5c643346a1b5b3acd9f802513b9f7e8e43e15e52af0"
+    },
+    {
+      "path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\manifest.json",
+      "sha256": "7e89ad8581760c343db1492b72afd895a6c3c628a4e2529522fda97719d8f397"
+    }
+  ],
+  "graph_records": [
+    {
+      "dataset": "DREAM5_N1",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\sjaracne_legacy_vs_develop_20261028\\results\\DREAM5_N1_TF_legacy\\consensus_network_ncol_.txt",
+      "sha256": "622c7229ff8c2f9478959642209771ad30a0fa66b92af2b2b0a7e01b57c0e299",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_N1",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\sjaracne_legacy_vs_develop_20261028\\consensus_before_dpi_20261105\\saved_standard_consensus\\DREAM5_N1_TF_current_K20_consensus_network_ncol.txt",
+      "sha256": "ed1dc4fc59b0786ad4900e6503faa78f40ed5dd2a110f1776d99355c00147b1c",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_N1",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\sjaracne_legacy_vs_develop_20261028\\consensus_before_dpi_20261105\\networks\\DREAM5_N1\\late_dpi\\K20\\network.adj",
+      "sha256": "a6c1b74187e83c8202e2b13c02ce82c796baac2a707c1865ef28d79abd1c1fc7",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_N1",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_N1\\relaxed\\network.adj",
+      "sha256": "f379e8d6a08d127f580c5cfffd0ad4962da7e22c8703229f5e96647ba920efa1",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_N3",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\sjaracne_legacy_vs_develop_20261028\\results\\DREAM5_N3_TF_legacy\\consensus_network_ncol_.txt",
+      "sha256": "1c03f855bf595d224ede7151c3ec3d583cdac158e65c3ad735c34ca7fffc3689",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_N3",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\sjaracne_legacy_vs_develop_20261028\\consensus_before_dpi_20261105\\saved_standard_consensus\\DREAM5_N3_TF_current_K20_consensus_network_ncol.txt",
+      "sha256": "e9f605dce3449f6b1610cbcdf822f20ea475341ae0126cefe23edfead294c273",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_N3",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\sjaracne_legacy_vs_develop_20261028\\consensus_before_dpi_20261105\\networks\\DREAM5_N3\\late_dpi\\K20\\network.adj",
+      "sha256": "6c2b1eafc244558e4e4fa307097521c321a801546e95e02717d9fc7fa523f025",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_N3",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_N3\\relaxed\\network.adj",
+      "sha256": "9942fd8559f69848cc2ffecc5cf33a3bbc33a09d2112d9ce6d32c23e34f3a5b8",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_N4",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_N4\\legacy.tsv",
+      "sha256": "b98e543745932b6d22b6307e5ec69d2d6042fa7d36da1ded69f223657a478120",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_N4",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_N4\\develop.tsv",
+      "sha256": "279e83be8a678bc4bbf47c5855a470804d9262b747d6f684b72a0553f0c53128",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_N4",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_N4\\new.tsv",
+      "sha256": "8e53096fb6df8d0e255470a3ec256d8f557930f1b3bafd741b5532e26f5070e1",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_N4",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_N4\\relaxed\\network.adj",
+      "sha256": "cce4d5de812cf60bf97eeccee758dca9f3ab39d20cbf30cb9f52d14437a72837",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network1",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network1\\legacy.tsv",
+      "sha256": "db1ad6ecf12c921de64417b8f037a174c6399fba3ff4baacac0fd094cb987fe6",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network1",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network1\\develop.tsv",
+      "sha256": "56e0852d30ada6b3778077a7a58a46383cc89c46e7fbdc4c8c936040e3013e38",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network1",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network1\\new.tsv",
+      "sha256": "f24bc3ae889e7b5e76d1ae6aafc83e84d7a7792c5931f04b0cb29de4504948fe",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network1",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA100_Network1\\relaxed\\network.adj",
+      "sha256": "38c84dd716920ad296cbb75228aaf6d85cbd6759fb994730a13a5f83bbca435f",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network2",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network2\\legacy.tsv",
+      "sha256": "666fe8d3292bdb853852354ee7760de815cae79d29860b9e004b5768144444f6",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network2",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network2\\develop.tsv",
+      "sha256": "3a7d3ca728eea0795368afe891cf327ff1786e574484b3080f273c24ec1fe9a5",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network2",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network2\\new.tsv",
+      "sha256": "f442d88265d41bb8f0e076156d0ee2fea84b8a48b65ea0b9f7068e4ac43621e9",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network2",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA100_Network2\\relaxed\\network.adj",
+      "sha256": "49ea3a718e1515b7ed3b082ea61d246210142b82e3925ed646452a8f670867ea",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network3",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network3\\legacy.tsv",
+      "sha256": "d54cfa3e3c709b2c34448c641fb7e5c44b08f13a6b62a94ce8e1edefabc5e256",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network3",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network3\\develop.tsv",
+      "sha256": "aa13320d2b993de3a36064eae9f5b0c0e5e514a1d7455df068f55c34868f9fca",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network3",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network3\\new.tsv",
+      "sha256": "8f5ae7de13935a3066904a7c51d84dd5a2496f7b5d650d5268e91b9318f131cf",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network3",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA100_Network3\\relaxed\\network.adj",
+      "sha256": "3fe262dff95270eeca526554a0c4f809f11cdb0f7ead09150cce77d4837acb71",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network4",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network4\\legacy.tsv",
+      "sha256": "e44b2f104dff524b9c5f4f710a39bb892859e86b5a25031972224b3b389bf84a",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network4",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network4\\develop.tsv",
+      "sha256": "a9ad3c14dd694c5b5e6dd4ba8ed9c4df089c2e72c299c678854b7617f55ec437",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network4",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network4\\new.tsv",
+      "sha256": "60d21269dfc13e642f34918fc84ff12f71a6e5730501272cefbbea76e7c81c6d",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network4",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA100_Network4\\relaxed\\network.adj",
+      "sha256": "07307781c566e5809d42e44e246f26aa8d98b30000e03b757dc074c1dd1ffce9",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network5",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network5\\legacy.tsv",
+      "sha256": "c1dc18bfe8344c8171ebba3471818ed95f78116a262abf1ea72395be7065ee06",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network5",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network5\\develop.tsv",
+      "sha256": "4f1de5cde8fc7385dd33333a5e3c8c4beab2f836ab4c45c28d997d881a933914",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network5",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network5\\new.tsv",
+      "sha256": "55fa5929e4175f5ccd5e000ec42d14b267b765c93148f12c54474644eec0e270",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network5",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA100_Network5\\relaxed\\network.adj",
+      "sha256": "c2292a0f9b44e1fd4a68cb73cd0771b9a86e18666e69340bc7ee7951aa24a9f4",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network1",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network1\\legacy.tsv",
+      "sha256": "439a7616074f7cf7e6ebaf0f52c57e585c397fc79a96629bb76ec70e5a13bb54",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network1",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network1\\develop.tsv",
+      "sha256": "76fd95ed12ac42a55caf0bcd6da1d102c8fa92e1e3ec627305d97ac98b0acbdb",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network1",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network1\\new.tsv",
+      "sha256": "bec07f6df9989d396e0359dd49affbf7132e3f72a1b913f4a84062c6ebbe8e76",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network1",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA300_Network1\\relaxed\\network.adj",
+      "sha256": "540b83c7ca0c70dee1945e84b0591acd6cbfe9d0938db9f5fbce4f3ca23a3424",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network2",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network2\\legacy.tsv",
+      "sha256": "16ecef70b397edf5424e8f9c003320ad99aef401eb3ca1cbf980a68d293e5dd0",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network2",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network2\\develop.tsv",
+      "sha256": "0e493f5a72a67ac06fa696bee262543d29cd100af1ba76409afe9d8ab37f3e1a",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network2",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network2\\new.tsv",
+      "sha256": "3d1d1724f1cb986b5f572541c54a3d7d5241c2d4d316469503cb62f10aa198c9",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network2",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA300_Network2\\relaxed\\network.adj",
+      "sha256": "947d75109eb2a19bf8bbcf90e9ed03467f6576aed5a01a4951039a0f1dd58acb",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network3",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network3\\legacy.tsv",
+      "sha256": "195a4a6b7616ecee61a9bc6db0b7ef9959e3e111ccac5edd800ba6ef59f85b69",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network3",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network3\\develop.tsv",
+      "sha256": "e438ac1313c833ee990b51dcf7a964806690779e96628ac7daac00f6e7af4ba1",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network3",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network3\\new.tsv",
+      "sha256": "844ca4e37b57291bcce62482f242fe0f7022070a1f4cb6de25ca7ee23ba231d6",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network3",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA300_Network3\\relaxed\\network.adj",
+      "sha256": "12612c6da225eabf3eb46cbe8ef879b9ce68d7561e70eb55acfd912d811803d8",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network4",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network4\\legacy.tsv",
+      "sha256": "1a28b2eca368b7bd1d032ac1c1f1bbe4c195d97acce64fd7981dc86717a194ca",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network4",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network4\\develop.tsv",
+      "sha256": "4050455a375c36ed4be8bf301d7c6407473a5d9614ada9af5e254513a68b756a",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network4",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network4\\new.tsv",
+      "sha256": "91bf7d0f8688bb9d260acd69c0aea21f4df640fb1f59f02a5adecd14cc214c01",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network4",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA300_Network4\\relaxed\\network.adj",
+      "sha256": "e46d773e9e690e580bfb0231842280de3b4f01c15996efb8b27a2bc6288d9fc0",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network5",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network5\\legacy.tsv",
+      "sha256": "ff76cfac643de8293c4aaf684b7c11e9c56f795bae87609af1e31c311603ae68",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network5",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network5\\develop.tsv",
+      "sha256": "4f73c61cdf73203559498cb286c50b82493a1410c229c9735aab872152b33006",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network5",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network5\\new.tsv",
+      "sha256": "e0bc703251920a84c136ec9f7329f17dd9c2bc1c8d7dc7761c34041ed2d86582",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network5",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA300_Network5\\relaxed\\network.adj",
+      "sha256": "64a4aa84bde9a8dae1925f0ba3506614756710df1e691d494151b0f89eb8237a",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network1",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network1\\legacy.tsv",
+      "sha256": "c76d654f9752e77de675a1ed180ae46d37418c6b6ec50fd32284ed701f92dee0",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network1",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network1\\develop.tsv",
+      "sha256": "540e599e2e04a3b8bfbe6f2acd814e217ad88b600dd16cbaa56b7c5a573004f2",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network1",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network1\\new.tsv",
+      "sha256": "7e73d4d5bc518d0c9b073feedc5517e40733cbb8d3258fb830b0178d1e29b796",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network1",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA999_Network1\\relaxed\\network.adj",
+      "sha256": "bc208c2d4d0d690aa7720f9409ed1d6c72b104e28ac42ec6562c5ccc4afea769",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network2",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network2\\legacy.tsv",
+      "sha256": "5862f7a033b5c4d8e1026dd2693affcd7d3ba14ebaf05936321de5720899f485",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network2",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network2\\develop.tsv",
+      "sha256": "4680e8bb61b8d2ec49d5659265ab737fb939fc25d9e28ab243a5b57802e06985",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network2",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network2\\new.tsv",
+      "sha256": "f87403f8ff6b82214e2c916092867fdcc055688fc60cb75eaa24a37d13fb7ba7",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network2",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA999_Network2\\relaxed\\network.adj",
+      "sha256": "5dd0f31cc2630cb960d8cbd03daca85480e0ccce533fa6e344754482f53d714c",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network3",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network3\\legacy.tsv",
+      "sha256": "2074777ad5d6f55a27dbb113bb08be1f55f3d4a291921941a2cee6b4c5276261",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network3",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network3\\develop.tsv",
+      "sha256": "52df8ac856a14fa290f8a7e9d8b0d9d77ab8f3275f4b2c68b88e4650994e2908",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network3",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network3\\new.tsv",
+      "sha256": "e02e4246ebe0a16627dfd4696dff9270a1a2a785b549c034e551ba066a12d196",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network3",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA999_Network3\\relaxed\\network.adj",
+      "sha256": "dae4d86e4e2c9cb23261c5e71d677ff5de1cf00076a932b19b3303debf2f8a4a",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network4",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network4\\legacy.tsv",
+      "sha256": "9d43e170934b079603db71062ab6695b784a453c7b1c78ed63614ea191d04157",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network4",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network4\\develop.tsv",
+      "sha256": "1ef54166aade0e4e4460304e25e3e15b3e934c0d7cb6bda384ca6d8b1ce28775",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network4",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network4\\new.tsv",
+      "sha256": "a982b43df1486c2b9ebc5d73d52ff1ea1e17caa245ca1d99055394697435dbd1",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network4",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA999_Network4\\relaxed\\network.adj",
+      "sha256": "98c55bbfc2c783e7dd35361616ba9354e29612e7d1f87267b3f264ebc2aaf295",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network5",
+      "method": "legacy",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network5\\legacy.tsv",
+      "sha256": "2e1e75342055128759c9746e3df32b35a58582e69a60d7d71a5043e08af6a6fb",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network5",
+      "method": "develop",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network5\\develop.tsv",
+      "sha256": "5d1b2f7fd904dc6ee8ddb55559dcfb6409cdc37ee2194a310cab637a3b891712",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network5",
+      "method": "new",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network5\\new.tsv",
+      "sha256": "12e77b4b6876094206c2e3542644865c908ed7424255e5e68a67cadfa8a87da3",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network5",
+      "method": "new_relaxed",
+      "source_path": "D:\\GitHub\\local_runs\\dream_late_dpi_epsilon_plus0025_20261107\\results\\DREAM5_SysGenA999_Network5\\relaxed\\network.adj",
+      "sha256": "5085cc9f0c57dbbe0c2bd08d99c6757ec89801c915f4d3d02572b98dfe20b4ed",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_N1",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\sjaracne_legacy_vs_develop_20261028\\dream5_k_sweep_20261102\\DREAM5_N1_TF_legacy__support.tsv",
+      "sha256": "b32cc5970af1568a403cd304f0510a9fc78270f5fd01756119711404a4c2f5a8",
+      "support_gate": "20"
+    },
+    {
+      "dataset": "DREAM5_N3",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\sjaracne_legacy_vs_develop_20261028\\dream5_k_sweep_20261102\\DREAM5_N3_TF_legacy__support.tsv",
+      "sha256": "511dbf312faed1c4f4c4b17b30aa8c8a51a999edf48213055416871bea00fcc9",
+      "support_gate": "20"
+    },
+    {
+      "dataset": "DREAM5_N4",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_N4\\legacy_k20.tsv",
+      "sha256": "1284d9336430d5e7ec4471880dd871a92543521f07a634c6373ef97c109ef560",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network1",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network1\\legacy_k20.tsv",
+      "sha256": "1493761fc77ed764a7e291387c170b52b9340ea28be93642ffa9c6f059b92f0d",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network2",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network2\\legacy_k20.tsv",
+      "sha256": "f5fb4ab2e34f7da0325f9007a95bbe70f77fdaa24172d3d93640090fe677052e",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network3",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network3\\legacy_k20.tsv",
+      "sha256": "c68920f071dafd667ed0c242cdb52f7abd74e8bc14df074b8f58b0dbb3ee80a1",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network4",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network4\\legacy_k20.tsv",
+      "sha256": "b82517395c1272f3efbcc90b2f70893cff00eb84061480358fd132b531f46c62",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA100_Network5",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA100_Network5\\legacy_k20.tsv",
+      "sha256": "32a614bc100dcac78f37d366c7e414cfcaaca401dcad0eccb1ebcdce5dc781f7",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network1",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network1\\legacy_k20.tsv",
+      "sha256": "9b5758db893dde28616955628bc2ecb1e5e0652940b3087454dcb1979440361a",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network2",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network2\\legacy_k20.tsv",
+      "sha256": "29e717b7e6929118979802ebf3793c92331e746553c3a9774c4b1ba66fd9f723",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network3",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network3\\legacy_k20.tsv",
+      "sha256": "4a0799d866495613308197f21d862ccb5a73be7203a08427f4c864d5415ff00d",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network4",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network4\\legacy_k20.tsv",
+      "sha256": "07c494b49d5ebdcf4bd1040e3738b4e0ede72cc5f9683f779b5eed4efa97102b",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA300_Network5",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA300_Network5\\legacy_k20.tsv",
+      "sha256": "280672d0508c1ca8ae9833a5bdd13d8dcef460fa8203265faa769b6dd005ad80",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network1",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network1\\legacy_k20.tsv",
+      "sha256": "0eafd7fbc5ecfe4a5b9be45106de8476eb4890fa5ba0989d1c0bc824c8804dde",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network2",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network2\\legacy_k20.tsv",
+      "sha256": "ffbf67fe9e0a8c36d283fcdcbddbb2a358bfa116b648369f49cc55e5ce7655f7",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network3",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network3\\legacy_k20.tsv",
+      "sha256": "88ce123899a181a1bb8824f681cec510b7fe44049bbe5e03b96746597386e553",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network4",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network4\\legacy_k20.tsv",
+      "sha256": "03902ce9d782310b064c79a532af909be5b8e7f22b16a459e6e5111bbbc1c537",
+      "support_gate": null
+    },
+    {
+      "dataset": "DREAM5_SysGenA999_Network5",
+      "method": "legacy_k20",
+      "source_path": "D:\\GitHub\\local_runs\\dream_pipeline_comparison_20261107\\results\\DREAM5_SysGenA999_Network5\\legacy_k20.tsv",
+      "sha256": "dc25afd2ebcce0421182fc8818ab37d5d6b6197ffda9a850e0b848bbdb45dfc6",
+      "support_gate": null
+    }
+  ],
+  "historical_engine_metadata": {
+    "engines": {
+      "legacy": {
+        "binary": "/mnt/d/GitHub/local_runs/dream_pipeline_comparison_20261107/engines/legacy/sjaracne.exe",
+        "binary_sha256": "eda4f07465160f9d2d536715023d439b36628b1e094dab8b7afed511efa24e11",
+        "config_dir": "/mnt/d/GitHub/local_runs/dream_pipeline_comparison_20261107/engines/legacy/config",
+        "config_sha256": {
+          "config_kernel.txt": "4a7d155ac4a1fc5ed835af5b64b58323c3fe2a3ed76084d129b4f362199f0041",
+          "TF_list.txt": "c4f1a0a9b807e374ca63a0171ee5d7d357ab66d2e656cad0e025a7a9e669fde2",
+          "config_cwlexec.json": "c2312ab211f16a5b88d9a2fc20e1250a494a1cbaeb9657290b996ccfa11a1a58",
+          "config_threshold.txt": "bc37e881c828d3098def89e1f5e465367e8ea900fef2fbb723fbb054aeb086cc",
+          "SIG_list.txt": "e08499e8cbad9f04f62bc780eaf39689e6af57a8915fc036f495dc493c82a9e7"
+        }
+      },
+      "direct": {
+        "binary": "/mnt/d/GitHub/local_runs/dream_pipeline_comparison_20261107/engines/direct/sjaracne.exe",
+        "binary_sha256": "1af80ead6cf63a39338565af659de96bbecbd8e5f117dcafaecd84204d07c702",
+        "config_dir": "/mnt/d/GitHub/local_runs/dream_pipeline_comparison_20261107/engines/direct/config",
+        "config_sha256": {
+          "config_kernel.txt": "4a7d155ac4a1fc5ed835af5b64b58323c3fe2a3ed76084d129b4f362199f0041",
+          "apmi_pchip.json": "5ae44f3ec251282b242e1e25e5695fe8c6d80a0e7a3f156170dbb72c29e09f59",
+          "TF_list.txt": "c4f1a0a9b807e374ca63a0171ee5d7d357ab66d2e656cad0e025a7a9e669fde2",
+          "config_cwlexec.json": "c2312ab211f16a5b88d9a2fc20e1250a494a1cbaeb9657290b996ccfa11a1a58",
+          "config_threshold.txt": "bc37e881c828d3098def89e1f5e465367e8ea900fef2fbb723fbb054aeb086cc",
+          "SIG_list.txt": "e08499e8cbad9f04f62bc780eaf39689e6af57a8915fc036f495dc493c82a9e7"
+        }
+      },
+      "current": {
+        "binary": "/mnt/d/GitHub/local_runs/dream_pipeline_comparison_20261107/engines/current/sjaracne.exe",
+        "binary_sha256": "80f2f4e948e7ffb24a24da566e874e5c4e1e3a90d83d9a3f60e9c8aa2d9ec465",
+        "config_dir": "/mnt/d/GitHub/local_runs/dream_pipeline_comparison_20261107/engines/current/config",
+        "config_sha256": {
+          "config_kernel.txt": "4a7d155ac4a1fc5ed835af5b64b58323c3fe2a3ed76084d129b4f362199f0041",
+          "apmi_pchip.json": "5ae44f3ec251282b242e1e25e5695fe8c6d80a0e7a3f156170dbb72c29e09f59",
+          "TF_list.txt": "c4f1a0a9b807e374ca63a0171ee5d7d357ab66d2e656cad0e025a7a9e669fde2",
+          "config_cwlexec.json": "c2312ab211f16a5b88d9a2fc20e1250a494a1cbaeb9657290b996ccfa11a1a58",
+          "config_threshold.txt": "bc37e881c828d3098def89e1f5e465367e8ea900fef2fbb723fbb054aeb086cc",
+          "SIG_list.txt": "e08499e8cbad9f04f62bc780eaf39689e6af57a8915fc036f495dc493c82a9e7"
+        }
+      }
+    },
+    "requested_develop": {
+      "commit": "7809628",
+      "scientific_equivalent_to": "5f952a5ad383749def582582b84e6bcb12c87c96",
+      "change_after_pinned_version": "README display-name change only",
+      "native_source_tree": "96d2353211b7ec9493acd5a547ce617c68aaf6f4"
+    },
+    "precision_contract": "Existing N1/N3 results retain their original six-digit raw MI serialization. New datasets use the pre-existing precision17 output-only build to preserve native MI values for paired replay; seed1 direct-DPI controls are mandatory for every dataset.",
+    "legacy_policy": "Actual legacy executable and actual frozen probability-consensus function, pc=1e-5. Full-size bootstrap with replacement, pb=1e-7, strict DPI.",
+    "modern_policy": "100x80% without replacement, pb=.001 PCHIP; per-run DPI?K20 versus same raw MI?K20 supporting-run arithmetic mean?DPI; unchanged Href479 slope.05 cap.30; no added MI cutoff.",
+    "gold_policy": "N1/N3/N4 explicitly labelled directed pairs only; unlabelled calls excluded from FP/precision. SysGenA complete generating-model nonself universe. Undirected SysGenA sensitivity scores kept separate.",
+    "legacy_consensus_sha256": "eede0a73c4582deddd084f9495f5d362244f3a2bf8f1f3e28d3bea966a64d9b7"
+  },
+  "historical_relaxation_metadata": {
+    "policy": "min(0.30, epsilon_base(H) + 0.025)",
+    "delta_epsilon": 0.025,
+    "parameter_points": 1,
+    "baseline_replay_controls": 18,
+    "trial_replays": 18,
+    "MI_runs": 0,
+    "K20_rebuilds": 0,
+    "weight_recomputations": 0
+  },
+  "weighting_schemes": {
+    "equal_network": "One per dataset.",
+    "gene_weighted_18": "Input gene count G per dataset.",
+    "gene_weighted_6_groups": "G divided by number of graphs in the dataset group; SysGen groups each have five graphs.",
+    "hub_weighted_18": "Requested candidate source count H per dataset."
+  },
+  "source_analysis_validation": {
+    "networks": 90,
+    "edge_counts_match_source": true,
+    "graph_file_hashes_match_recorded": true
+  },
+  "export_validation": {
+    "directed_rows": 90,
+    "weighted_rows": 20,
+    "bulk_rows": 18,
+    "metrics_match_source_strings": true,
+    "FN_copied_from_original_comparison": true,
+    "precision_recall_F1_formulas_checked": true,
+    "native_feature_equivalence": "pending",
+    "inference_runs_for_export": 0
+  },
+  "exported_table_sha256": {
+    "per_dataset.tsv": "e1a4a8b7d8a2a7cf31d432270766fcf6f721d83de572c43c82e95b9df5b81cb1",
+    "weighted_summary.tsv": "b809bb852f010de5eb8480d28dac43b5541f0e8189348c242c99e969faccde48",
+    "bulk_metrics.tsv": "e4481cbad044c09b4ba9a15f0c36b392a96f76309e656f7fa385ed721ea45a69"
+  }
+}

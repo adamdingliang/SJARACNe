@@ -1,9 +1,9 @@
 # Default WDL 1.3 / Sprocket workflow
 
 The public local workflow now uses **WDL 1.3 and Sprocket** by default. It
-validates and stages inputs, scatters seeded reconstructions, then runs the
-existing consensus/enhancement implementation. MI estimation and DPI still run
-in the native C++ executable; WDL does not reimplement those calculations.
+validates and stages inputs, scatters seeded raw-MI reconstructions, then runs
+one native C++ consensus/DPI invocation and enhances the final graph. WDL
+schedules these stages; it does not reimplement their scientific calculations.
 
 This branch also makes experimental **PCHIP MI cutoffs and dynamic DPI** the
 current-profile defaults. The retained CWL path and an explicit pre-sampling
@@ -46,19 +46,24 @@ The same full hub list supplies native `-s` and `-l`.
 | AP-MI Npar limit | 40 |
 | MI conversion | Experimental PCHIP |
 | Per-resample probability | TF `0.001`; SIG `0.0005` |
-| DPI | Experimental dynamic epsilon, Href=479, slope=0.05, cap=0.30 |
+| Order | Raw MI resamples, K-support consensus, supporting-run mean MI, then DPI |
+| DPI | Dynamic epsilon, Href=479, slope=0.05, cap=0.30, additive offset=0.025 |
 | Consensus | Distinct-network recurrence K=20, inclusive; 20 of 100 by default |
 
-Dynamic tolerance is one scalar for each reconstruction:
+Dynamic tolerance is one scalar for the final consensus graph:
 
 ```text
-epsilon(H) = min(dpi_max, dpi_slope * max(0, log2(H / dpi_href)))
+epsilon(H) = min(dpi_max, dpi_offset + dpi_slope * max(0, log2(H / dpi_href)))
 ```
 
 H counts unique reconstructed source rows, including empty rows. It is not
 annotation-list length or emitted-edge count. Larger epsilon relaxes pruning;
-H at or below Href resolves to zero. The native executable calculates and records
-the actual tolerance.
+H at or below Href resolves to the offset, subject to the cap. The native
+executable calculates and records the actual tolerance. Missing edges do not
+enter the supporting-run MI mean denominator. Raw MI files retain 17 significant
+digits, including every constructed source row even when it has no edges.
+Native-order final three-column and enhanced outputs preserve the computed MI
+tokens; the prior order keeps its historical four-decimal MI formatting.
 
 Default status does not remove scientific limitations. The TF/SIG probabilities
 are provisional operating points, not universal optima. PCHIP calibration does
@@ -68,6 +73,13 @@ visible in the retained logs. Unsupported model inputs fail rather than silently
 extrapolating or selecting another model.
 
 ## Explicit alternatives
+
+`--dpi-offset 0` removes the added tolerance. `--consensus-order dpi-first
+--dpi-offset 0` retains the previous current-profile order and tolerance schedule.
+Consensus-first requires minimum recurrence; probability consensus requires
+`--consensus-order dpi-first` or the legacy profile. Explicit fixed tolerance
+bypasses the dynamic schedule and cannot be combined with an explicit offset.
+
 
 ```bash
 # Current sampling and K=20, but strict fixed DPI:
@@ -121,7 +133,8 @@ is K20 and fewer than 20 resamples require a smaller explicit K. This is not an
 automatic support-fraction rule. Set `profile` to `legacy` to use that profile; its network type is
 optional. Optional inputs include `aracne_config_dir`, `subsample_spec`, `depth`,
 `p_value_bootstrap`, `apmi_null_model`, `min_recurrence`, `p_value_consensus`,
-`tolerance`, `dynamic_dpi`, `dpi_href`, `dpi_slope` and `dpi_max`. Explicit sampling
+`tolerance`, `dynamic_dpi`, `dpi_href`, `dpi_slope`, `dpi_max`, `dpi_offset` and
+`consensus_order`. Explicit sampling
 mode uses `sampling_method`; conflicting replacement/unique inputs are rejected.
 
 Do not copy the old standalone document's defaults from historical reports.
@@ -129,7 +142,11 @@ Omissions now select the current profile, not affine/strict settings. Raw CWL
 keeps its older MI/sampling/DPI defaults, but an omitted consensus cutoff now
 uses K20; specify `min_recurrence: 6` to retain its prior recurrence cutoff.
 Engine selection through the public CLI always forwards a fully resolved
-scientific profile. A smaller K may be appropriate for scRNA-seq, but neither
+scientific profile. For consensus-first, the CLI uses
+`cwl/native_consensus_workflow.cwl`, whose tasks invoke the same validated JSON
+adapter as WDL. Its scatter adjacencies, provenance and logs remain in the
+recorded owned engine output directory. The retained low-level CWL workflow
+remains DPI-first. A smaller K may be appropriate for scRNA-seq, but neither
 a scRNA-seq default nor dynamic K has been validated; inspect target coverage.
 
 ## Resources, outputs and provenance
@@ -153,16 +170,28 @@ accepted for choosing a scratch parent; existing files there are not deleted.
 Direct WDL outputs include `out_dir` (the enhanced network **file**, a historical
 name), `consensus_network` (three columns), `bootstrap_info`, `parameter_info`,
 `adjacencies`, `run_provenance`, `native_stdout`, `native_stderr`,
-`validation_report` and `parameters`. Sprocket's workflow `outputs.json` gives the
+`validation_report`, `parameters`, `consensus_provenance`,
+`consensus_native_stdout` and `consensus_native_stderr`. Sprocket's workflow
+`outputs.json` gives the
 actual file paths; do not assume they are at the engine output root.
 
 Every seed has a separate adjacency and provenance record. The preparation step
 freezes runtime, native binary, configuration and normalized input hashes;
 reconstructions also record the prepared-settings hash. Consensus checks the
-expected seed set and hashes and stages **only** the adjacency files. Empty
-networks still count as runs. Retained MI is averaged across runs containing an
-edge; enhancement uses the **full original expression matrix**, not a sampled
-subset. Its regression p-value is not an MI or consensus-edge probability.
+expected seed set and hashes. Consensus-first passes a manifest of the existing
+localized adjacency paths to native C++ without copying raw graphs or writing
+an intermediate mean-MI candidate graph. DPI-first retains Python consensus.
+Empty networks still count as runs. Retained MI is averaged across runs
+containing an edge; enhancement uses the **full original expression matrix**,
+not a sampled subset. Its regression p-value is not an MI or consensus-edge
+probability. Final publication checks successful consensus provenance and all
+four final hashes before copying native-order outputs.
+
+Raw scatter files still need to be written and transferred/localized across
+nodes. Native integration removes Python aggregation caches, adjacency staging
+copies and the candidate-graph write/read; it does not eliminate distributed
+scatter I/O or provenance hashing. Raw files remain available according to the
+engine's retention policy; no automatic deletion is introduced.
 
 No expression transformation, gene filtering or hub reordering is introduced.
 Line endings are normalized on staged copies without changing original files.

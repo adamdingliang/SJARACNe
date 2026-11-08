@@ -77,6 +77,7 @@ class TestSJARACNe(unittest.TestCase):
                 result = subprocess.run([
                     sys.executable, '-m', 'SJARACNe.sjaracne', 'local',
                     '--engine', 'cwl', '--network-type', 'TF', '--fixed-dpi',
+                    '--consensus-order', 'dpi-first',
                     '-e', str(expression), '-g', str(hubs), '-n', '2', '-pc', '1',
                     '-pb', pvalue, '-M', 'pchip', '--subsample-size', '80',
                     '-o', str(output), '-tmp', str(workdir / 'tmp'),
@@ -135,6 +136,7 @@ class TestSJARACNe(unittest.TestCase):
                 'SJARACNe.sjaracne',
                 'local',
                 '--engine', 'cwl', '--network-type', 'TF',
+                '--consensus-order', 'dpi-first',
                 '-M', 'affine', '-pb', '1e-7', '--fixed-dpi',
                 '-e',
                 str(PROJECT_ROOT / 'tests' / 'inputs' / 'Tcell1170.exp'),
@@ -298,6 +300,7 @@ class TestSJARACNe(unittest.TestCase):
                     command = [
                         sys.executable, '-m', 'SJARACNe.sjaracne', 'local',
                         '--engine', 'cwl', '--network-type', 'TF', '--fixed-dpi',
+                        '--consensus-order', 'dpi-first',
                         '-e', str(expression), '-g', str(hubs), '-n', '6', '-k', '6',
                         '-M', 'pchip', '-pb', '0.001', '-o', str(output),
                         '-tmp', str(workdir / 'tmp'),

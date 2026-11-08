@@ -17,7 +17,7 @@ arguments:
           return value !== null && typeof value !== 'undefined';
         }
         var fixed = inputs.tolerance;
-        var tuning = hasValue(inputs.dpi_href) || hasValue(inputs.dpi_slope) || hasValue(inputs.dpi_max);
+        var tuning = hasValue(inputs.dpi_href) || hasValue(inputs.dpi_slope) || hasValue(inputs.dpi_max) || hasValue(inputs.dpi_offset);
         if (inputs.dynamic_dpi) {
           if (hasValue(fixed)) {
             throw new Error('dynamic_dpi conflicts with an explicit fixed tolerance');
@@ -25,7 +25,7 @@ arguments:
           return [];
         }
         if (tuning) {
-          throw new Error('dpi_href, dpi_slope and dpi_max require dynamic_dpi');
+          throw new Error('dpi_href, dpi_slope, dpi_max and dpi_offset require dynamic_dpi');
         }
         return ['-e', String(hasValue(fixed) ? fixed : 0)];
       }
@@ -91,6 +91,12 @@ inputs:
       position: 6
       prefix: --dpi-max
     doc: Optional dynamic epsilon cap in [0,1); requires dynamic_dpi; native default 0.30
+  dpi_offset:
+    type: double?
+    inputBinding:
+      position: 6
+      prefix: --dpi-offset
+    doc: Additive dynamic-DPI offset before the cap; native default zero
   algorithm:
     type: string
     default: adaptive_partitioning

@@ -18,6 +18,8 @@ from gene expression data. It builds transcription factor (TF) and signaling
 > This README describes `develop`, not the published PyPI
 > release. Its default workflow uses WDL 1.3 and Sprocket. PCHIP MI cutoffs and
 > dynamic DPI tolerance are experimental, even though they are defaults here.
+> The current profile now applies native recurrence consensus before DPI, with
+> a configurable dynamic tolerance offset of 0.025.
 
 ## Features
 
@@ -198,8 +200,9 @@ normalizes line endings on staged copies without modifying the original inputs.
 | Resampling | 80% of observations without replacement; 100 networks, seeds 1–100 |
 | Per-resample probability `pb` | TF: `0.001`; SIG: `0.0005` |
 | Mutual information (MI) cutoff | Experimental empirical PCHIP conversion; Npar=40 |
-| Data processing inequality (DPI) pruning | Experimental dynamic tolerance; Href=479, slope=0.05, cap=0.30 |
-| Consensus | Retain edges present in at least 20 distinct resampled networks (K=20 of 100) |
+| Operation order | Raw MI resamples → native C++ K20 consensus → supporting-run mean MI → DPI |
+| Data processing inequality (DPI) pruning | Dynamic tolerance after consensus; Href=479, slope=0.05, offset=0.025, cap=0.30 |
+| Consensus | Retain directed edges present in at least 20 distinct resampled networks; average MI over supporting runs only |
 | Local scheduling | Four task slots; 16 GiB memory budget |
 
 These are **workflow defaults**, not the defaults of every bare native
@@ -214,6 +217,26 @@ K may be appropriate, but neither a single-cell default nor a dynamic K rule
 has been validated yet. Override with `-k COUNT` as needed; `-k 6` restores the
 previous recurrence cutoff, not the full legacy workflow. See the
 [benchmark summary](https://github.com/adamdingliang/sjaracne_benchmark/pull/4).
+
+The current process is **100 × 80% resamples → K20 candidates → supporting-run
+mean MI → DPI**. The final native call streams the resample graphs and passes
+its retained graph directly to the existing DPI code. Python adds symbols and
+correlation/regression statistics to the final pruned edge list.
+
+```text
+epsilon(H) = min(0.30, dpi_offset + 0.05 * max(0, log2(H / 479)))
+```
+
+`H` counts the requested matched source rows, including zero-target hubs. The
+workflow default is `--dpi-offset 0.025`. Set it to zero to test the original
+dynamic schedule while keeping consensus first. The offset is additive and the
+cap applies after addition. Fixed DPI does not use an offset.
+
+The previous current order remains available as `--consensus-order dpi-first`;
+its omitted offset resolves to zero. The legacy profile retains its historical
+sampling, strict DPI and probability consensus. See the
+[native design and interface](docs/native_consensus_before_dpi.md) and
+[benchmark results](benchmarks/consensus_before_dpi/README.md).
 
 ### Common overrides
 
@@ -231,9 +254,24 @@ sjaracne local --network-type TF -pb 0.002 --fixed-dpi \
 | `-k COUNT` or `--min-recurrence COUNT` | Retain edges present in at least `COUNT` distinct resampled networks. Current-profile default: **K=20**; requires `1 <= K <= n`. If `n < 20`, supply a smaller K explicitly. |
 | `--subsample-fraction 0.8` or `--subsample-size 80` | Select a fraction or exact number of observations without replacement; use only one. |
 | `--fixed-dpi` or `--tolerance 0.1` | Use strict DPI (epsilon=0), or fixed positive epsilon. Larger epsilon relaxes pruning. |
-| `--dpi-href`, `--dpi-slope`, `--dpi-max` | Adjust the dynamic tolerance schedule; incompatible with fixed DPI. |
+| `--dpi-offset VALUE` | Add a finite nonnegative offset before the dynamic cap; default 0.025 for consensus-first, zero for DPI-first. Requires dynamic DPI. |
+| `--dpi-href`, `--dpi-slope`, `--dpi-max` | Adjust the dynamic tolerance schedule; incompatible with fixed DPI. Href remains 479 by default. |
+| `--consensus-order consensus-first` or `dpi-first` | Select operation order. Current defaults to consensus-first; legacy requires DPI-first. |
 | `--jobs 8`, `--memory "32 GiB"` | Change the local Sprocket task and memory budgets; `--serial` uses one task slot. |
 | `-tmp PATH` | Choose a scratch parent; only a fresh child is used, without deleting existing contents. |
+
+For an explicit offset experiment:
+
+```bash
+sjaracne local --network-type TF --dpi-offset 0.025 \
+  -e /absolute/path/input.exp -g /absolute/path/hubs.txt \
+  -o results/tf_consensus_first
+
+# Reproduce the previous current order and its original tolerance schedule:
+sjaracne local --network-type TF --consensus-order dpi-first \
+  -e /absolute/path/input.exp -g /absolute/path/hubs.txt \
+  -o results/tf_dpi_first
+```
 
 Run `sjaracne local --help` for the full interface. The
 [WDL guide](SJARACNe/wdl/README.md) explains the dynamic formula, standalone WDL
@@ -302,8 +340,8 @@ inputs fail rather than silently falling back. Probabilities below `0.0005`
 warn that they are outside the main assessment range; extreme-tail assessment
 has limited Monte Carlo precision.
 
-Dynamic DPI relaxes pruning as the reconstructed hub count increases above its
-reference. It addresses hub-context sensitivity as an engineering choice;
+Dynamic DPI applies the configured baseline offset and further relaxes pruning
+as the reconstructed hub count increases above its reference. It addresses hub-context sensitivity as an engineering choice;
 DREAM5 tests did not establish a dynamic-specific accuracy advantage. See the
 linked benchmark reports for the evidence and its limitations.
 
@@ -317,7 +355,8 @@ linked benchmark reports for the evidence and its limitations.
 | [Execution coverage](tests/README.md#execution-coverage) | Separate Python/C++ coverage, Codecov setup and measurement limits. |
 | [Environment and deployment guide](docs/uv.md) | uv lockfile, pip alternative, native builds and offline/HPC/cloud precautions. |
 | [Native installation validation](docs/native_build_installation.md) | Automatic C++ builds during source installation and missing-tool diagnostics. |
-| [Current validation report](docs/default_profiles_validation.md) | Default-profile and engine-parity checks, with validation limits. |
+| [Native consensus validation](docs/native_consensus_validation.md) | Current native/default-workflow checks and exact saved-data equivalence. |
+| [Historical profile validation](docs/default_profiles_validation.md) | Earlier default-profile and engine-parity snapshots. |
 | [Python compatibility report](docs/python_compatibility.md) | Python 3.11/3.14 dependencies, clean source installations and scientific-output comparisons. |
 | [Benchmark index](https://github.com/adamdingliang/sjaracne_benchmark) | DREAM5, THP-1, BRCA100, LUAD and calibration analyses. |
 | [Null calibration process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m) / [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md) | PCHIP calibration design and measured accuracy. |

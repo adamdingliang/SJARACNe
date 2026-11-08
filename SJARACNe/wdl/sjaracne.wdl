@@ -1,7 +1,7 @@
 version 1.3
 
-# Orchestration only: the native executable computes AP-MI and DPI, while the
-# existing Python consensus module combines and enhances the inferred networks.
+# Orchestration only: the native executable computes AP-MI, consensus and DPI;
+# Python validates task boundaries and enhances the final expression-based graph.
 # Each task sends a JSON request to the shared Python adapter; user-provided
 # values are not interpolated into shell commands.
 
@@ -24,6 +24,8 @@ struct WorkflowOptions {
     Int? dpi_href
     Float? dpi_slope
     Float? dpi_max
+    Float? dpi_offset
+    String? consensus_order
 }
 
 workflow SJARACNe {
@@ -68,6 +70,9 @@ workflow SJARACNe {
         Int? dpi_href
         Float? dpi_slope
         Float? dpi_max
+        # Added before the cap; consensus-first defaults to 0.025, dpi-first to zero.
+        Float? dpi_offset
+        String? consensus_order
 
         # Per-task scheduling requests, not the backend's total memory budget.
         # The CLI's --jobs/--memory configure Sprocket separately, not WDL inputs.
@@ -94,6 +99,8 @@ workflow SJARACNe {
         dpi_href: dpi_href,
         dpi_slope: dpi_slope,
         dpi_max: dpi_max,
+        dpi_offset: dpi_offset,
+        consensus_order: consensus_order,
     }
 
     # Validate and stage LF-normalized copies without modifying original inputs.
@@ -119,11 +126,12 @@ workflow SJARACNe {
         }
     }
 
-    # Wait for every reconstruction. The adapter checks the complete ordered
-    # seed set and provenance before selecting consensus edges, then enhances
-    # them using the full staged expression matrix rather than one resample.
+    # Wait for every reconstruction. The adapter verifies the complete seed set
+    # before native K-support/mean-MI selection and DPI. The previous order keeps
+    # Python consensus. Both enhance only the final graph from full expression.
     call Consensus { input:
         exp_file = Prepare.expression,
+        probe_file = Prepare.hubs,
         aracne_config_dir = aracne_config_dir,
         settings = Prepare.parameters,
         adjacencies = Infer.adjacency,
@@ -145,6 +153,9 @@ workflow SJARACNe {
         Array[File] native_stderr = Infer.native_stderr
         File validation_report = Prepare.validation_report
         File parameters = Prepare.parameters
+        File consensus_provenance = Consensus.provenance
+        File consensus_native_stdout = Consensus.native_stdout
+        File consensus_native_stderr = Consensus.native_stderr
     }
 
     meta {
@@ -228,11 +239,12 @@ task Infer {
     }
 }
 
-# Runs after all seeds: accept only matching successful adjacencies/provenance,
-# stage adjacency files alone and call the shared consensus/enhancement functions.
+# Runs after all seeds: verify matching adjacencies/provenance and pass localized
+# paths to native consensus/DPI without copying raw graphs or candidate weights.
 task Consensus {
     input {
         File exp_file
+        File probe_file
         Directory? aracne_config_dir
         File settings
         Array[File] adjacencies
@@ -242,6 +254,7 @@ task Consensus {
 
     env File request = write_json(object {
         exp_file: exp_file,
+        probe_file: probe_file,
         aracne_config_dir: aracne_config_dir,
         settings: settings,
         adjacencies: adjacencies,
@@ -258,6 +271,9 @@ task Consensus {
         File network = "results/consensus_network_3col_.txt"
         File bootstrap_info = "results/bootstrap_info_.txt"
         File parameter_info = "results/parameter_info_.txt"
+        File provenance = "consensus_provenance.json"
+        File native_stdout = "consensus.native.stdout.txt"
+        File native_stderr = "consensus.native.stderr.txt"
     }
 
     requirements {
