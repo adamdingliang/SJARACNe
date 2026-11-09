@@ -15,9 +15,13 @@ from gene expression data. It builds transcription factor (TF) and signaling
 [Inputs](#inputs) · [Configuration](#configuration) ·
 [Documentation](#documentation) · [Citation](#citation)
 
-> This README describes `develop`, not the published PyPI
-> release. Its default workflow uses WDL 1.3 and Sprocket. PCHIP MI cutoffs and
-> dynamic DPI tolerance are experimental, even though they are defaults here.
+> For the current workflow with **native consensus before DPI**, use the
+> [public `develop` guide and installation instructions](https://github.com/adamdingliang/SJARACNe/blob/develop/README.md).
+>
+> This README documents the retained `master` snapshot, not the published PyPI
+> release. That snapshot applies DPI before recurrence consensus and uses
+> WDL 1.3 and Sprocket by default. PCHIP MI cutoffs and dynamic DPI tolerance
+> remain experimental.
 
 ## Features
 
@@ -69,7 +73,7 @@ Run the following in a Linux or WSL terminal. The committed `uv.lock` selects
 the validated dependency versions; `.python-version` selects Python 3.14:
 
 ```bash
-git clone --branch develop https://github.com/adamdingliang/SJARACNe.git
+git clone --branch master https://github.com/adamdingliang/SJARACNe.git
 cd SJARACNe
 
 uv sync --locked
