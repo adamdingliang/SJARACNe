@@ -15,7 +15,7 @@ from gene expression data. It builds transcription factor (TF) and signaling
 [Inputs](#inputs) · [Configuration](#configuration) ·
 [Outputs](#outputs) · [Documentation](#documentation) · [Citation](#citation)
 
-> This README documents `develop`. Use the source installation below.
+> Install [SJARACNe2 v0.4.0](https://github.com/adamdingliang/SJARACNe2/releases/tag/v0.4.0) from the tagged source below.
 
 ## Features
 
@@ -66,7 +66,7 @@ manager. Install Sprocket separately as described above.
 The committed `uv.lock` pins dependencies. In a Linux or WSL terminal:
 
 ```bash
-git clone --branch develop https://github.com/adamdingliang/SJARACNe2.git
+git clone --branch v0.4.0 --depth 1 https://github.com/adamdingliang/SJARACNe2.git
 cd SJARACNe2
 
 uv sync --locked --python 3.11

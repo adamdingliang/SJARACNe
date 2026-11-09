@@ -88,10 +88,9 @@ download it when needed. To use an existing interpreter:
 uv sync --locked --python /path/to/python3.14 --no-python-downloads
 ```
 
-The lock resolves 3.11 through 3.14. Intermediate versions are resolvable but
-not CI-tested. The historical package requirement `>=3.7.6` is metadata, not a
-current support claim; the locked environment excludes versions outside its
-narrower range.
+The package requires Python **3.11 or newer**. The lock resolves 3.11 through
+3.14; intermediate versions are resolvable but not CI-tested. The locked
+environment excludes Python versions outside that range.
 
 For a separate Python 3.11 environment:
 

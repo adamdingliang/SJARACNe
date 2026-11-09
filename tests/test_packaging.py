@@ -139,7 +139,7 @@ class TestPackaging(unittest.TestCase):
                         'wdl/*.wdl', 'wdl/*.toml'):
             self.assertIn(pattern, patterns)
         project = tomllib.loads((ROOT / 'pyproject.toml').read_text(encoding='utf-8'))
-        self.assertEqual(project['project']['requires-python'], '>=3.7.6')
+        self.assertEqual(project['project']['requires-python'], '>=3.11')
 
     def test_pep517_backend_and_source_build_inputs_are_declared(self):
         project = (ROOT / 'pyproject.toml').read_text(encoding='utf-8')
