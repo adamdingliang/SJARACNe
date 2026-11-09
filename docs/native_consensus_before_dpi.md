@@ -67,9 +67,9 @@ outside WDL. The WDL steps are `prepare_inputs`, `resample_and_estimate_mi`
 and `build_consensus_network`; the final name also covers explicit DPI-first
 runs, which combine already-pruned resamples. CWL consensus-first execution uses
 `cwl/consensus_before_dpi.cwl` and the same Python adapter, with the final step
-named `consensus_and_dpi`. The retained `native_consensus_workflow.cwl` path is
-a forwarding alias; the word "native" identifies the C++ implementation rather
-than a separate scientific operation. See the [CWL workflow index](../SJARACNe/cwl/README.md).
+named `consensus_and_dpi`. Use the descriptive filenames directly; import-only
+CWL aliases have been removed. The word "native" describes the C++ implementation.
+See the [CWL workflow index](../SJARACNe/cwl/README.md).
 
 ## Validation and compatibility
 

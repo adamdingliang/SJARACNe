@@ -174,12 +174,11 @@ and `--consensus-inputs` modes are explicit. Native `--dpi-offset` defaults to
 zero and requires `--dynamic-dpi`. The workflow supplies its resolved offset.
 
 The public CLI selects `cwl/consensus_before_dpi.cwl` for consensus-first and
-`cwl/dpi_before_consensus.cwl` for DPI-first. The earlier
-`native_consensus_workflow.cwl` and `sjaracne_workflow.cwl` paths remain as thin
-`$import` aliases to those documents. The earlier `native_prepare.cwl`,
-`native_infer.cwl` and `native_consensus.cwl` paths also remain aliases to the
-descriptively named tools. Older saved jobs retain their explicit processing
-order rather than silently changing their native stages.
+`cwl/dpi_before_consensus.cwl` for DPI-first. Import-only aliases have been
+removed; saved direct CWL commands and custom workflow references must use the
+[descriptive entry points and tools](../SJARACNe/cwl/README.md#updating-older-cwl-paths).
+The public CLI already selects those documents. Explicit processing order,
+scientific profiles and public input/output keys remain supported.
 
 WDL retains `wdl/sjaracne.wdl`, the `SJARACNe` workflow identifier, and its public
 input/output keys. Its descriptive display name is "Reconstruct a regulatory

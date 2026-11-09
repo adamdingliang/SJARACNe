@@ -113,7 +113,7 @@ class TestSJARACNe(unittest.TestCase):
                 output = workdir / 'output'
                 result = subprocess.run([
                     'cwltool', '--outdir', str(output), '--tmpdir-prefix', str(workdir / 'tmp'),
-                    str(PROJECT_ROOT / 'SJARACNe/cwl/sjaracne_workflow.cwl'), str(job_file),
+                    str(PROJECT_ROOT / 'SJARACNe/cwl/dpi_before_consensus.cwl'), str(job_file),
                 ], cwd=str(PROJECT_ROOT), capture_output=True, text=True)
                 log = result.stdout + result.stderr
                 if model:
@@ -294,7 +294,7 @@ class TestSJARACNe(unittest.TestCase):
                                '--tmpdir-prefix', str(workdir / 'tmp')]
                     if execution == 'cwl-parallel':
                         command.append('--parallel')
-                    command.extend([str(PROJECT_ROOT / 'SJARACNe/cwl/sjaracne_workflow.cwl'),
+                    command.extend([str(PROJECT_ROOT / 'SJARACNe/cwl/dpi_before_consensus.cwl'),
                                     str(job_file)])
                 else:
                     command = [
@@ -395,7 +395,7 @@ class TestSJARACNe(unittest.TestCase):
                     result = subprocess.run([
                         'cwltool', '--leave-tmpdir', '--outdir', str(output),
                         '--tmpdir-prefix', str(workdir / 'tmp'),
-                        str(PROJECT_ROOT / 'SJARACNe/cwl/sjaracne_workflow.cwl'), str(job_file),
+                        str(PROJECT_ROOT / 'SJARACNe/cwl/dpi_before_consensus.cwl'), str(job_file),
                     ], cwd=str(PROJECT_ROOT), capture_output=True, text=True)
                     log = result.stdout + result.stderr
                     self.assertEqual(result.returncode, 0, log)

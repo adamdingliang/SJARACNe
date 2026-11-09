@@ -61,6 +61,9 @@ preserved by making their intended DPI-first order explicit.
 
 [Validation receipt](native_consensus_validation.json) records source hashes,
 compiler outputs, dependency versions and exact local evidence-file hashes.
+It is a dated regression snapshot from before the CWL naming cleanup; its older
+CWL paths and hashes intentionally describe the files tested at that time,
+including wrappers subsequently removed.
 The full retained run is `native_consensus_regression_20261108_py311_r2` in the
 local benchmark-results directory.
 

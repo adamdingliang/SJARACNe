@@ -62,19 +62,23 @@ Explicit current-profile `dpi-first` uses a zero additive dynamic-DPI offset by
 default. The legacy profile instead uses strict fixed DPI and its historical
 probability consensus.
 
-## Existing entry paths
+## Updating older CWL paths
 
-Old paths remain thin single-process `$graph`/`$import` aliases. Each pair loads
-one canonical document,
-so saved commands continue to resolve without maintaining duplicate workflows.
+Use the descriptive filenames directly. The following import-only aliases have
+been removed; update saved commands and custom CWL `run` references accordingly.
 
-| Existing path | Canonical document |
+| Removed path | Use directly |
 | --- | --- |
 | `native_consensus_workflow.cwl` | `consensus_before_dpi.cwl` |
 | `sjaracne_workflow.cwl` | `dpi_before_consensus.cwl` |
 | `native_prepare.cwl` | `prepare_inputs.cwl` |
 | `native_infer.cwl` | `resample_and_estimate_mi.cwl` |
 | `native_consensus.cwl` | `consensus_and_dpi.cwl` |
+
+The unused `get_consensus_network.cwl` and `get_enhanced_consensus_network.cwl`
+shims were also removed: they called scripts no longer supplied by the package.
+`create_consensus_network.cwl` performs consensus merging and annotation for
+the DPI-first workflow through the supported Python module.
 
 Public input/output keys and native filenames remain unchanged. In particular,
 `out_dir` is the historical output key for an enhanced network **file**. Internal

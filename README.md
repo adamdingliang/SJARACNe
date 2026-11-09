@@ -314,8 +314,8 @@ explicit DPI-first runs use
 Both engines name the per-seed stage `resample_and_estimate_mi`. In the default
 order it estimates and significance-filters raw MI without DPI; the final stage
 selects recurrent edges, averages supporting-run MI and applies DPI.
-The [CWL workflow index](SJARACNe/cwl/README.md) explains the steps and the retained
-old entry-point aliases.
+The [CWL workflow index](SJARACNe/cwl/README.md) explains the steps and the
+replacement paths for removed import-only aliases.
 
 See [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) for the profile
 comparison, historical overrides and native API behavior.

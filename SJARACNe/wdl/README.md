@@ -161,10 +161,9 @@ scientific profile. For consensus-first, the CLI uses
 adapter as WDL. Its stages are `prepare_inputs`, `create_resample_seeds`,
 `resample_and_estimate_mi` and `consensus_and_dpi`. Its scatter adjacencies, provenance and logs remain in the
 recorded owned engine output directory. The retained low-level CWL workflow
-is named `cwl/dpi_before_consensus.cwl`; `cwl/sjaracne_workflow.cwl` is a
-forwarding compatibility alias. `cwl/native_consensus_workflow.cwl` forwards to
-`cwl/consensus_before_dpi.cwl`. See the [CWL index](../cwl/README.md) for the
-complete entry-point and step mapping. A smaller K may be appropriate for scRNA-seq, but neither
+is named `cwl/dpi_before_consensus.cwl`. Use these descriptive filenames
+directly; the earlier import-only aliases have been removed. See the
+[CWL index](../cwl/README.md) for the entry-point, step and older-path mapping. A smaller K may be appropriate for scRNA-seq, but neither
 a scRNA-seq default nor dynamic K has been validated; inspect target coverage.
 
 ## Resources, outputs and provenance
