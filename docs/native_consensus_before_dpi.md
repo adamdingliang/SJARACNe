@@ -36,20 +36,38 @@ six-digit historical MI cannot recover the original unrounded values.
 
 ## Engineering choices
 
-Each input is read sequentially. Corresponding source rows are accumulated in
-gene-indexed counts and double-precision sums. An ordered source-target edge is
-counted once per run; support K is inclusive. The mean denominator is that
-edge's support count, so absent runs are not zero-filled. MI zero is still a
-present edge. Surviving edges are inserted directly into the existing native
-Matrix and pruned with the existing DPI implementation. Source rows with zero
-survivors remain part of H.
+The final C++ call opens one raw-MI file, reads it completely from beginning to
+end, then closes it before opening the next file in manifest order. One 1 MiB
+input buffer is used. This follows the previous Python aggregation's file order
+and avoids alternating small reads across all resamples on a mechanical disk;
+an SSD is not required by the design.
 
-The accumulator uses O(G) storage for G expression genes. Total memory also
-includes the retained graph and DPI indices, expression data and input row
-buffers; it is not O(G) overall. A loose K can produce a large retained graph.
-The process opens the listed run files concurrently. Extremely large resample
-counts can exceed the host's file descriptor limit; ordinary B=100 is the
-intended operating scale.
+Support counts and double-precision MI sums for all requested source-target
+pairs are held in RAM. The outer loop follows manifest order, so each edge's
+ordinary binary64 additions remain in that order. An ordered source-target edge
+is counted once per run; support K is inclusive. The mean denominator is that
+edge's support count, so absent runs are not zero-filled. MI zero is still a
+present edge. After all inputs have been validated, surviving edges are inserted
+directly into the existing native Matrix. Each source's accumulator arrays are
+released as its retained edges enter Matrix, before the existing DPI pass.
+Source rows with zero survivors remain part of H.
+
+For H requested matched sources and G expression genes, the dense accumulators
+require `H * G * (sizeof(double) + sizeof(uint32_t))` bytes, normally
+**12 bytes per source-target pair**. This cost does not grow with the number of
+resamples. For example, the 9,464-source by 29,841-gene LUAD SIG panel needs about
+**3.16 GiB** for these arrays; the 9,428-source by 29,778-gene BLCA SIG panel needs
+about **3.14 GiB**. Expression data, the retained graph and DPI indices, parser
+buffers and allocator overhead are additional. A loose K can produce a large
+retained graph.
+
+Allocation sizes are checked for overflow and allocation errors identify the
+requested accumulator dimensions and bytes. The implementation requires enough
+RAM; it does not spill aggregation caches to disk or reread all inputs in source
+blocks. The local workflow's default **8 GiB consensus request is unchanged**.
+This is a scheduling request, not a measured peak or a hard memory limit. Larger
+panels can need a higher `--consensus-memory` request and a sufficient overall
+`--memory` budget; see [workflow resources](../SJARACNe/wdl/README.md#resources-outputs-and-provenance).
 
 This removes Python per-edge aggregation caches, adjacency staging copies and
 the candidate graph write/read between consensus and DPI. Distributed scatter

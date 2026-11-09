@@ -104,6 +104,34 @@ class TestNativeConsensus(unittest.TestCase):
         self.assertEqual(self.header(self.output, 'Consensus minimum recurrence K'), '2')
         self.assertEqual([row.split('\t')[0] for row in self.rows(self.output)], list('ABCD'))
 
+    def test_subset_sources_keep_requested_order_and_independent_support(self):
+        # Source ordinals differ from their expression-gene indices. Shared
+        # targets must contribute separately to each source, including zeros.
+        self.hubs.write_text('C\nA\n')
+        self.write_runs([
+            'C\tB\t0.25\tD\t0\nA\tB\t0.5\tD\t0\n',
+            'C\tB\t0.75\tD\t0\nA\tB\t1.5\tD\t0\n',
+            'C\tB\t1.25\nA\tD\t0\n',
+        ])
+        self.assert_success(self.command(k=2))
+        self.assertEqual(self.edges(self.output), {
+            ('C', 'B'): 0.75, ('C', 'D'): 0.0,
+            ('A', 'B'): 1.0, ('A', 'D'): 0.0,
+        })
+        self.assertEqual([row.split('\t')[0] for row in self.rows(self.output)], ['C', 'A'])
+        self.assertEqual(self.header(self.output, 'Consensus source rows H'), '2')
+        self.assertEqual(self.header(self.output, 'Consensus union edges'), '4')
+        self.assertEqual(self.header(self.output, 'Consensus candidate edges'), '4')
+
+    def test_finite_mi_sum_overflow_preserves_existing_output(self):
+        self.write_runs(['A\tB\t1e308\nB\nC\nD\n'] * 2)
+        self.output.write_text('previous good network\n')
+        result = self.invoke(self.command(k=2))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('MI sum overflow', result.stderr)
+        self.assertEqual(self.output.read_text(), 'previous good network\n')
+        self.assertFalse(list(self.work.glob('result.adj.tmp.*')))
+
     def test_dpi_matches_existing_replay_on_the_same_consensus_triangle(self):
         body = 'A\tB\t0.1\tC\t0.9\nB\tC\t0.8\nC\nD\n'
         self.write_runs([body, body])
@@ -139,6 +167,72 @@ class TestNativeConsensus(unittest.TestCase):
         self.assert_success(self.command(k=300))
         self.assertEqual(self.edges(self.output), {('A', 'B'): 0.0})
         self.assertEqual(self.header(self.output, 'Consensus input runs B'), '300')
+
+    @unittest.skipUnless(os.name == 'posix', 'uses POSIX open-file limits')
+    def test_many_resamples_do_not_require_many_open_files(self):
+        import resource
+        self.write_runs(['A\tB\t0.25\nB\nC\nD\n'] * 80)
+
+        def limit_open_files():
+            soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+            limited = 32 if soft == resource.RLIM_INFINITY else min(32, soft)
+            resource.setrlimit(resource.RLIMIT_NOFILE, (limited, hard))
+
+        result = self.invoke(self.command(k=80), preexec_fn=limit_open_files)
+        self.assertEqual(result.returncode, 0, result.stderr + '\n' + result.stdout)
+        self.assertEqual(self.edges(self.output), {('A', 'B'): 0.25})
+        self.assertEqual(self.header(self.output, 'Consensus input runs B'), '80')
+
+    @unittest.skipUnless(os.name == 'posix', 'uses POSIX address-space limits')
+    def test_accumulator_allocation_failure_preserves_existing_output(self):
+        import resource
+        if not hasattr(resource, 'RLIMIT_AS'):
+            self.skipTest('address-space limits are unavailable')
+        address_limit = 128 * 1024 * 1024
+        try:
+            _, hard = resource.getrlimit(resource.RLIMIT_AS)
+        except (OSError, ValueError):
+            self.skipTest('address-space limits are unsupported')
+        if hard != resource.RLIM_INFINITY and hard < address_limit:
+            self.skipTest('existing hard limit is too low for the loading fixture')
+
+        # Loading 5000 genes and 100 observations takes much less than 128 MiB,
+        # while the full 12*H*G consensus accumulator requires 300,000,000 bytes.
+        # Limit only the native child, leaving the test runner unaffected.
+        genes = ['GENE_%04d' % i for i in range(5000)]
+        observations = '\t'.join(str(i + 1) for i in range(100))
+        header = 'isoformId\tgeneSymbol\t' + '\t'.join('s%d' % i for i in range(100))
+        self.exp.write_text(header + '\n' + ''.join(
+            gene + '\t' + gene + '\t' + observations + '\n' for gene in genes))
+        self.hubs.write_text('\n'.join(genes) + '\n')
+        self.write_runs(['\n'.join(genes) + '\n'])
+        self.output.write_text('previous good network\n')
+
+        def limit_address_space():
+            resource.setrlimit(resource.RLIMIT_AS, (address_limit, hard))
+
+        result = self.invoke(self.command(), preexec_fn=limit_address_space)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Cannot allocate sequential consensus accumulators', result.stderr)
+        self.assertIn('H=5000', result.stderr)
+        self.assertIn('G=5000', result.stderr)
+        self.assertIn('300000000 bytes', result.stderr)
+        self.assertEqual(self.output.read_text(), 'previous good network\n')
+        self.assertFalse(list(self.work.glob('result.adj.tmp.*')))
+
+    def test_each_raw_file_is_fully_validated_before_reading_the_next(self):
+        # The first graph fails at its last source; the second fails at its
+        # first. File-major reading must report the first graph's error.
+        self.write_runs([
+            'A\nB\nC\nD\tA\tnan\n',
+            'A\tB\tinf\nB\nC\nD\n',
+        ])
+        result = self.invoke(self.command())
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(self.runs[0].name, result.stderr)
+        self.assertNotIn(self.runs[1].name, result.stderr)
+        self.assertIn('nan', result.stderr)
+        self.assertFalse(self.output.exists())
 
     def test_all_empty_consensus_preserves_sources_and_dynamic_h(self):
         self.write_runs(['A\nB\nC\nD\n'] * 2)
