@@ -3,6 +3,7 @@
 Unlike optional developer tests, these fail for a missing Sprocket/runtime.
 The complete small runner and CI explicitly provision and pin that dependency.
 """
+import csv
 import hashlib
 import json
 import math
@@ -14,6 +15,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from urllib.parse import unquote, urlparse
 
 from native_test_support import find_native_executable
 from test_sjaracne_acceptance import write_multihub_dpi_inputs
@@ -24,7 +26,8 @@ FINAL_FILES = (
     "consensus_network_3col_.txt", "consensus_network_ncol_.txt",
     "bootstrap_info_.txt", "parameter_info_.txt",
 )
-PATH_HEADER = re.compile(r"^(>\s+(?:Input file\s+|Subnetwork file\s+|Output network:\s+)).*$")
+PATH_HEADER = re.compile(
+    r"^(>\s+(?:Input file\s+|Subnetwork file\s+|Output network:\s+|Consensus input manifest\s+)).*$")
 
 
 def header(text, name):
@@ -130,6 +133,8 @@ class TestDefaultWorkflow(unittest.TestCase):
                     self.assertEqual(options["sampling_method"], "without-replacement")
                     self.assertEqual(options["subsample_spec"], "80%")
                     self.assertEqual(options["depth"], 40)
+                    self.assertEqual(options["consensus_order"], "consensus-first")
+                    self.assertEqual(options["dpi_offset"], 0.025)
                     self.assertEqual(options["min_recurrence"], 20)
                     self.assertIsNone(options["p_value_consensus"])
                     adjacencies = [Path(value) for value in outputs["SJARACNe.adjacencies"]]
@@ -146,18 +151,23 @@ class TestDefaultWorkflow(unittest.TestCase):
                         self.assertEqual(argv[argv.index("-S") + 1], str(seed))
                         self.assertEqual(argv[argv.index("-M") + 1], "pchip")
                         self.assertEqual(argv[argv.index("-u") + 1], "80%")
-                        self.assertIn("--dynamic-dpi", argv)
+                        self.assertIn("--raw-mi", argv)
+                        self.assertNotIn("--dynamic-dpi", argv)
                         self.assertNotIn("-e", argv)
                         self.assertNotIn("-r", argv)
                         self.assertEqual(header(text, "MI threshold method"), "experimental PCHIP empirical cutoff")
                         self.assertEqual(float(header(text, "MI P-value")), probability)
                         self.assertEqual(header(text, "AP-MI actual m"), "80")
-                        self.assertEqual(header(text, "DPI mode"), "experimental-dynamic")
-                        self.assertEqual(header(text, "DPI H_ref"), "479")
-                        self.assertEqual(header(text, "DPI source rows H"), "3")
-                        self.assertEqual(float(header(text, "DPI epsilon binary64")), 0)
+                        self.assertEqual(header(text, "DPI mode"), "disabled-raw-mi")
+                        self.assertEqual(header(text, "Raw MI source rows H"), "3")
+                        self.assertEqual(header(text, "MI output precision"), "17")
                     metadata = (output / "bootstrap_info_.txt").read_text(encoding="utf-8")
-                    self.assertIn("Consensus selection: minimum recurrence\n", metadata)
+                    self.assertIn("Consensus selection: minimum recurrence before DPI\n", metadata)
+                    parameters_text = (output / "parameter_info_.txt").read_text(encoding="utf-8")
+                    self.assertEqual(float(header(parameters_text, "DPI epsilon binary64")), 0.025)
+                    self.assertEqual(header(parameters_text, "DPI H_ref"), "479")
+                    self.assertEqual(header(parameters_text, "Consensus source rows H"), "3")
+                    self.assertEqual(header(parameters_text, "Consensus input runs B"), "20")
                     self.assertIn("Bootstrap networks: 20\n", metadata)
                     self.assertIn("Minimum recurrence: 20\n", metadata)
                     self.assertGreater(len((output / "consensus_network_ncol_.txt").read_bytes().splitlines()), 1)
@@ -204,6 +214,94 @@ class TestDefaultWorkflow(unittest.TestCase):
             self.assertIn("Bonferroni corrected (0.05) alpha:", metadata)
             self.assertIn("mu:", metadata)
             self.assertIn("sigma:", metadata)
+
+    def test_optional_raw_hash_verification_preserves_real_workflow_outputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = root / "inputs"
+            fixture.mkdir()
+            expression, hubs = write_multihub_dpi_inputs(fixture)
+            baseline_options = baseline_files = baseline_parameters = None
+            for engine in ("sprocket", "cwl"):
+                for verify in (False, True):
+                    with self.subTest(engine=engine, verify_raw_hashes=verify):
+                        options = ["--network-type", "TF", "-k", "2"]
+                        if verify:
+                            options.append("--verify-raw-hashes")
+                        output, manifest, outputs = self.successful_run(
+                            root / (engine + ("_verified" if verify else "_default")),
+                            expression, hubs, *options, engine=engine, bootstrap_num=3)
+                        self.assertIs(manifest["verify_raw_hashes"], verify)
+                        self.assertNotIn("verify_raw_hashes", manifest["scientific_options"])
+                        if engine == "sprocket":
+                            receipt_path = Path(outputs["SJARACNe.consensus_provenance"])
+                        else:
+                            engine_outputs = json.loads(
+                                (output / "engine.stdout.log").read_text(encoding="utf-8"))
+                            artifact = engine_outputs["consensus_provenance"]
+                            location = artifact.get("path") or artifact["location"]
+                            parsed = urlparse(location)
+                            receipt_path = Path(unquote(parsed.path)
+                                                if parsed.scheme == "file" else location)
+                        self.assertTrue(receipt_path.is_file(), receipt_path)
+                        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+                        self.assertEqual(receipt["raw_hash_verification"], {
+                            "requested": verify, "performed": verify,
+                            "method": "sha256" if verify else "not-reverified"})
+                        self.assertEqual(len(receipt["adjacencies"]), 3)
+                        self.assertEqual([item["seed"] for item in receipt["adjacencies"]], [1, 2, 3])
+                        for item in receipt["adjacencies"]:
+                            self.assertIs(item["content_verified"], verify)
+                        self.assertEqual(receipt["parameters"], manifest["scientific_options"])
+                        files = tuple((output / name).read_bytes() for name in FINAL_FILES[:3])
+                        parameters = normalized_parameters(output / "parameter_info_.txt")
+                        if baseline_options is None:
+                            baseline_options = manifest["scientific_options"]
+                            baseline_files = files
+                            baseline_parameters = parameters
+                        else:
+                            self.assertEqual(manifest["scientific_options"], baseline_options)
+                            for name, actual, expected in zip(FINAL_FILES[:3], files, baseline_files):
+                                self.assertEqual(actual, expected, name)
+                            self.assertEqual(parameters, baseline_parameters)
+
+    def test_native_consensus_cwl_wdl_parity_and_offset_zero_control(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            expression, hubs = write_multihub_dpi_inputs(root)
+            for offset in (0, 0.025):
+                with self.subTest(offset=offset):
+                    options = ("--network-type", "TF", "-k", "2", "--dpi-offset", str(offset))
+                    wdl, manifest, outputs = self.successful_run(root / ("wdl_" + str(offset)),
+                        expression, hubs, *options, bootstrap_num=3)
+                    cwl, other, _ = self.successful_run(root / ("cwl_" + str(offset)),
+                        expression, hubs, *options, engine="cwl", bootstrap_num=3)
+                    self.assertEqual(manifest["scientific_options"], other["scientific_options"])
+                    engine_outputs = json.loads((cwl / "engine.stdout.log").read_text(encoding="utf-8"))
+                    engine_root = Path(other["engine_output_dir"]).resolve()
+                    for key in ("adjacencies", "run_provenance", "native_stdout", "native_stderr"):
+                        self.assertEqual(len(engine_outputs[key]), 3)
+                        for artifact in engine_outputs[key]:
+                            location = artifact.get("path") or artifact["location"]
+                            parsed = urlparse(location)
+                            path = Path(unquote(parsed.path) if parsed.scheme == "file" else location).resolve()
+                            self.assertTrue(path.is_file(), (key, location))
+                            self.assertIn(engine_root, path.parents, (key, location))
+                    for folder in (wdl, cwl):
+                        with (folder / "consensus_network_3col_.txt").open(encoding="utf-8") as handle:
+                            network = {(r["source"], r["target"]): r["MI"] for r in csv.DictReader(handle, delimiter="\t")}
+                        with (folder / "consensus_network_ncol_.txt").open(encoding="utf-8") as handle:
+                            enhanced = {(r["source"], r["target"]): r["MI"] for r in csv.DictReader(handle, delimiter="\t")}
+                        self.assertEqual(network, enhanced)
+                    for name in FINAL_FILES[:3]:
+                        self.assertEqual((wdl / name).read_bytes(), (cwl / name).read_bytes(), name)
+                    # Native headers contain engine-local paths, so compare the
+                    # scientific tolerance directly rather than path strings.
+                    for folder in (wdl, cwl):
+                        text = (folder / "parameter_info_.txt").read_text(encoding="utf-8")
+                        self.assertEqual(float(header(text, "DPI epsilon binary64")), offset)
+                        self.assertEqual(header(text, "Consensus input runs B"), "3")
+                        self.assertEqual(header(text, "Consensus minimum recurrence K"), "2")
 
     def test_missing_network_type_and_legacy_conflicts_fail_before_outputs(self):
         with tempfile.TemporaryDirectory() as temporary:

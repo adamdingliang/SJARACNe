@@ -28,7 +28,7 @@ from urllib.parse import unquote, urlparse
 
 ROOT = Path(__file__).resolve().parents[2]
 WDL = ROOT / "SJARACNe/wdl/sjaracne.wdl"
-CWL = ROOT / "SJARACNe/cwl/sjaracne_workflow.cwl"
+CWL = ROOT / "SJARACNe/cwl/dpi_before_consensus.cwl"
 NATIVE = ROOT / "SJARACNe/bin/sjaracne.exe"
 SPROCKET_VERSION = "0.32.0"
 PATH_HEADER = re.compile(r"^(>\s+(?:Input file|Subnetwork file)\s+).*$")
@@ -344,7 +344,7 @@ class ParityRun:
             artifacts = [str(path.relative_to(output)) for path in output.rglob("*")
                          if path.name.startswith("TF_run_") or path.name in ("run_provenance.json", "native.stdout.txt")]
             infer_calls = [str(path.relative_to(output)) for path in output.rglob("*")
-                           if path.is_dir() and re.fullmatch(r"(?:call[-_])?Infer(?:[-_].*)?", path.name)]
+                           if path.is_dir() and re.fullmatch(r"(?:call[-_])?resample_and_estimate_mi(?:[-_].*)?", path.name)]
             self.check(name + ":no_native_artifacts", not artifacts, artifacts)
             self.check(name + ":no_infer_calls", not infer_calls, infer_calls)
             return {"command": entry, "execution": str(output), "failed_as_expected": True}
@@ -394,7 +394,7 @@ class ParityRun:
             observations = len(handle.readline().rstrip("\r\n").split("\t")) - 2
         parameters = resolve_options(options, observations)
         for key in ("bootstrap_num", "depth", "p_value_bootstrap", "min_recurrence",
-                    "p_value_consensus", "dynamic_dpi", "dpi_href", "dpi_slope", "dpi_max", "tolerance"):
+                    "p_value_consensus", "dynamic_dpi", "dpi_href", "dpi_slope", "dpi_max", "dpi_offset", "tolerance"):
             if parameters.get(key) is not None:
                 job[key] = parameters[key]
         job["apmi_null_model"] = (None if parameters["apmi_null_model"] == "affine"
@@ -509,6 +509,8 @@ class ParityRun:
                 ("current_sig_defaults", {"bootstrap_num": 20, "network_type": "SIG"}),
                 ("presampling_legacy_profile", {"bootstrap_num": 6, "profile": "legacy"}),
             )
+            cases = tuple((name, {"consensus_order": "dpi-first", **options}) for name, options in cases)
+            self.summary["consensus_order_scope"] = "Explicit retained DPI-first parity; native consensus-first defaults are exercised by test_default_workflow.py"
             baseline = None
             for name, options in cases:
                 cwl = self.run_cwl(name, expression, hubs, options)

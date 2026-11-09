@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <cstddef>
+#include <cstdint>
 
 //------------------------------------------------------------------------------------
 
@@ -41,8 +42,19 @@ struct Parameter
    int    dpiHref;            // reference count of reconstructed source rows
    double dpiSlope;           // epsilon increase per doubling above dpiHref
    double dpiMax;             // upper bound of experimental dynamic epsilon
-   std::size_t dpiActualH;    // unique reconstructed rows, including empty rows
+   double dpiOffset;          // additive baseline before dpiMax; native default 0
+   std::size_t dpiActualH;    // unique constructed source rows, including empty rows
 
+   // Canonical resample output for later consensus: above-cutoff MI, no DPI,
+   // 17-digit weights and an explicit row for every matched -s source.
+   bool rawMi;
+   bool minRecurrenceSpecified; // distinguish explicit --min-recurrence from its default
+   int minRecurrence;           // inclusive distinct-input support K; native default 20
+   std::size_t consensusRuns;   // validated manifest input count B
+   // Counts of directed (source,target) pairs: union across inputs, then K-
+   // selected candidates, both measured before the subsequent DPI pass.
+   std::uint64_t consensusUnionEdges, consensusCandidateEdges;
+   std::string consensusInputs; // manifest path; empty means estimate/replay one graph
    std::string verbose, infile, outfile, adjfile, hub;
    std::string dpiWitnessFile;
    std::string subnetfile, annotfile, controlId, condition, home_dir;
@@ -60,7 +72,10 @@ struct Parameter
         nparLimit(default_nparLimit), seed(default_seed), samplingPopulation(0),
         samplingSize(0), thresholdSpecified(false), epsSpecified(false),
         dynamicDpi(false), dynamicDpiParametersSpecified(false), dpiHref(479),
-        dpiSlope(0.05), dpiMax(0.30), dpiActualH(0),
+        dpiSlope(0.05), dpiMax(0.30), dpiOffset(0.0), dpiActualH(0),
+        rawMi(false), minRecurrenceSpecified(false), minRecurrence(20),
+        consensusRuns(0), consensusUnionEdges(0), consensusCandidateEdges(0),
+        consensusInputs(""),
         verbose("off"), infile(""), outfile(""), adjfile(""),
         hub(""), dpiWitnessFile(""), subnetfile(""), annotfile(""), controlId(""), condition(""),
         home_dir("./"), subsampleSpec(""), samplingMethod(""), nullModelFile(""),
@@ -76,7 +91,14 @@ void checkParameter(Parameter &p);
 void displayParameter(Parameter &p);
 void createOutfileName(Parameter &p );
 int resolveSubsampleSize(const std::string& spec, int populationSize);
+/**
+ * Validate and resolve min(maximum, offset + slope*max(0, log2(H/referenceHubs))).
+ * H includes constructed empty source rows; it is not the number of edges or
+ * active/nonempty hubs. Native offset defaults to zero for existing callers;
+ * the current dynamic consensus-first workflow explicitly supplies 0.025 by
+ * default. Invalid counts or nonfinite/out-of-range settings throw std::string.
+ */
 double resolveDynamicDpiEpsilon(std::size_t sourceRows, int referenceHubs,
-                                double slope, double maximum);
+                                double slope, double maximum, double offset=0.0);
 
 #endif

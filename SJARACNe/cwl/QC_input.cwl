@@ -2,7 +2,11 @@
 
 cwlVersion: v1.0
 class: CommandLineTool
-doc: validation of input files
+label: Validate expression and hub inputs
+doc: |
+  Check expression matrix structure, hub identifiers and hub-expression
+  overlap. The validation report is a hard dependency of the DPI-first
+  resample jobs, so invalid inputs fail before native inference starts.
 
 requirements:
   InlineJavascriptRequirement: {}

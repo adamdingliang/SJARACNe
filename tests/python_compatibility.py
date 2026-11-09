@@ -3,7 +3,10 @@
 
 This is a compatibility check, not a dataset benchmark. Both environments run
 the same checkout, native executable, fixture, seeds and Sprocket executable.
-Nothing is installed and no existing output directory is reused.
+The current-profile cases explicitly retain DPI-first order because the
+independent selector checks that historical contract. New consensus-first
+defaults are exercised separately by real default-workflow tests. Nothing is
+installed and no existing output directory is reused.
 """
 import argparse
 import csv
@@ -30,8 +33,8 @@ ENHANCED_COLUMNS = ("source", "target", "source.symbol", "target.symbol", "MI") 
 RTOL = 1e-12
 ATOL = 1e-14
 CASES = (
-    ("current_tf", ("--network-type", "TF")),
-    ("current_sig", ("--network-type", "SIG")),
+    ("current_tf", ("--network-type", "TF", "--consensus-order", "dpi-first")),
+    ("current_sig", ("--network-type", "SIG", "--consensus-order", "dpi-first")),
     # Explicit legacy tuning keeps this small compatibility fixture nonempty;
     # this is not the legacy profile's default pb/pc operating point.
     ("legacy_probability", ("--profile", "legacy", "-pb", "1", "-pc", "0.1")),
@@ -159,7 +162,7 @@ class CompatibilityRun:
         self.output.mkdir(parents=True, exist_ok=False)
         self.summary = {"schema": "sjaracne-python-compatibility-v1", "started_utc": now(),
                         "complete": False, "passed": False, "cases": [], "commands": [],
-                        "scope": "tiny cross-Python compatibility; no dataset benchmark",
+                        "scope": "tiny cross-Python compatibility of explicit DPI-first profiles; no dataset benchmark",
                         "numeric_policy": {"exact": "native body/scientific headers, selected identities and MI",
                                            "tolerant": list(NUMERIC_COLUMNS) + ["legacy mu/sigma"],
                                            "rtol": RTOL, "atol": ATOL,

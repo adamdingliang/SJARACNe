@@ -2,6 +2,10 @@
 
 cwlVersion: v1.0
 class: ExpressionTool
+label: Create deterministic resample seeds
+doc: |
+  Return integers 1..number in order. Both processing orders use this array
+  to assign one stable seed to each scattered resample job.
 
 requirements:
  - class: InlineJavascriptRequirement

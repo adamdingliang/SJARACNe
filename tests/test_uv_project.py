@@ -27,7 +27,7 @@ class TestUvProject(unittest.TestCase):
         configuration = project_configuration()
         project = configuration['project']
         self.assertEqual(project['name'].lower(), 'sjaracne')
-        self.assertEqual(project['requires-python'], '>=3.7.6')
+        self.assertEqual(project['requires-python'], '>=3.11')
         self.assertEqual(project['scripts']['sjaracne'], 'SJARACNe.sjaracne:main')
         self.assertEqual(project['dynamic'], ['version'])
         self.assertEqual(configuration['tool']['setuptools']['dynamic']['version'],

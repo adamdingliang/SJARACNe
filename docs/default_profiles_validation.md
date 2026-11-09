@@ -1,23 +1,19 @@
-# Historical validation: default profiles and legacy compatibility
+# Historical K6 profile validation (2026-10-28)
 
-This 2026-10-28 snapshot measured K6. Its results are preserved; use the
-[workflow guide](../SJARACNe/wdl/README.md#default-parameter-values) for active
-K20 settings. Test counts below describe the tested revision, not current CI.
-
-Validation date: 2026-10-28 (America/New_York). Work is on the existing
-`feat/wdl13-scientific-parity` branch, following Step 1 commit `d824d7a`.
-
-This report preserves the original default-profile checks. Subsequent packaging,
-Python 3.11/3.14 CI and cross-version validation are recorded in the
+This is a dated K6 / DPI-first snapshot from `feat/wdl13-scientific-parity`,
+following Step 1 commit `d824d7a`. The measurements below describe that
+revision, not the current defaults. See the [workflow guide](../SJARACNe/wdl/README.md)
+for active settings and [CI](https://github.com/adamdingliang/SJARACNe2/actions/workflows/regression.yml)
+for current regression results. Later cross-version measurements are in the
 [Python compatibility report](python_compatibility.md).
 
 The complete small regression passed: **287 Python tests**, **ten CWL
 validations**, **four Bats tests**, and **422 assertions** in the expanded
 engine matrix, with no failed checks or skips.
 
-## Defaults at the tested revision
+## Defaults tested in this snapshot
 
-| Setting | Current profile | Explicit legacy profile |
+| Setting | Then-current profile | Explicit legacy profile |
 | --- | --- | --- |
 | Default workflow/engine | WDL 1.3 / Sprocket 0.32.0 | Same; CWL also remains selectable |
 | Role | Explicit TF or SIG required, including when pb is supplied | Optional; does not change legacy pb |
@@ -91,15 +87,16 @@ universal historical bitwise reproducibility or header identity.
 
 The historical binary SHA256 was
 `eda4f07465160f9d2d536715023d439b36628b1e094dab8b7afed511efa24e11`.
-The current binary SHA256 was
+The tested binary SHA256 was
 `dbdbe074f1e6263cddf296dd0f9ebbacc437edbb47e0904ffc79f34a119a4fde`.
 No obsolete executable is bundled or required by ordinary regression/CI.
 
 ## Evidence and reproduction
 
-For the recorded measurements, use the pinned revision and environment above.
-The commands below run the suite from whichever revision is checked out.
-Local artifacts are not committed:
+Historical reproduction requires the source and environment recorded in the
+artifacts below. The command runs the suite from whichever revision is checked out.
+
+Local artifacts, not committed to the repository:
 
 - Full regression: `D:\GitHub\local_runs\wdl13_no_cwlexec_regression_20261028`.
   Its `manifest.json`, `python_tests.json`, logs and nested `wdl_parity/summary.json`
@@ -113,15 +110,14 @@ Local artifacts are not committed:
 python tests/run_regression.py --jobs 2 --output-dir /absolute/path/new-evidence
 ```
 
-CI installs checksum-pinned Sprocket 0.32.0, optional CWL dependencies and runs
-the full small suite. It does not launch BRCA100/LUAD/DREAM5 benchmark batches.
-Local success does not by itself claim a completed hosted GitHub Actions run.
+At this revision, CI was configured to install checksum-pinned Sprocket 0.32.0
+and optional CWL dependencies, then run the small suite. This local report
+does not record a hosted CI result or a full dataset benchmark.
 
-## Conditional conclusion
+## Scope of these results
 
-These checks support changing the public workflow defaults while retaining
-explicit configuration compatibility with the pre-sampling workflow on the
-tested local cases. They do not show improved biological edge accuracy, an optimal probability
+These checks supported the 2026-10-28 default change and legacy compatibility
+on the tested local cases. They do not show improved biological edge accuracy, an optimal probability
 for every dataset, or universal PCHIP calibration. Direct-native interfaces
 remain compatible; current safety checks and metadata are not rolled back.
 Production-scale resources, remote LSF/Slurm/cloud execution, containers,

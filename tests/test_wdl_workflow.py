@@ -112,7 +112,7 @@ class TestWdlParameters(unittest.TestCase):
             validate_current({"bootstrap_num": 19}, 100)
         values = validate_current({"bootstrap_num": 2, "min_recurrence": 1}, 100)
         self.assertEqual(values["min_recurrence"], 1)
-        values = validate_current({"bootstrap_num": 2, "p_value_consensus": 1e-5}, 100)
+        values = validate_current({"bootstrap_num": 2, "p_value_consensus": 1e-5, "consensus_order": "dpi-first"}, 100)
         self.assertIsNone(values["min_recurrence"])
         self.assertEqual(values["p_value_consensus"], 1e-5)
         for options in ({"bootstrap_num": 2},
@@ -193,7 +193,8 @@ class TestWdlNativeCommand(unittest.TestCase):
             self.assertEqual(command[command.index(flag) + 1], expected)
         self.assertNotIn("-r", command)
         self.assertEqual(command[command.index('-M') + 1], 'pchip')
-        self.assertIn('--dynamic-dpi', command)
+        self.assertIn('--raw-mi', command)
+        self.assertNotIn('--dynamic-dpi', command)
         self.assertNotIn('-e', command)
         self.assertEqual(Path(command[0]), WDL.PACKAGE / "bin/sjaracne.exe")
 
@@ -218,14 +219,14 @@ class TestWdlNativeCommand(unittest.TestCase):
 
     def test_fixed_zero_fixed_one_and_dynamic_flags(self):
         for tolerance in (0, 1):
-            command = self.command({"tolerance": tolerance})
+            command = self.command({"tolerance": tolerance, "consensus_order": "dpi-first"})
             self.assertEqual(float(command[command.index("-e") + 1]), tolerance)
             self.assertNotIn("--dynamic-dpi", command)
-        command = self.command({"dynamic_dpi": True})
+        command = self.command({"dynamic_dpi": True, "consensus_order": "dpi-first"})
         self.assertIn("--dynamic-dpi", command)
         for flag in ("-e", "--dpi-href", "--dpi-slope", "--dpi-max"):
             self.assertNotIn(flag, command)
-        command = self.command({"dynamic_dpi": True, "dpi_href": 2,
+        command = self.command({"dynamic_dpi": True, "consensus_order": "dpi-first", "dpi_href": 2,
             "dpi_slope": 0.1, "dpi_max": 0, "apmi_null_model": "pchip",
             "p_value_bootstrap": 0.001, "subsample_spec": "80"})
         for flag, expected in (("--dpi-href", "2"), ("--dpi-slope", "0.1"),
@@ -395,6 +396,7 @@ class TestWdlTaskBoundaries(unittest.TestCase):
                 self.assertEqual(provenance["returncode"], 0)
                 self.assertEqual(provenance["runtime"], fingerprint)
                 self.assertEqual(provenance["adjacency_sha256"], WDL.sha256("TF_run_001.adj"))
+                self.assertEqual(provenance["adjacency_size_bytes"], Path("TF_run_001.adj").stat().st_size)
                 self.assertEqual(provenance["prepared_settings_sha256"], WDL.sha256(request["settings"]))
                 self.assertEqual(provenance["argv"], launch.call_args.args[0])
                 with mock.patch.object(WDL.subprocess, "run") as repeat:
@@ -418,7 +420,7 @@ class TestWdlTaskBoundaries(unittest.TestCase):
             self.assertFalse(Path("TF_run_001.adj").exists())
 
     def consensus_fixture(self, root, legacy=False):
-        options = {"bootstrap_num": 2, **({"p_value_consensus": 0.01} if legacy else {"min_recurrence": 1})}
+        options = {"bootstrap_num": 2, "consensus_order": "dpi-first", **({"p_value_consensus": 0.01} if legacy else {"min_recurrence": 1})}
         _, fingerprint = self.prepare(root, options)
         settings = WDL.read_json("parameters.json")
         source = root / "source_networks"
@@ -449,6 +451,99 @@ class TestWdlTaskBoundaries(unittest.TestCase):
             self.assertIn("Bootstrap networks: 2\n", Path("results/bootstrap_info_.txt").read_text())
             self.assertTrue(Path("results/consensus_network_ncol_.txt").is_file())
 
+    def test_raw_hash_verification_is_optional_and_not_a_scientific_parameter(self):
+        for verify in (None, False, True):
+            with self.subTest(verify=verify), work_directory() as root:
+                request, fingerprint = self.consensus_fixture(root)
+                if verify is not None:
+                    request["verify_raw_hashes"] = verify
+                parameters = WDL.read_json(request["settings"])["parameters"]
+                expected = [WDL.read_json(path)["adjacency_sha256"] for path in request["run_provenance"]]
+                raw_paths = {Path(path).resolve() for path in request["adjacencies"]}
+                actual_sha = WDL.sha256
+                raw_hash_calls = []
+
+                def track_hash(path):
+                    if Path(path).resolve() in raw_paths:
+                        raw_hash_calls.append(Path(path).resolve())
+                        if verify is not True:
+                            raise AssertionError("Default consensus must not rehash raw adjacency contents")
+                    return actual_sha(path)
+
+                with mock.patch.object(WDL, "runtime_fingerprint", return_value=fingerprint), \
+                        mock.patch.object(WDL, "sha256", side_effect=track_hash):
+                    WDL.consensus(request)
+                value = WDL.read_json("consensus_provenance.json")
+                self.assertEqual(value["parameters"], parameters)
+                self.assertNotIn("verify_raw_hashes", value["parameters"])
+                self.assertEqual(value["raw_hash_verification"], {
+                    "requested": verify is True, "performed": verify is True,
+                    "method": "sha256" if verify is True else "not-reverified"})
+                self.assertEqual([item["sha256"] for item in value["adjacencies"]], expected)
+                self.assertEqual([item["content_verified"] for item in value["adjacencies"]],
+                                 [verify is True] * 2)
+                self.assertEqual(len(raw_hash_calls), 2 if verify is True else 0)
+
+    def test_raw_hash_verification_requires_an_actual_boolean(self):
+        for value in (None, 0, 1, "true", "false", [], {}):
+            with self.subTest(value=value), work_directory() as root:
+                request, fingerprint = self.consensus_fixture(root)
+                request["verify_raw_hashes"] = value
+                with mock.patch.object(WDL, "runtime_fingerprint", return_value=fingerprint):
+                    with self.assertRaisesRegex(ValueError, "verify_raw_hashes"):
+                        WDL.consensus(request)
+                self.assertFalse(Path("adjacencies").exists())
+                self.assertFalse(Path("results").exists())
+
+    def test_default_mode_rejects_missing_or_malformed_producer_digests(self):
+        for digest in (None, 123, "", "0" * 63, "A" * 64, "g" * 64):
+            with self.subTest(digest=digest), work_directory() as root:
+                request, fingerprint = self.consensus_fixture(root)
+                record_path = Path(request["run_provenance"][0])
+                record = WDL.read_json(record_path)
+                if digest is None:
+                    del record["adjacency_sha256"]
+                else:
+                    record["adjacency_sha256"] = digest
+                record_path.write_text(json.dumps(record), encoding="utf-8")
+                with mock.patch.object(WDL, "runtime_fingerprint", return_value=fingerprint):
+                    with self.assertRaises(ValueError):
+                        WDL.consensus(request)
+                self.assertFalse(Path("adjacencies").exists())
+                self.assertFalse(Path("results").exists())
+
+    def test_default_mode_validates_optional_producer_sizes(self):
+        # Existing receipts omit size; the ordinary fixture tests preserve that
+        # compatibility. Once present, it must be an exact nonnegative integer
+        # matching the current file, even when content hashing is disabled.
+        for size in (None, True, False, -1, "13", 13.0, 0):
+            with self.subTest(size=size), work_directory() as root:
+                request, fingerprint = self.consensus_fixture(root)
+                record_path = Path(request["run_provenance"][1])
+                record = WDL.read_json(record_path)
+                self.assertGreater(Path(request["adjacencies"][1]).stat().st_size, 0)
+                record["adjacency_size_bytes"] = size
+                record_path.write_text(json.dumps(record), encoding="utf-8")
+                with mock.patch.object(WDL, "runtime_fingerprint", return_value=fingerprint):
+                    with self.assertRaises(ValueError):
+                        WDL.consensus(request)
+                self.assertFalse(Path("adjacencies").exists())
+                self.assertFalse(Path("results").exists())
+
+    def test_default_mode_requires_each_raw_adjacency_to_be_a_file(self):
+        for directory in (False, True):
+            with self.subTest(directory=directory), work_directory() as root:
+                request, fingerprint = self.consensus_fixture(root)
+                path = Path(request["adjacencies"][0])
+                path.unlink()
+                if directory:
+                    path.mkdir()
+                with mock.patch.object(WDL, "runtime_fingerprint", return_value=fingerprint):
+                    with self.assertRaises(ValueError):
+                        WDL.consensus(request)
+                self.assertFalse(Path("adjacencies").exists())
+                self.assertFalse(Path("results").exists())
+
     def test_consensus_rejects_missing_extra_reordered_or_mismatched_evidence_before_staging(self):
         cases = ("missing_adjacency", "extra_adjacency", "missing_record", "reorder_adjacencies",
                  "reorder_records", "wrong_seed", "failed_seed", "runtime", "input_hash", "adjacency_hash", "settings_hash")
@@ -465,6 +560,7 @@ class TestWdlTaskBoundaries(unittest.TestCase):
                     key = "adjacencies" if case == "reorder_adjacencies" else "run_provenance"
                     request[key].reverse()
                 elif case == "adjacency_hash":
+                    request["verify_raw_hashes"] = True
                     Path(request["adjacencies"][0]).write_bytes(b"> altered\n")
                 else:
                     path = Path(request["run_provenance"][0])
@@ -484,6 +580,9 @@ class TestWdlTaskBoundaries(unittest.TestCase):
         with work_directory() as root:
             request, fingerprint = self.consensus_fixture(root, legacy=True)
             module = importlib.import_module("SJARACNe.bin.create_consensus_network")
+            Path("results").mkdir()
+            for filename in ("consensus_network_3col_.txt", "consensus_network_ncol_.txt", "bootstrap_info_.txt", "parameter_info_.txt"):
+                (Path("results") / filename).write_text("mock output", encoding="utf-8")
             with mock.patch.object(WDL, "runtime_fingerprint", return_value=fingerprint), \
                     mock.patch.object(module, "create_consensus_network",
                                return_value="results/consensus_network_3col_.txt") as consensus, \

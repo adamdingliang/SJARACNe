@@ -4,6 +4,8 @@ Scientific work stays in the existing native program, input QC and consensus
 module. Requests arrive as JSON, never as shell-interpolated user arguments.
 """
 import argparse
+import csv
+import math
 import hashlib
 import importlib
 import json
@@ -18,7 +20,7 @@ from ..workflow_options import OPTION_NAMES, integer, resolve_options
 
 
 PACKAGE = Path(__file__).resolve().parents[1]
-SCHEMA = "sjaracne-wdl-parameters-v2"
+SCHEMA = "sjaracne-wdl-parameters-v3"
 
 
 def sha256(path):
@@ -164,6 +166,8 @@ def prepare(request):
     with expression.open(encoding="utf-8-sig") as handle:
         observations = len(handle.readline().rstrip("\r\n").split("\t")) - 2
     parameters = validate_parameters(request["parameters"], observations)
+    if "bootstrap_num" in request and integer(request["bootstrap_num"], "bootstrap_num") != parameters["bootstrap_num"]:
+        raise ValueError("Scatter bootstrap_num differs from the scientific settings")
     fingerprint = runtime_fingerprint(request.get("aracne_config_dir"))
     validate_inputs(str(expression), str(hubs), "hub_overlap_validation.txt")
     normalize_lf(expression, "expression.exp")
@@ -246,9 +250,13 @@ def native_command(request, parameters):
         command += ["-u", parameters["subsample_spec"]]
     if parameters["apmi_null_model"] == "pchip":
         command += ["-M", "pchip"]
+    if parameters["consensus_order"] == "consensus-first":
+        command += ["--raw-mi"]
+        return command
     if parameters["dynamic_dpi"]:
         command += ["--dynamic-dpi"]
-        for name, flag in (("dpi_href", "--dpi-href"), ("dpi_slope", "--dpi-slope"), ("dpi_max", "--dpi-max")):
+        for name, flag in (("dpi_href", "--dpi-href"), ("dpi_slope", "--dpi-slope"), ("dpi_max", "--dpi-max"),
+                           ("dpi_offset", "--dpi-offset")):
             if name in parameters:
                 command += [flag, str(parameters[name])]
     else:
@@ -262,7 +270,7 @@ def infer(request):
     Creates the adjacency, ``native.stdout.txt``, ``native.stderr.txt`` and
     ``run_provenance.json`` in the task directory. After the native process
     returns, provenance records argv, exit status and settings/runtime/input
-    hashes; successful output also receives an adjacency hash.
+    hashes; successful output also receives an adjacency hash and byte count.
 
     Args:
         request (dict): Prepared settings and input paths, ``seed`` and optional
@@ -286,6 +294,7 @@ def infer(request):
                   "prepared_settings_sha256": sha256(request["settings"])}
     if result.returncode == 0:
         provenance["adjacency_sha256"] = sha256(output)
+        provenance["adjacency_size_bytes"] = output.stat().st_size
     write_json("run_provenance.json", provenance)
     if result.returncode:
         print(Path("native.stderr.txt").read_text(), file=sys.stderr)
@@ -296,19 +305,28 @@ def consensus(request):
     """Verify reconstruction provenance before staging shared consensus inputs.
 
     Requires one adjacency/provenance pair per seed, ordered from 1 through
-    ``bootstrap_num``. Copies only validated adjacencies into a new staging
-    directory, then writes shared consensus and enhancement outputs to
-    ``results`` using the prepared profile's recurrence or legacy cutoff.
+    ``bootstrap_num``. Producer hashes are retained as reported; raw file bytes
+    are rehashed only when the operational ``verify_raw_hashes`` Boolean is true
+    (default false). Seed/settings/runtime/input checks remain unconditional.
+    Consensus-first passes the existing localized files to
+    the native accumulator and DPI in one invocation. DPI-first retains the
+    historical Python selector. Only final networks are enhanced from the full
+    expression matrix. Successful completion hashes all four retained outputs.
 
     Args:
         request (dict): Prepared ``settings``, staged ``exp_file``, ordered
-            ``adjacencies`` and ``run_provenance`` lists, and optional config.
+            ``adjacencies`` and ``run_provenance`` lists, optional config, and
+            optional ``verify_raw_hashes`` (bool, default false). This integrity
+            policy is independent of the scientific parameters.
 
     Raises:
         ValueError: Settings/input checks fail, the reconstruction count is
             wrong or an adjacency does not match its successful provenance.
         FileExistsError: The adjacency staging directory already exists.
     """
+    verify_raw_hashes = request.get("verify_raw_hashes", False)
+    if type(verify_raw_hashes) is not bool:
+        raise ValueError("verify_raw_hashes must be a Boolean")
     settings = checked_settings(request)
     parameters = settings["parameters"]
     adjacencies, provenance_files = request["adjacencies"], request["run_provenance"]
@@ -316,27 +334,201 @@ def consensus(request):
     settings_sha256 = sha256(request["settings"])
     if len(adjacencies) != n or len(provenance_files) != n:
         raise ValueError("Expected exactly bootstrap_num adjacencies and provenance records")
-    # Reject incomplete or foreign runs before staging any consensus inputs.
+    # Check producer identity without a second full raw-data pass by default.
+    # A reported digest is not proof of the current bytes unless rehashing is
+    # explicitly enabled. Record that distinction in the completion receipt.
+    validated_adjacencies = []
+    raw_snapshots = []
     for seed, (adjacency, record) in enumerate(zip(adjacencies, provenance_files), 1):
         provenance = read_json(record)
-        if (Path(adjacency).name != adjacency_name(seed) or provenance.get("seed") != seed
+        path = Path(adjacency)
+        digest = provenance.get("adjacency_sha256")
+        if (path.name != adjacency_name(seed) or provenance.get("seed") != seed
                 or provenance.get("returncode") != 0 or provenance.get("runtime") != settings["runtime"]
                 or provenance.get("input_sha256") != settings["input_sha256"]
                 or provenance.get("prepared_settings_sha256") != settings_sha256
-                or provenance.get("adjacency_sha256") != sha256(adjacency)):
+                or not isinstance(digest, str) or len(digest) != 64
+                or any(character not in "0123456789abcdef" for character in digest)
+                or not path.is_file()):
             raise ValueError("Mismatched adjacency/provenance for seed {}".format(seed))
-    staging = Path("adjacencies")
-    staging.mkdir(exist_ok=False)
-    for seed, adjacency in enumerate(adjacencies, 1):
-        shutil.copyfile(adjacency, staging / adjacency_name(seed))
-    # No logs, provenance or parameter files enter this directory. The shared
-    # scientific function reads every entry and counts header-only runs too.
+        info = path.stat()
+        # Older producer receipts omitted the size. Keep them compatible while
+        # enforcing the cheap byte-count check whenever a producer supplies it.
+        if "adjacency_size_bytes" in provenance:
+            size = provenance["adjacency_size_bytes"]
+            if type(size) is not int or size != info.st_size:
+                raise ValueError("Mismatched adjacency/provenance for seed {}: byte count differs".format(seed))
+        if verify_raw_hashes and digest != sha256(path):
+            raise ValueError("Mismatched adjacency/provenance for seed {}".format(seed))
+        raw_snapshots.append((path, (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)))
+        validated_adjacencies.append({"seed": seed, "sha256": digest,
+                                      "content_verified": verify_raw_hashes,
+                                      "size_bytes": info.st_size})
+    def check_raw_unchanged():
+        # This catches ordinary replacement/truncation, not same-metadata
+        # content changes; only opt-in SHA verification checks file contents.
+        for path, before in raw_snapshots:
+            info = path.stat()
+            if (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns) != before:
+                raise ValueError("Adjacency changed during consensus: " + str(path))
+    check_raw_unchanged()
     module = importlib.import_module("SJARACNe.bin.create_consensus_network")
-    selection = ({"min_recurrence": parameters["min_recurrence"]}
-                 if parameters["p_value_consensus"] is None
-                 else {"p_value": parameters["p_value_consensus"]})
-    network = module.create_consensus_network(str(staging), out_dir="results", **selection)
-    module.create_enhanced_consensus_network(request["exp_file"], network, "results")
+    native_order = parameters["consensus_order"] == "consensus-first"
+    provenance = {"schema": "sjaracne-consensus-v1", "runtime": settings["runtime"],
+                  "parameters": parameters, "prepared_settings_sha256": settings_sha256,
+                  "input_sha256": settings["input_sha256"],
+                  "adjacencies": validated_adjacencies, "returncode": 0,
+                  "raw_hash_verification": {"requested": verify_raw_hashes,
+                      "performed": verify_raw_hashes,
+                      "method": "sha256" if verify_raw_hashes else "not-reverified"}}
+    if native_order:
+        command = native_consensus_command(request, parameters)
+        provenance["argv"] = command
+        with Path("consensus.native.stdout.txt").open("x", encoding="utf-8") as stdout, \
+                Path("consensus.native.stderr.txt").open("x", encoding="utf-8") as stderr:
+            result = subprocess.run(command, stdout=stdout, stderr=stderr, check=False)
+        provenance["returncode"] = result.returncode
+        if result.returncode:
+            write_json("consensus_provenance.json", provenance)
+            raise RuntimeError("Native consensus/DPI failed; see consensus.native.stdout.txt/consensus.native.stderr.txt")
+        check_raw_unchanged()
+        network = export_native_consensus("consensus.adj", "results", parameters)
+        provenance["native_adjacency_sha256"] = sha256("consensus.adj")
+    else:
+        staging = Path("adjacencies")
+        staging.mkdir(exist_ok=False)
+        for seed, adjacency in enumerate(adjacencies, 1):
+            shutil.copyfile(adjacency, staging / adjacency_name(seed))
+        selection = ({"min_recurrence": parameters["min_recurrence"]}
+                     if parameters["p_value_consensus"] is None
+                     else {"p_value": parameters["p_value_consensus"]})
+        network = module.create_consensus_network(str(staging), out_dir="results", **selection)
+        check_raw_unchanged()
+        for name in ("consensus.native.stdout.txt", "consensus.native.stderr.txt"):
+            Path(name).touch(exist_ok=False)
+    if native_order:
+        module.create_enhanced_consensus_network(request["exp_file"], network, "results", preserve_mi=True)
+    else:
+        module.create_enhanced_consensus_network(request["exp_file"], network, "results")
+    check_raw_unchanged()
+    provenance["output_sha256"] = {name: sha256(Path("results") / name) for name in (
+        "consensus_network_3col_.txt", "consensus_network_ncol_.txt", "bootstrap_info_.txt", "parameter_info_.txt")}
+    write_json("consensus_provenance.json", provenance)
+
+
+def native_consensus_command(request, parameters):
+    """Write a path-only manifest and build one native consensus/DPI invocation.
+
+    The manifest preserves seed order and refers to already localized files;
+    neither raw adjacencies nor candidate mean weights are copied or serialized.
+
+    Args:
+        request (dict): Localized expression, hubs, adjacency paths and config.
+        parameters (dict): Resolved recurrence and DPI settings.
+
+    Returns:
+        list[str]: Literal native argv for consensus followed by DPI.
+
+    Raises:
+        ValueError: An adjacency path contains a line break.
+        FileExistsError: The manifest already exists.
+    """
+    manifest = Path("consensus_inputs.txt")
+    with manifest.open("x", encoding="utf-8", newline="\n") as output:
+        for path in request["adjacencies"]:
+            path = str(Path(path).resolve())
+            if "\n" in path or "\r" in path:
+                raise ValueError("Adjacency paths must not contain line breaks")
+            output.write(path + "\n")
+    config = request.get("aracne_config_dir") or str(PACKAGE / "config")
+    command = [str(PACKAGE / "bin/sjaracne.exe"), "--consensus-inputs", str(manifest.resolve()),
+               "--min-recurrence", str(parameters["min_recurrence"]),
+               "-i", request["exp_file"], "-s", request["probe_file"], "-l", request["probe_file"],
+               "-H", config, "-N", str(parameters["depth"]), "-o", "consensus.adj"]
+    if parameters["dynamic_dpi"]:
+        command += ["--dynamic-dpi"]
+        for name, flag in (("dpi_href", "--dpi-href"), ("dpi_slope", "--dpi-slope"),
+                           ("dpi_max", "--dpi-max"), ("dpi_offset", "--dpi-offset")):
+            if name in parameters:
+                command += [flag, str(parameters[name])]
+    else:
+        command += ["-e", str(parameters["tolerance"])]
+    return command
+
+
+def export_native_consensus(adjacency, output_dir, parameters):
+    """Stream the final pruned adjacency into the retained three-column format.
+
+    Only the final graph is converted. Native headers remain intact in
+    parameter_info_.txt, including recurrence and resolved tolerance metadata.
+
+    Args:
+        adjacency (str or Path): Completed native consensus/DPI output.
+        output_dir (str or Path): New directory for retained output filenames.
+        parameters (dict): Requested run count and minimum recurrence.
+
+    Returns:
+        Path: Final three-column network for expression-based enhancement.
+
+    Raises:
+        ValueError: Native rows or completion counters are inconsistent.
+        FileExistsError: The output directory already exists.
+    """
+    directory = Path(output_dir)
+    directory.mkdir(exist_ok=False)
+    network = directory / "consensus_network_3col_.txt"
+    headers = []
+    edges = 0
+    with Path(adjacency).open(encoding="utf-8") as source, network.open("x", encoding="utf-8", newline="\n") as out:
+        writer = csv.writer(out, delimiter="\t", lineterminator="\n")
+        writer.writerow(("source", "target", "MI"))
+        seen_sources = set()
+        for line in source:
+            if line.startswith(">"):
+                if seen_sources:
+                    raise ValueError("Native consensus header follows a data row")
+                headers.append(line)
+                continue
+            fields = line.rstrip("\r\n").split("\t")
+            if len(fields) % 2 != 1 or fields[0] in seen_sources:
+                raise ValueError("Malformed native consensus row")
+            seen_sources.add(fields[0])
+            targets = set()
+            for index in range(1, len(fields), 2):
+                target, weight = fields[index:index + 2]
+                value = float(weight)
+                if target == fields[0] or target in targets or not math.isfinite(value) or value < 0:
+                    raise ValueError("Malformed native consensus edge")
+                targets.add(target)
+                writer.writerow((fields[0], target, weight))
+                edges += 1
+    def counter(name):
+        prefix = ">  " + name + " "
+        values = [line[len(prefix):].strip() for line in headers if line.startswith(prefix)]
+        if len(values) != 1:
+            raise ValueError("Missing or duplicate native consensus metadata: " + name)
+        return int(values[0])
+    if (counter("Consensus input runs B") != parameters["bootstrap_num"]
+            or counter("Consensus minimum recurrence K") != parameters["min_recurrence"]
+            or counter("Consensus final edges") != edges
+            or counter("Consensus source rows H") != len(seen_sources)):
+        raise ValueError("Native consensus metadata differs from the final graph or requested settings")
+    with (directory / "parameter_info_.txt").open("x", encoding="utf-8", newline="\n") as output:
+        output.writelines(headers)
+        output.write(">  Workflow consensus order consensus-first\n")
+        output.write(">  Final stage input already-thresholded mean MI; no MI rethresholding\n")
+        output.write(">  Raw inference workflow options JSON " + json.dumps(parameters, sort_keys=True, allow_nan=False) + "\n")
+        output.write(">  Source: sjaracne2\n")
+    with (directory / "bootstrap_info_.txt").open("x", encoding="utf-8", newline="\n") as output:
+        output.write("Consensus selection: minimum recurrence before DPI\n")
+        output.write("Bootstrap networks: {}\nMinimum recurrence: {}\n".format(
+            parameters["bootstrap_num"], parameters["min_recurrence"]))
+        output.write("MI aggregation: supporting-run arithmetic mean\n")
+        for line in headers:
+            if line.startswith(">  Consensus ") and not line.startswith(">  Consensus input manifest "):
+                output.write(line)
+    return network
+
 
 
 def main():

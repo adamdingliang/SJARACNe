@@ -1,31 +1,29 @@
 # Backward-compatible workflows
 
-This guide covers the retained DPI-before-consensus `master` snapshot. Use
-`--profile legacy` for the settings preceding sampling without replacement.
-For native consensus before DPI, see the
-[`develop` compatibility guide](https://github.com/adamdingliang/SJARACNe2/blob/develop/docs/BACKWARD_COMPATIBILITY.md).
+Use `--profile legacy` for the scientific settings used before sampling without
+replacement. It selects retained behavior in the current executable, not a
+historical checkout.
 
 ## Current and historical profiles
 
-| Setting | Current profile on this branch | `--profile legacy` |
+| Setting | Current workflow profile | `--profile legacy` |
 | --- | --- | --- |
-| Local workflow/engine | WDL 1.3 / Sprocket | WDL 1.3 / Sprocket; CWL remains selectable |
-| Network type | Explicit `--network-type TF` or `SIG`, even when supplying `pb` | Optional; does not select a different legacy probability |
-| Per-resample sampling | 80% without replacement, using `ceil(0.8*N)` observations | N draws with replacement, native `-r 1` |
-| Native random seeds | `-S 1` through `-S 100` by default | Same; `-r 1` is not the random seed |
-| MI conversion | Experimental PCHIP | Historical affine conversion, no native `-M` |
+| Local workflow/engine | WDL 1.3 / Sprocket; CWL selectable | Same |
+| Network type | Required `--network-type TF` or `SIG`, even with explicit `pb` | Optional; does not change legacy probability |
+| Per-resample sampling | `ceil(0.8*N)` observations without replacement | N draws with replacement, native `-r 1` |
+| Native seeds | `-S 1` through `-S 100` by default | Same; `-r 1` is not a seed |
+| MI conversion | Experimental PCHIP | Affine; omit native `-M` |
 | Per-resample `pb` | TF `0.001`; SIG `0.0005` | `1e-7` |
 | AP-MI Npar limit | 40 | 40 |
-| DPI | Experimental dynamic epsilon; Href=479, slope=0.05, cap=0.30 | Fixed strict tolerance, native `-e 0` |
-| Consensus | Distinct-network recurrence K=20 | Explicit legacy normal-approximation `pc=1e-5` |
-| Reconstruction/annotation | Same full hub list supplied to native `-s` and `-l` | Same |
+| Order | Raw MI -> K20/supporting-run mean MI -> DPI | Per-run DPI -> probability consensus |
+| DPI | Dynamic; Href=479, slope=0.05, offset=0.025, cap=0.30 | Strict fixed tolerance, native `-e 0` |
+| Consensus | Distinct-network recurrence K=20 | Normal-approximation `pc=1e-5` |
+| Reconstruction/annotation | Same full hub list for native `-s` and `-l` | Same |
 
-The legacy settings were checked against pre-sampling revision
-`e59973a1891672a14f06d7847545c53368f3066c`. The profile uses the retained
-replacement-sampling implementation in the **current** native executable. It
-does not download, check out or run that historical revision automatically.
-For replacement sampling, the affine conversion uses the full observation count
-N; no PCHIP calibration is used.
+Legacy affine conversion uses the full observation count N; PCHIP calibration
+is not used. Compatibility was checked against pre-sampling revision
+`e59973a1891672a14f06d7847545c53368f3066c`; that revision is not downloaded or run
+automatically.
 
 ### Run the historical profile
 
@@ -35,8 +33,7 @@ sjaracne local --profile legacy \
   -o legacy_brca100_tf
 ```
 
-This restores the complete legacy scientific profile while using Sprocket to
-orchestrate it. To use the retained CWL path instead:
+To use local CWL instead of Sprocket:
 
 ```bash
 uv sync --locked --extra cwl
@@ -46,40 +43,29 @@ sjaracne local --engine cwl --profile legacy \
   -o legacy_cwl_brca100_tf -tmp /absolute/path/cwl-scratch
 ```
 
-CWL also needs Node.js. CWLEXEC, its launchers and the `lsf`, `-j` and
-`--config-json` interfaces are removed; those invocations fail explicitly.
-
-Use WDL/Sprocket with an explicit `--sprocket-config` for separately configured
-scheduler backends. Cluster execution remains unvalidated here; old CWLEXEC
-JSON files are not Sprocket configurations and are not converted automatically.
-The `legacy` scientific profile remains available with either Sprocket or local
-`cwltool`; it does not depend on the retired scheduler runner.
+CWL also requires Node.js. The retired CWLEXEC runner, `sjaracne lsf`, `-j` and
+`--config-json` are unsupported. Old scheduler JSON is not converted to Sprocket
+configuration. Configure other Sprocket backends explicitly with
+`--sprocket-config`; cluster execution remains unvalidated here.
 
 ## Explicit overrides and saved inputs
 
-Historical `pb`, `pc`, depth, resample-count and fixed-tolerance tuning remain
-possible in the legacy profile. PCHIP, dynamic DPI, unique subsampling and K-based
-consensus conflict with the definition of that profile and are rejected rather
-than silently ignored. Use the current profile for mixed modern configurations.
+Legacy permits historical `pb`, `pc`, depth, network-count and fixed-tolerance
+overrides. It rejects PCHIP, dynamic DPI, unique subsampling and K consensus.
+Use the current profile for mixed configurations.
 
-The current profile also supports explicit `-M affine`, `--fixed-dpi`,
-`--tolerance`, `-pb` and `-pc` settings. Selecting **one** old option does not
-restore every historical setting. For example, `-M affine` still leaves the
-current TF/SIG probability, without-replacement sampling, dynamic DPI and K=20 in
-place unless you explicitly change them.
+Current-profile `-M affine`, `--fixed-dpi`, `--tolerance` or `-pb` changes only
+that setting. `-pc` requires `--consensus-order dpi-first`. Likewise, `-k 6`
+restores only the previous recurrence cutoff, not the legacy profile. Without
+probability consensus, fewer than 20 networks require a smaller explicit K.
 
-Raw saved CWL jobs retain the older affine `pb=1e-7`, strict DPI and 80%
-**without** replacement settings, but an omitted consensus cutoff now resolves
-to K20. Set `min_recurrence: 6` explicitly to preserve the prior recurrence
-cutoff. Likewise, use CLI `-k 6` to recover the previous current-profile cutoff;
-it does not restore the pre-sampling legacy profile. Requests with fewer than
-20 networks need a smaller explicit K unless legacy probability selection is
-active. The public CLI injects its complete resolved profile
-into CWL. A raw legacy CWL job must explicitly set `sample_number: 1`,
-`subsample_spec: null`, affine mode, fixed tolerance and the legacy consensus
-probability. Do not set native replacement and unique-sampling inputs together.
+Direct saved `cwl/dpi_before_consensus.cwl` jobs retain affine `pb=1e-7`, strict
+DPI and 80% sampling without replacement, but an omitted consensus cutoff selects
+K20. Set `min_recurrence: 6` to preserve the prior cutoff. The public CLI instead
+passes a complete resolved profile.
 
-The scientific portion of such a raw CWL input is:
+For a direct legacy CWL job, set these scientific inputs explicitly; replacement
+and unique-sampling settings cannot be combined:
 
 ```yaml
 sample_number: 1
@@ -93,53 +79,71 @@ min_recurrence: null
 p_value_consensus: 1e-5
 ```
 
-Here null `apmi_null_model` means affine for the retained CWL document; the
-public CLI uses the explicit spelling `-M affine` and performs that translation.
+Here null `apmi_null_model` means affine for the retained CWL document. The CLI
+accepts `-M affine` and translates it to that representation.
 
-The familiar final files remain:
+Final network/metadata files retain their names:
 
 - `consensus_network_3col_.txt`
 - `consensus_network_ncol_.txt`
 - `bootstrap_info_.txt`
 - `parameter_info_.txt`
 
-The CLI records resolved options and engine paths in `sjaracne_run.json`.
-Sprocket retains per-seed graphs, provenance and logs. Existing outputs are not
-overwritten.
+The CLI also writes `sjaracne_run.json` with resolved settings and engine/output
+paths. Sprocket retains per-seed graphs, provenance and logs. Choose an empty
+output directory; existing results are not overwritten.
 
 ## Direct native executable
 
-Bare `sjaracne.exe` retains its historical defaults and its all-gene, single-hub,
-conditional and replay interfaces:
+Bare native inference defaults differ from workflow defaults:
 
-- Omitting native `-M` selects affine conversion. Native depth defaults to
-  `-N 20`; the workflow supplies `-N 40` and current-profile `-M pchip` explicitly.
-- `-r 1` retains full-size replacement sampling; `-u` is the separate unique
-  subsampling option. They cannot be combined.
+- `-N` defaults to 20; workflows pass 40.
+- Omitted `-M` uses affine conversion when a probability cutoff is requested;
+  workflow PCHIP is explicit `-M pchip`.
+- `-r 1` requests full-size replacement sampling; unique subsampling uses `-u`.
+  They cannot be combined.
 - Fixed `-e` remains available; `-e 1` disables DPI.
-- Native `-p 1` preserves all MI. An explicit `-t`, including zero, overrides
-  probability conversion.
-- Existing single-hub, all-gene, conditional and replay interfaces retain their
-  constraints. Unsupported PCHIP/replacement or dynamic/replay combinations fail
-  explicitly; there is no silent model fallback.
+- `-p 1` preserves all MI; explicit `-t`, including zero, overrides conversion.
+- Single-hub, all-gene, conditional and adjacency-replay interfaces retain their
+  constraints. Unsupported PCHIP/replacement or dynamic/replay combinations fail.
 
 ## What compatibility does not promise
 
-The existing Python `get_mi_cutoff(m, p)` callable is also retained. It requires
-explicit numeric inputs; workflow role defaults do not change that API.
+`get_mi_cutoff(m, p)` still requires explicit numeric inputs; workflow defaults
+do not change that Python API.
 
-Compatibility covers settings and supported scientific operations. Exact
-historical bytes require the pinned source, binary, inputs and numerical
-environment; validation, duplicate handling and metadata may differ.
+The legacy profile provides configuration/workflow compatibility, not universal
+byte-identical historical reproduction. Input validation, duplicate handling,
+provenance, compilers and numerical libraries can differ. Exact reproduction
+requires the pinned historical runtime, inputs, configuration and environment.
 
-A narrow local compatibility check compared the verified pre-sampling native
-executable at `e59973a` with the current executable using the legacy settings.
-On the six-gene, 100-observation synthetic fixture, paired seeds **1 and 17**
-produced byte-identical adjacency **bodies**. This is useful evidence that the
-retained replacement/affine/strict-DPI path reproduces that small example; it
-does not establish identical metadata or universal fidelity across datasets,
-compilers and platforms. Artifact provenance is recorded in the
+A local six-gene/100-observation check compared the pre-sampling executable with
+current legacy settings. Seeds 1 and 17 produced byte-identical adjacency
+bodies, not necessarily metadata. This is narrow evidence, recorded in the
 [historical validation report](default_profiles_validation.md).
 
-For PCHIP calibration and inference limits, see the
-[workflow guide](../SJARACNe/wdl/README.md#interpretation-and-calibration-limits).
+Current calibration and dynamic-DPI choices remain experimental. See
+[interpretation and calibration limits](../SJARACNe/wdl/README.md#interpretation-and-calibration-limits)
+for their scope.
+
+## Retaining the previous current workflow
+
+Keep the preceding order and zero-offset schedule with:
+
+```bash
+sjaracne local --network-type TF --consensus-order dpi-first \
+  -e input.exp -g hubs.txt -o previous_current
+```
+
+`--dpi-offset 0` instead keeps consensus first with the unshifted dynamic
+schedule. Neither request selects legacy. Native `--raw-mi` and
+`--consensus-inputs` are explicit modes; native offset defaults to zero and
+requires `--dynamic-dpi`. The workflow supplies its resolved offset.
+
+The CLI selects descriptive [CWL entry points](../SJARACNe/cwl/README.md#updating-older-cwl-paths)
+by order; update saved import-only aliases accordingly. WDL retains
+`wdl/sjaracne.wdl`, workflow ID `SJARACNe` and its public keys. Its task labels are
+`prepare_inputs`, `resample_and_estimate_mi` and `build_consensus_network`.
+Renamed tasks can invalidate old call-cache identities: resume already-started
+work with its frozen workflow document. Adapter subcommands remain `prepare`,
+`infer` and `consensus`.

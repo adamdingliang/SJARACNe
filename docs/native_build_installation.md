@@ -1,10 +1,14 @@
 # Automatic native builds during installation
 
-Source installations build the native programs automatically. See the
-[environment guide](uv.md) for current commands. The validation section records
-the original October 29, 2026 checks; its counts are historical.
+Source installation builds native programs automatically. For current setup,
+see the [environment guide](uv.md).
 
-## Installation
+The validation below is a **historical snapshot from October 29, 2026**,
+following `6920ffe` on `feat/wdl13-scientific-parity`. Its counts and measurements
+apply to that revision; [current CI](../.github/workflows/regression.yml) tests
+the maintained checkout on Python 3.11 and 3.14.
+
+## Source installation
 
 On Ubuntu, including Ubuntu through WSL on Windows, install system prerequisites
 once:
@@ -14,8 +18,8 @@ sudo apt update
 sudo apt install --yes build-essential git curl
 ```
 
-After installing the pinned uv and separately supplied Sprocket versions, the
-normal source installation is:
+After installing uv, run the source installation below. Install Sprocket
+separately before launching a WDL workflow:
 
 ```bash
 uv sync --locked
@@ -29,33 +33,21 @@ not supported; use an Ubuntu/WSL terminal rather than Git Bash/UCRT64.
 
 ## Build behavior and safety
 
-The setuptools build command starts with a public `build_native`
-subcommand. Both regular wheels and PEP 660 editable installs execute it before
-Python package data is collected. Metadata/source discovery does not compile.
-The subcommand exposes source/output mappings for editable installs; it does
-not rely on an editable-specific private setuptools API.
+Setuptools runs `build_native` for regular wheels and PEP 660 editable installs
+before collecting package data. Metadata/source discovery does not compile.
+Missing tools produce setup instructions; compilation failures fail installation.
+The installer does not install system packages or run `sudo`.
 
-Missing Make or the compiler produces an actionable message identifying the
-missing tools and Ubuntu/WSL package commands. A failed native build fails the
-installation instead of leaving a successful-looking Python-only package. The
-installer never runs sudo or installs operating-system packages automatically.
+Unchanged uv synchronization can reuse a cached installation. Native source,
+header and Makefile changes participate in cache/build freshness. Compiler or
+toolchain changes need an explicit rebuild; see the [environment guide](uv.md).
 
-Unchanged uv synchronization can reuse its existing cached installation; it
-does not compile on every invocation. Native source/header cache keys and
-Make dependencies remain in place. Advanced users may still call Make
-directly, and compiler/toolchain changes need an explicit rebuild as described
-in the [environment guide](uv.md).
+CI exercises the automatic build path through disposable uv editable/non-editable
+and pip source/wheel/editable installations without prebuilt native programs.
 
-CI uses the installation build path before regression, so it exercises
-the same automatic build path as a new user. Independent clean-source probes
-cover default editable and non-editable uv installs, plus pip editable and
-source-archive/wheel installs. No prebuilt native programs are supplied to
-those probes.
+## Validation
 
-## Historical validation
-
-Scope: `feat/wdl13-scientific-parity`, following `6920ffe`, October 29, 2026
-(America/New_York). Checks used CPython 3.11.15 and 3.14.5 with the unchanged locked dependency
+The October 29 checks used CPython 3.11.15 and 3.14.5 with the locked dependency
 versions. The clean-install tests deliberately exclude prebuilt executables
 and object files; they never manually invoke Make before installation.
 
@@ -74,16 +66,13 @@ and object files; they never manually invoke Make before installation.
 | CWL document validation / Bats utilities | 10 / 4 passed | 10 / 4 passed |
 | Real WDL/CWL parity | 422 checks passed; zero failures | 422 checks passed; zero failures |
 
-Each uv install probe records 19 stages, including two intentionally failing
-missing-tool installs; all stages satisfied their expected outcome. The
-ordinary pip fallback was also independently checked on 3.11 using the retained
-top-level requirement snapshots rather than the full uv export, so a missing
-runtime dependency cannot be masked by preinstalled regression dependencies.
+Each probe recorded 19 stages, including two expected missing-tool failures.
+The Python 3.11 pip fallback also passed with the retained top-level requirement
+snapshots, independently of a preinstalled regression environment.
 
-An initial full-suite attempt was interrupted after the pip test helper's
-default dependency handling was corrected. Its incomplete regression manifest
-is retained and is not counted as a completed run. The final passing full
-suite evidence is in `validation-resume1`, against a fresh source snapshot.
+An interrupted initial attempt remains marked incomplete. Final full-suite
+results in `validation-resume1` use a fresh snapshot after correcting the pip
+test helper's dependency handling.
 
 Evidence is retained under
 `D:\GitHub\local_runs\native_autobuild_20261029\`: `uv-install311` and
@@ -93,23 +82,18 @@ both complete regressions. Source copies, environments and caches are not
 committed. The preceding [uv migration report](uv_validation.md) remains
 historical evidence for its tested revision.
 
-The final controller completed all nine stages successfully. Both strict
-runs retained identical frozen source hashes throughout. The additional paired
-six-gene/100-observation comparison passed for current TF, current SIG and an
-explicitly tuned legacy probability case: 6/6/5 consensus edges per
-environment, exact native edges/MI and selected consensus identities, and zero
-observed differences in emitted correlation/regression statistics. This is
-small-fixture compatibility evidence, not universal numerical identity.
+The controller completed nine stages with unchanged frozen source hashes.
+The paired six-gene/100-observation TF, SIG and tuned legacy cases produced
+6/6/5 edges per environment, exact selected identities/MI, and zero observed
+correlation/regression differences. These are small-fixture measurements.
 
 ## Conditional conclusion
 
-These checks support simplifying normal Linux/WSL source installation to
-`uv sync --locked`, after installing system prerequisites once. A manual Make
-command is no longer part of the normal install path. Source builds still
-require Make and a C++ compiler; no compiler-free binary release is published
-by this change. Sprocket remains separately installed.
+The recorded Linux/WSL checks passed automatic source builds with Make and a
+C++ compiler. They did not publish a compiler-free binary release or change
+inference algorithms, coefficients, dependencies or scientific defaults.
+Sprocket remains a separate installation.
 
-No inference algorithms, model coefficients, dependency versions or scientific
-defaults changed. The tests do not establish native Windows/MSYS2, production
-HPC/cloud, arbitrary toolchain compatibility or biological accuracy. No full
-dataset benchmark rerun or hosted GitHub Actions result is claimed.
+This snapshot does not validate native Windows/MSYS2, arbitrary toolchains,
+production HPC/cloud or biological accuracy. Hosted CI results and later
+workflow changes are outside these dated measurements.

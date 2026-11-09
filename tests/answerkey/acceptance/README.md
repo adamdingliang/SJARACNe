@@ -1,14 +1,11 @@
 # Acceptance fixtures
 
-`cnn_5.txt` is the active end-to-end acceptance result. It is generated from
-five fixed-size 80% subsamples without replacement.
+`cnn_5.txt` is the active end-to-end acceptance result for five fixed-size
+80% subsamples without replacement. Its test explicitly selects DPI-first,
+affine MI and probability consensus (`-pc 0.01`); it is a compatibility
+fixture, not the current K20 consensus-first default.
 
-The test explicitly uses legacy consensus `-pc 0.01` and affine MI cutoffs;
-it is a supported-compatibility check, not the current K=20/PCHIP workflow.
-Explicit PCHIP and selection-mode checks use tiny generated inputs in
-`test_sjaracne_acceptance.py`; default-profile checks are in
-`test_default_workflow.py`.
-
-Unused 100-run historical snapshots and absolute-path cluster job files were
-removed during test maintenance. They remain recoverable from Git history;
-`cnn_5.txt` was not regenerated or changed.
+[Acceptance tests](../../test_sjaracne_acceptance.py) cover these compatibility
+cases. [Default-workflow tests](../../test_default_workflow.py) cover current
+consensus-first behavior with generated inputs. Historical unused snapshots
+remain in Git history; `cnn_5.txt` was not regenerated.

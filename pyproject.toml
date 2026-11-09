@@ -9,8 +9,8 @@ name = "SJARACNe"
 dynamic = ["version"]
 description = "Gene network reverse engineering from big data"
 readme = "README.md"
-# Historical metadata retained, not a new validation claim for Python <3.11.
-requires-python = ">=3.7.6"
+# Minimum maintained Python; CI tests Python 3.11 and 3.14.
+requires-python = ">=3.11"
 license = {text = "See LICENSE.md"}
 authors = [
     {name = "Liang Ding", email = "liang.ding@stjude.org"},
@@ -39,8 +39,8 @@ coverage = ["coverage==7.17.0", "gcovr==8.8"]
 [tool.uv]
 required-version = "==0.11.16"
 default-groups = []
-# The lock is for the maintained developer/runtime range, not the historical
-# published minimum. Only Python 3.11 and 3.14 are regression-tested.
+# Lock resolution covers Python 3.11 through 3.14; only its endpoints are
+# regression-tested.
 environments = ["python_version >= '3.11' and python_version < '3.15'"]
 constraint-dependencies = [
     "numpy==1.26.4; python_version < '3.14'",
