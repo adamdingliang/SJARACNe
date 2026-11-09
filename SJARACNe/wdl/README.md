@@ -97,12 +97,27 @@ The workflow default is `--dpi-offset 0.025`. The offset is additive and the
 cap applies after addition. Set it to zero to test the original dynamic
 schedule while keeping consensus first. Fixed DPI does not use an offset.
 
-Default status does not remove scientific limitations. The TF/SIG probabilities
-are provisional operating points, not universal optima. PCHIP calibration does
-not establish biological FDR, and dynamic tolerance does not guarantee more
-accurate direct edges. Native principal-range and extreme-tail warnings remain
-visible in the retained logs. Unsupported model inputs fail rather than silently
-extrapolating or selecting another model.
+### Interpretation and calibration limits
+
+Inferred edges are candidate associations, not verified direct or causal
+regulation. The provisional TF/SIG probabilities are operating choices, not
+universal optima or biological false-discovery-rate guarantees.
+
+PCHIP converts sample count and probability to an MI cutoff using a bundled
+empirical null surface. It requires Npar=40, `m=50..10000` and probabilities
+`1e-7..0.05` (with `pb=1` reserved for preserving all MI candidates). Unsupported
+inputs fail rather than silently falling back or extrapolating. Probabilities
+below `0.0005` warn that they are outside the main assessment range; extreme-tail
+assessment has limited Monte Carlo precision.
+
+Dynamic DPI applies the configured baseline offset and further relaxes pruning
+as the reconstructed hub count increases above its reference. It addresses
+hub-context sensitivity as an engineering choice; DREAM5 tests did not establish
+a dynamic-specific accuracy advantage. See the
+[DPI benchmark summaries](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/docs/benchmark_summaries/README.md)
+for the evidence and its limitations.
+
+Native principal-range and extreme-tail warnings remain visible in retained logs.
 
 ## Explicit alternatives
 
