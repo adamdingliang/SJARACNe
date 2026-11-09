@@ -17,10 +17,13 @@ class Matrix;
  * one observation per source-target pair. The mean divides by supporting runs,
  * not all runs; an emitted zero MI still counts as support.
  *
- * Numeric accumulators use O(G) storage and B input streams remain open. Each
- * stream owns a 1 MiB input buffer (100 MiB for 100 resamples). The retained
- * graph, expression data, row buffers and path/ID strings also contribute to
- * memory use; this is not a total-memory O(G) guarantee.
+ * Read each complete resample sequentially, with one open raw input and one
+ * 1 MiB read buffer. Dense accumulators cost H*G*(sizeof(double)+sizeof(uint32_t))
+ * bytes (normally 12*H*G), where H is the requested source count and G is the
+ * expression gene count. Rows are released as their retained edges enter Matrix.
+ * Expression data, the retained graph, parser buffers and allocator overhead are
+ * additional. Enough RAM is required; no disk-cache or repeated-pass fallback is
+ * used. Each edge's additions follow manifest order for deterministic means.
  *
  * @param data Expression markers/IDs; matched source markers become active.
  * @param sources Distinct valid marker indices defining the raw row order.

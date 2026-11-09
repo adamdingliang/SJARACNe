@@ -226,9 +226,15 @@ previous recurrence cutoff, not the full legacy workflow. See the
 [benchmark summary](https://github.com/adamdingliang/sjaracne_benchmark/pull/4).
 
 The current process is **100 × 80% resamples → K20 candidates → supporting-run
-mean MI → DPI**. The final native call streams the resample graphs and passes
-its retained graph directly to the existing DPI code. Python adds symbols and
-correlation/regression statistics to the final pruned edge list.
+mean MI → DPI**. The final native call finishes each raw-MI file before opening
+the next, using one 1 MiB input buffer. It accumulates support and MI sums in RAM
+and passes the retained graph directly to the existing DPI code, without an
+intermediate candidate graph or aggregation cache. Dense accumulator memory
+scales with the number of hubs multiplied by the number of expression genes;
+larger panels can need higher `--consensus-memory` and `--memory` budgets. See
+[the algorithm and memory requirements](docs/native_consensus_before_dpi.md#engineering-choices).
+Python adds symbols and correlation/regression statistics to the final pruned
+edge list.
 
 ```text
 epsilon(H) = min(0.30, dpi_offset + 0.05 * max(0, log2(H / 479)))

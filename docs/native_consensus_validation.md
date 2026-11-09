@@ -1,7 +1,49 @@
 # Native consensus-first workflow validation
 
-For the latest local workflow checks, see the [validation refresh](#workflow-validation-refresh).
-The initial implementation snapshot and its original receipts are retained below.
+This document retains dated validation records and their original receipts.
+The [sequential-input revision](#sequential-input-revision) describes the current
+C++ read design and its focused local checks. The earlier
+[workflow refresh](#workflow-validation-refresh) and the initial snapshot below
+record the implementations tested at their stated dates.
+
+## Sequential-input revision
+
+Revision date: **2026-11-09**. Native consensus now reads each complete raw-MI
+file in manifest order before opening the next. It keeps one raw input and one
+1 MiB read buffer open, replacing the initial design's source-by-source reads
+across all resample files. No SSD is required by this access pattern. This is
+an I/O design change; no cold-HDD or end-to-end speedup result is claimed here.
+
+Support and MI sums are accumulated in RAM using dense per-source arrays:
+`H * G * (sizeof(double) + sizeof(uint32_t))` bytes, normally 12 bytes per
+source-target pair. The current large SIG panels need approximately **3.16 GiB**
+(LUAD) and **3.14 GiB** (BLCA) for these arrays alone. Expression data, the retained
+graph, parser buffers and allocator overhead require additional memory. Each
+source's arrays are released while the K-supported graph is built. No aggregation
+cache, adjacency copy or repeated-input-pass fallback is introduced. The default
+local consensus scheduling request remains **8 GiB**; larger panels may require
+higher `--consensus-memory` and overall `--memory` budgets.
+
+Focused local checks for this revision passed on Linux/WSL:
+
+- A fresh native build and all **22 native consensus tests** passed without
+  skips. New checks cover 80 resamples under a 32-file descriptor limit, complete
+  validation of one file before the next, nonmonotonic source subsets, finite-MI
+  sum overflow and an explicit accumulator-allocation failure.
+- The descriptor-limit and complete-file-order tests both failed on the previous
+  interleaved-reader binary, confirming that they detect the access-pattern
+  regression rather than only checking final numerical results.
+- Three long-row comparisons produced byte-identical complete adjacency outputs
+  against the original native implementation: dynamic DPI offsets 0 and 0.025,
+  and fixed epsilon 1. The fixture has 50,002 genes, rows larger than 1 MiB,
+  40,000 retained targets, 10,000 emitted-zero edges and an empty source.
+
+The pull-request CI runs the complete small-workflow regression under Python
+3.11 and 3.14, including real WDL/CWL execution. The dated test counts, hashes
+and JSON receipts below remain evidence for earlier revisions. No production
+bulk resampling or cold-HDD speed benchmark was run for this revision.
+
+## Initial validation snapshot
 
 Validation date: 2026-11-08. Historical feature branch: `feat/native-consensus-before-dpi`,
 based on fork develop `78096288ab35f629452ca3b9339c65175200dec0`.
@@ -74,10 +116,12 @@ local benchmark-results directory.
 
 Two independent design reviews, followed by implementation cross-review,
 checked support semantics, direction, empty-source H, precision, deterministic
-order, memory scaling and publication evidence. The final implementation uses
-O(G) per-row accumulators plus the retained graph, expression data and input
-buffers; total memory is not O(G). It removes Python edge aggregation,
-adjacency staging copies and the mean-candidate write/read before DPI.
+order, memory scaling and publication evidence. At this **2026-11-08 snapshot**,
+the implementation used O(G) per-row accumulators plus the retained graph,
+expression data and input buffers; total memory was not O(G). That design kept
+all resample streams open and is superseded by the sequential-input revision
+above. The snapshot removed Python edge aggregation, adjacency staging copies
+and the mean-candidate write/read before DPI.
 Distributed raw scatter files and their transfers remain necessary. No
 end-to-end speedup measurement is claimed.
 

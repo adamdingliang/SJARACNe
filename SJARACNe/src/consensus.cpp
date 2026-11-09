@@ -1,6 +1,6 @@
 /**
  * @file consensus.cpp
- * Read raw resample graphs source by source and retain directed consensus MI.
+ * Read each raw resample graph sequentially and retain directed consensus MI.
  * Manifest order fixes floating-point addition order. The selected edges enter
  * the existing Matrix directly; the caller applies DPI after this aggregation.
  */
@@ -15,6 +15,7 @@
 #include <cstring>
 #include <fstream>
 #include <memory>
+#include <limits>
 #include <set>
 #include <sstream>
 #include <sys/stat.h>
@@ -78,8 +79,8 @@ std::vector<std::string> manifestPaths(const std::string& manifest)
                                             static_cast<std::uint64_t>(identity.st_ino))).second)
          throw std::string("Duplicate consensus input file identity (hardlink): ") + path;
       paths.push_back(path);
-      // The bound also keeps support counts and the one-based run stamps
-      // representable by the uint32_t accumulators used below.
+      // The bound keeps exact support counts representable by the uint32_t
+      // accumulators, even when the caller requests more than 255 runs.
       if (paths.size() > static_cast<std::size_t>(INT_MAX))
          throw std::string("Too many consensus inputs; supported run count is at most INT_MAX.");
    }
@@ -100,10 +101,9 @@ bool sameExistingFile(const std::string& first, const std::string& second)
       a.st_dev == b.st_dev && a.st_ino == b.st_ino;
 }
 
-// Keep one forward-only stream per resample. Row identity/order is checked by
-// the aggregator; this reader enforces the header/data boundary and row framing.
-// Larger input buffers reduce small reads on high-latency filesystems. The
-// buffer budget is 1 MiB per open input, or 100 MiB for 100 resamples.
+// Only one raw stream is open at a time. The aggregator checks each complete
+// source layout before advancing to the next resample. Keep reads large and
+// sequential on HDDs and shared filesystems; one input buffer costs 1 MiB.
 const std::size_t rawInputBufferBytes = 1024 * 1024;
 
 class RawReader
@@ -180,6 +180,25 @@ private:
    bool dataStarted, dpiHeaderSeen;
 };
 
+// File-major input order needs state for every source until the last run has
+// contributed. Separate arrays avoid padding each (double, uint32_t) pair to
+// 16 bytes. Rows own their storage so conversion to Matrix can release it before
+// the next row is exported; these arrays are never spilled to temporary files.
+struct ConsensusAccumulatorRow
+{
+   explicit ConsensusAccumulatorRow(std::size_t genes)
+      : sums(genes, 0.0), counts(genes, 0) { }
+
+   std::vector<double> sums;
+   std::vector<std::uint32_t> counts;
+
+   void release()
+   {
+      std::vector<double>().swap(sums);
+      std::vector<std::uint32_t>().swap(counts);
+   }
+};
+
 // Reject range errors and trailing junk instead of silently accepting a prefix.
 // Zero is valid: support is recorded by an edge's presence, not a positive MI.
 double parseMi(const std::string& token, const RawReader& reader)
@@ -221,13 +240,10 @@ std::vector<std::string> buildConsensusFromManifest(
    if (static_cast<std::size_t>(p.minRecurrence) > paths.size())
       throw std::string("Minimum recurrence exceeds the number of raw consensus inputs.");
    validateNativeOutputPaths(p, paths);
-   // All B streams remain open, but no full resample graph is cached. RAII
-   // closes them if validation fails while later rows are being consumed.
-   std::vector<std::unique_ptr<RawReader> > readers;
-   for (std::vector<std::string>::const_iterator path = paths.begin(); path != paths.end(); ++path)
-      readers.push_back(std::unique_ptr<RawReader>(new RawReader(*path)));
 
    const std::size_t geneCount = data.markerset.size();
+   if (geneCount > static_cast<std::size_t>(INT_MAX))
+      throw std::string("Consensus gene count exceeds the supported marker-index range.");
    std::set<int> uniqueSources;
    for (std::vector<int>::const_iterator source = sources.begin(); source != sources.end(); ++source)
       if (*source < 0 || static_cast<std::size_t>(*source) >= geneCount || !uniqueSources.insert(*source).second)
@@ -237,26 +253,48 @@ std::vector<std::string> buildConsensusFromManifest(
    std::unordered_map<std::string, int> geneIds;
    for (std::size_t i = 0; i < geneCount; ++i)
       geneIds.insert(std::make_pair(data.markerset[i].accnum.substr(1), static_cast<int>(i)));
-   // Reuse these O(G) arrays for one source at a time. counts is distinct-run
-   // support; seen stamps detect repeated targets without a per-run O(G) clear.
-   std::vector<double> sums(geneCount, 0.0);
-   std::vector<std::uint32_t> counts(geneCount, 0), seen(geneCount, 0);
-   matrix.nmv.assign(geneCount, AdjacencyRow());
-   matrix.adjacencyRowsPresent.assign(geneCount, false);
-   p.consensusRuns = paths.size();
-   p.consensusUnionEdges = p.consensusCandidateEdges = 0;
-   std::string row;
-   for (std::vector<int>::const_iterator source = sources.begin(); source != sources.end(); ++source)
+
+   // Trade the former 100-way interleaved disk reads for dense in-RAM state.
+   // At H=9464 and G=29841, these arrays cost about 3.16 GiB. Check products
+   // before allocation; the retained graph/expression/parser need extra memory.
+   const std::size_t maximum = std::numeric_limits<std::size_t>::max();
+   const std::size_t bytesPerCell = sizeof(double) + sizeof(std::uint32_t);
+   if (geneCount != 0 && sources.size() > maximum / geneCount)
+      throw std::string("Consensus accumulator dimensions overflow the addressable size.");
+   const std::size_t cells = sources.size() * geneCount;
+   if (cells > maximum / bytesPerCell)
+      throw std::string("Consensus accumulator byte count exceeds the addressable size.");
+   const std::size_t accumulatorBytes = cells * bytesPerCell;
+   std::vector<ConsensusAccumulatorRow> accumulators;
+   try
    {
-      const std::string expected = data.markerset[*source].accnum.substr(1);
-      std::fill(sums.begin(), sums.end(), 0.0);
-      std::fill(counts.begin(), counts.end(), 0);
+      accumulators.reserve(sources.size());
+      for (std::size_t source = 0; source < sources.size(); ++source)
+         accumulators.emplace_back(geneCount);
+   }
+   catch (const std::exception& error)
+   {
+      std::ostringstream message;
+      message << "Cannot allocate sequential consensus accumulators for H=" << sources.size()
+              << " and G=" << geneCount << " (" << accumulatorBytes
+              << " bytes for MI sums/support; expression data and the retained graph need additional memory): "
+              << error.what();
+      throw message.str();
+   }
+
+   // One stamp vector detects duplicate targets in the current source row.
+   // Clear it once per file, then stamp by source ordinal, not run number:
+   // different sources may legitimately share the same target within a run.
+   std::vector<std::uint32_t> seen(geneCount, 0);
+   std::string row;
+   for (std::size_t run = 0; run < paths.size(); ++run)
+   {
+      RawReader reader(paths[run]);
       std::fill(seen.begin(), seen.end(), 0);
-      // Lockstep rows require the complete source layout, even for empty
-      // regulons. Manifest order also fixes the order of binary64 additions.
-      for (std::size_t run = 0; run < readers.size(); ++run)
+      for (std::size_t source = 0; source < sources.size(); ++source)
       {
-         RawReader& reader = *readers[run];
+         const int sourceId = sources[source];
+         const std::string expected = data.markerset[sourceId].accnum.substr(1);
          if (!reader.next(row))
             reader.fail("missing requested source row '" + expected + "'");
          const std::size_t firstTab = row.find('\t');
@@ -264,6 +302,8 @@ std::vector<std::string> buildConsensusFromManifest(
             reader.fail("expected source row '" + expected + "' in supplied hub-list order");
          if (firstTab == std::string::npos)
             continue; // Explicit empty source row, never an absent row.
+         ConsensusAccumulatorRow& accumulated = accumulators[source];
+         const std::uint32_t stamp = static_cast<std::uint32_t>(source + 1);
          std::size_t cursor = firstTab + 1;
          while (cursor < row.size())
          {
@@ -277,20 +317,20 @@ std::vector<std::string> buildConsensusFromManifest(
             if (found == geneIds.end())
                reader.fail("unknown target '" + target + "'");
             const int id = found->second;
-            if (id == *source)
+            if (id == sourceId)
                reader.fail("self-edge for source '" + expected + "'");
-            if (seen[id] == run + 1)
+            if (seen[id] == stamp)
                reader.fail("duplicate target '" + target + "' within one resample row");
-            // Stamp zero means unseen for this source; run+1 reserves that
-            // sentinel while allowing support from the same target in later runs.
-            seen[id] = static_cast<std::uint32_t>(run + 1);
+            seen[id] = stamp;
             const double value = parseMi(token, reader);
-            // An absent edge adds neither weight nor support. An emitted zero
-            // adds support normally, so it is included in the mean denominator.
-            sums[id] += value;
-            if (!std::isfinite(sums[id]))
+            // The outer loop visits runs in manifest order. Every edge keeps
+            // exactly the former binary64 addition order, although source rows
+            // now have independent state. Absent edges contribute nothing;
+            // an emitted zero MI still increments its supporting-run count.
+            accumulated.sums[id] += value;
+            if (!std::isfinite(accumulated.sums[id]))
                reader.fail("MI sum overflow");
-            ++counts[id];
+            ++accumulated.counts[id]; // B <= INT_MAX; uint32_t cannot overflow.
             if (next == std::string::npos)
             {
                cursor = row.size();
@@ -303,31 +343,42 @@ std::vector<std::string> buildConsensusFromManifest(
          if (cursor == firstTab + 1)
             reader.fail("empty source rows must contain only their source ID");
       }
-      // Preserve requested sources even when K selects no targets. Their
-      // explicit presence contributes to H in the later dynamic-DPI schedule.
-      matrix.markAdjacencyRow(*source);
-      data.markerset[*source].isActive = true;
-      AdjacencyRow& selected = matrix.nmv[*source];
+      if (reader.next(row))
+         reader.fail("extra source row after the supplied hub list");
+      std::cout << "[CONSENSUS INPUT] completed_run=" << run + 1 << "/" << paths.size() << std::endl;
+      // reader closes here, before the next raw graph is opened. No input is
+      // reread and no candidate/mean graph is written between this pass and DPI.
+   }
+
+   matrix.nmv.assign(geneCount, AdjacencyRow());
+   matrix.adjacencyRowsPresent.assign(geneCount, false);
+   p.consensusRuns = paths.size();
+   p.consensusUnionEdges = p.consensusCandidateEdges = 0;
+   for (std::size_t source = 0; source < sources.size(); ++source)
+   {
+      const int sourceId = sources[source];
+      ConsensusAccumulatorRow& accumulated = accumulators[source];
+      matrix.markAdjacencyRow(sourceId);
+      data.markerset[sourceId].isActive = true;
+      AdjacencyRow& selected = matrix.nmv[sourceId];
+      std::size_t retained = 0;
       for (std::size_t target = 0; target < geneCount; ++target)
       {
-         if (counts[target] == 0)
-            continue;
-         ++p.consensusUnionEdges;
-         // Inclusive K selects candidate edges. Average only their supporting
-         // runs and populate Matrix directly, without a candidate-file roundtrip.
-         if (counts[target] >= static_cast<std::uint32_t>(p.minRecurrence))
-         {
-            selected.push_back(AdjacencyEdge(static_cast<int>(target), sums[target] / counts[target]));
-            ++p.consensusCandidateEdges;
-         }
+         if (accumulated.counts[target] != 0)
+            ++p.consensusUnionEdges;
+         if (accumulated.counts[target] >= static_cast<std::uint32_t>(p.minRecurrence))
+            ++retained;
       }
+      selected.reserve(retained);
+      for (std::size_t target = 0; target < geneCount; ++target)
+         if (accumulated.counts[target] >= static_cast<std::uint32_t>(p.minRecurrence))
+            selected.push_back(AdjacencyEdge(static_cast<int>(target),
+               accumulated.sums[target] / accumulated.counts[target]));
+      p.consensusCandidateEdges += retained;
+      // Empty requested sources stay marked and contribute to dynamic-DPI H.
+      // Release each dense row as its sparse K-selected row becomes available.
+      accumulated.release();
    }
-   // A missing row was rejected in lockstep; a remaining row is equally invalid.
-   // Do not silently ignore duplicate or unrequested sources after the hub list.
-   for (std::size_t run = 0; run < readers.size(); ++run)
-      if (readers[run]->next(row))
-         readers[run]->fail("extra source row after the supplied hub list");
-   // Finalize the retained directed graph for existing DPI code in the caller.
    matrix.compactRows();
    return paths;
 }
