@@ -17,9 +17,10 @@ class Matrix;
  * one observation per source-target pair. The mean divides by supporting runs,
  * not all runs; an emitted zero MI still counts as support.
  *
- * Numeric accumulators use O(G) storage and B input streams remain open. The
- * retained graph, expression data, row/stream buffers and path/ID strings also
- * contribute to memory use; this is not a total-memory O(G) guarantee.
+ * Numeric accumulators use O(G) storage and B input streams remain open. Each
+ * stream owns a 1 MiB input buffer (100 MiB for 100 resamples). The retained
+ * graph, expression data, row buffers and path/ID strings also contribute to
+ * memory use; this is not a total-memory O(G) guarantee.
  *
  * @param data Expression markers/IDs; matched source markers become active.
  * @param sources Distinct valid marker indices defining the raw row order.
