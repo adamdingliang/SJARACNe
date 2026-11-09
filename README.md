@@ -211,13 +211,8 @@ executable invocation. Memory settings are scheduling requests, not a guarantee
 that a dataset fits. Larger datasets may need higher budgets and task memory
 requests; see [resources and outputs](SJARACNe/wdl/README.md#resources-outputs-and-provenance).
 
-K=20 is a practical consensus setting, not a biological false-discovery-rate
-guarantee or an optimum for every dataset. Inspect target coverage; the bundled
-BRCA100 example becomes sparse at K20. For **scRNA-seq**, a smaller user-selected
-K may be appropriate, but neither a single-cell default nor a dynamic K rule
-has been validated yet. Override with `-k COUNT` as needed; `-k 6` restores the
-previous recurrence cutoff, not the full legacy workflow. See the
-[benchmark summary](https://github.com/adamdingliang/sjaracne_benchmark/pull/4).
+See [default parameter values](SJARACNe/wdl/README.md#default-parameter-values)
+for guidance on recurrence cutoffs and dynamic DPI tolerance.
 
 ### Common overrides
 
@@ -315,6 +310,7 @@ linked benchmark reports for the evidence and its limitations.
 
 | Resource | What it covers |
 | --- | --- |
+| [Default parameters](SJARACNe/wdl/README.md#default-parameter-values) | Default values, recurrence cutoff guidance and dynamic DPI tolerance. |
 | [Workflow guide](SJARACNe/wdl/README.md) | WDL inputs, dynamic DPI formula, resources, outputs and provenance. |
 | [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) | Legacy profile, local CWL and low-level native behavior. |
 | [Regression guide](tests/README.md) | Test prerequisites, execution and retained evidence. |
