@@ -16,7 +16,7 @@ import tempfile
 import threading
 
 from SJARACNe.bin.QC_input import validate_inputs
-from SJARACNe.bin.wdl_workflow import runtime_fingerprint, sha256
+from SJARACNe.bin.wdl_workflow import SCHEMA as PARAMETER_SCHEMA, runtime_fingerprint, sha256
 from SJARACNe.workflow_options import DEFAULT_MIN_RECURRENCE, resolve_options
 
 PACKAGE = Path(__file__).resolve().parent
@@ -25,7 +25,8 @@ _EXECUTION_CONTEXT = ContextVar("sjaracne_cli_execution", default=None)
 SCIENTIFIC_FIELDS = (
     "profile", "network_type", "bootstrap_num", "subsample_spec", "depth",
     "p_value_bootstrap", "apmi_null_model", "min_recurrence", "p_value_consensus",
-    "tolerance", "dynamic_dpi", "dpi_href", "dpi_slope", "dpi_max", "sampling_method",
+    "tolerance", "dynamic_dpi", "dpi_href", "dpi_slope", "dpi_max", "dpi_offset",
+    "sampling_method", "consensus_order",
 )
 FINAL_OUTPUTS = {
     "out_dir": "consensus_network_ncol_.txt", "consensus_network": "consensus_network_3col_.txt",
@@ -87,6 +88,24 @@ def dpi_maximum(value):
     parsed = float(value)
     if not math.isfinite(parsed) or not 0 <= parsed < 1:
         raise argparse.ArgumentTypeError("DPI maximum must be finite and within [0,1)")
+    return parsed
+
+
+def dpi_offset(value):
+    """Parse an additive dynamic-DPI offset in the interval [0, 1).
+
+    Args:
+        value: Numeric text supplied by argparse.
+
+    Returns:
+        float: Finite nonnegative offset, applied before the DPI cap.
+
+    Raises:
+        argparse.ArgumentTypeError: The offset is nonfinite or outside [0, 1).
+    """
+    parsed = float(value)
+    if not math.isfinite(parsed) or not 0 <= parsed < 1:
+        raise argparse.ArgumentTypeError("DPI offset must be finite and within [0,1)")
     return parsed
 
 
@@ -223,6 +242,10 @@ def build_parser():
     common.add_argument("--dpi-href", type=dpi_reference_hubs)
     common.add_argument("--dpi-slope", type=dpi_positive_slope)
     common.add_argument("--dpi-max", type=dpi_maximum)
+    common.add_argument("--dpi-offset", type=dpi_offset,
+                        help="Additive dynamic-DPI tolerance offset before the cap; current consensus-first default0.025, dpi-first default0")
+    common.add_argument("--consensus-order", choices=("consensus-first", "dpi-first"),
+                        help="Current default consensus-first; dpi-first retains the previous order")
     common.add_argument("--sprocket", default=os.environ.get("SJARACNE_SPROCKET", "sprocket"), help="Sprocket0.32.0 executable, or SJARACNE_SPROCKET")
     common.add_argument("--sprocket-config", help="Explicit trusted backend configuration")
     common.add_argument("--jobs", type=bootstrap_count, help="Sprocket-only local task budget (default4); custom config owns concurrency")
@@ -474,6 +497,11 @@ def make_cwl_job(args, parameters, expression, hubs, config):
     Returns:
         dict: CWL inputs with File and Directory objects and scientific settings.
     """
+    if parameters["consensus_order"] == "consensus-first":
+        return {"exp_file": {"class": "File", "path": str(expression)},
+                "probe_file": {"class": "File", "path": str(hubs)},
+                "aracne_config_dir": {"class": "Directory", "path": str(config)},
+                "scientific_options": parameters, "bootstrap_num": parameters["bootstrap_num"]}
     job = {"exp_file": {"class": "File", "path": str(expression)},
            "probe_file": {"class": "File", "path": str(hubs)},
            "aracne_config_dir": {"class": "Directory", "path": str(config)},
@@ -483,7 +511,7 @@ def make_cwl_job(args, parameters, expression, hubs, config):
            "apmi_null_model": "pchip" if parameters["apmi_null_model"] == "pchip" else None,
            "dynamic_dpi": parameters["dynamic_dpi"], "subsample_spec": parameters.get("subsample_spec"),
            "sample_number": 1 if parameters["sampling_method"] == "with-replacement" else None}
-    for name in ("min_recurrence", "p_value_consensus", "tolerance", "dpi_href", "dpi_slope", "dpi_max"):
+    for name in ("min_recurrence", "p_value_consensus", "tolerance", "dpi_href", "dpi_slope", "dpi_max", "dpi_offset"):
         if parameters.get(name) is not None:
             job[name] = parameters[name]
     return job
@@ -523,7 +551,7 @@ def path_within(path, root):
         return False
 
 
-def publish_sprocket_outputs(engine_root, output, expected_runtime=None, expected_parameters=None):
+def publish_sprocket_outputs(engine_root, output, expected_runtime=None, expected_parameters=None, expected_inputs=None):
     """Validate one completed execution and copy its final files without overwrite.
 
     Every required source must resolve within this execution. When supplied,
@@ -560,6 +588,13 @@ def publish_sprocket_outputs(engine_root, output, expected_runtime=None, expecte
             raise ValueError("Executed SJARACNe runtime differs from the CLI preflight")
         if expected_parameters is not None and prepared.get("parameters") != expected_parameters:
             raise ValueError("Executed scientific parameters differ from the CLI request")
+    consensus_evidence = None
+    if expected_parameters is not None and expected_parameters.get("consensus_order") == "consensus-first":
+        consensus_path = outputs.get("SJARACNe.consensus_provenance")
+        if not isinstance(consensus_path, str) or not path_within(consensus_path, engine_root):
+            raise ValueError("Missing consensus completion provenance inside this execution")
+        consensus_evidence = checked_consensus_provenance(
+            consensus_path, expected_runtime, expected_parameters, prepared_path, expected_inputs)
     sources = {}
     for key, filename in FINAL_OUTPUTS.items():
         value = outputs.get("SJARACNe." + key)
@@ -571,6 +606,8 @@ def publish_sprocket_outputs(engine_root, output, expected_runtime=None, expecte
         destination = output / filename
         if destination.exists() or destination.is_symlink():
             raise ValueError("Refusing to overwrite published output: " + str(destination))
+        if consensus_evidence is not None and consensus_evidence.get("output_sha256", {}).get(filename) != sha256(source):
+            raise ValueError("Final output differs from consensus provenance: " + filename)
         sources[key] = (source, destination)
     published = {}
     # Exclusive creation protects each destination even after the earlier check.
@@ -580,6 +617,76 @@ def publish_sprocket_outputs(engine_root, output, expected_runtime=None, expecte
         published[key] = {"path": str(destination), "sha256": sha256(destination)}
     write_json(output / "sprocket_outputs.json", outputs)
     return outputs_json, published
+
+
+def checked_consensus_provenance(path, runtime, parameters, prepared_path, expected_inputs=None):
+    """Require successful consensus from the requested runtime and settings.
+
+    Args:
+        path: Consensus completion JSON file.
+        runtime: Expected installed runtime fingerprint.
+        parameters: Expected resolved scientific settings.
+        prepared_path: Prepared settings JSON bound to this consensus execution.
+        expected_inputs: Optional original expression/hub hashes from CLI preflight.
+
+    Returns:
+        dict: Validated completion record.
+
+    Raises:
+        ValueError: Completion status, runtime or parameters differ.
+    """
+    value = json.loads(Path(path).read_text(encoding="utf-8"))
+    if (value.get("schema") != "sjaracne-consensus-v1" or value.get("returncode") != 0
+            or value.get("runtime") != runtime or value.get("parameters") != parameters):
+        raise ValueError("Consensus completion provenance differs from the requested run")
+    prepared = json.loads(Path(prepared_path).read_text(encoding="utf-8"))
+    if (prepared.get("schema") != PARAMETER_SCHEMA or prepared.get("runtime") != runtime
+            or prepared.get("parameters") != parameters
+            or value.get("prepared_settings_sha256") != sha256(prepared_path)
+            or not isinstance(prepared.get("input_sha256"), dict)
+            or set(prepared["input_sha256"]) != {"exp_file", "probe_file"}
+            or value.get("input_sha256") != prepared["input_sha256"]):
+        raise ValueError("Consensus completion provenance differs from the prepared inputs/settings")
+    if expected_inputs is not None and prepared.get("original_input_sha256") != expected_inputs:
+        raise ValueError("Prepared original inputs differ from the CLI preflight")
+    return value
+
+
+def publish_native_cwl_outputs(engine_output, output, runtime, parameters, expected_inputs=None):
+    """Validate all native-order CWL evidence before copying final outputs.
+
+    Args:
+        engine_output: Fresh CWL publication staging directory.
+        output: New or empty CLI output directory containing run evidence.
+        runtime: Expected installed runtime fingerprint.
+        parameters: Expected resolved scientific settings.
+
+    Returns:
+        dict: Four published scientific outputs and their SHA-256 hashes.
+
+    Raises:
+        ValueError: An artifact is missing, changed, foreign or would overwrite.
+        OSError: Reading or copying artifacts fails.
+    """
+    published = validate_cwl_outputs(engine_output)
+    evidence = checked_consensus_provenance(engine_output / "consensus_provenance.json", runtime, parameters,
+                                            engine_output / "parameters.json", expected_inputs)
+    for filename in FINAL_OUTPUTS.values():
+        if evidence.get("output_sha256", {}).get(filename) != sha256(engine_output / filename):
+            raise ValueError("Final output differs from consensus provenance: " + filename)
+    extras = ("consensus_provenance.json", "consensus.native.stdout.txt", "consensus.native.stderr.txt", "parameters.json")
+    destinations = list(FINAL_OUTPUTS.values()) + list(extras)
+    for filename in destinations:
+        source = engine_output / filename
+        if not source.is_file() or not path_within(source, engine_output):
+            raise ValueError("CWL output is absent or outside this execution: " + filename)
+        if (output / filename).exists() or (output / filename).is_symlink():
+            raise ValueError("Refusing to overwrite published output: " + filename)
+    for filename in destinations:
+        with (engine_output / filename).open("rb") as reader, (output / filename).open("xb") as writer:
+            shutil.copyfileobj(reader, writer)
+    return {key: {"path": str(output / Path(value["path"]).name), "sha256": value["sha256"]}
+            for key, value in published.items()}
 
 
 def validate_cwl_outputs(output):
@@ -671,6 +778,7 @@ def main(argv=None):
         runtime = runtime_fingerprint(str(config))
         with tempfile.TemporaryDirectory(prefix="sjaracne-preflight-") as temporary:
             validate_inputs(str(expression), str(hubs), str(Path(temporary) / "validation.txt"))
+        input_hashes = {"exp_file": sha256(expression), "probe_file": sha256(hubs)}
     except (ValueError, OSError, subprocess.SubprocessError) as error:
         parser.error(str(error))
 
@@ -680,7 +788,8 @@ def main(argv=None):
     manifest_path = output / "sjaracne_run.json"
     record = {"schema": "sjaracne-cli-run-v1", "state": "prepared", "engine": engine,
               "scientific_options": parameters, "runtime": runtime, "sprocket_version": version,
-              "inputs": {"expression": str(expression), "hubs": str(hubs)}, "published_outputs": {}}
+              "inputs": {"expression": str(expression), "hubs": str(hubs)},
+              "original_input_sha256": input_hashes, "published_outputs": {}}
     environment = execution_env()
     try:
         job_file = output / "sjaracne_workflow.yml"
@@ -710,10 +819,26 @@ def main(argv=None):
             job = make_cwl_job(args, parameters, expression, hubs, config)
             scratch = Path(args.tmpdir_prefix).expanduser().absolute() if args.tmpdir_prefix else output / ".cwl_tmp"
             scratch.mkdir(parents=True, exist_ok=True)
-            command = [tool, "--preserve-environment", "PYTHONPATH", "--tmpdir-prefix", str(scratch) + os.sep, "--outdir", str(output)]
+            native_order = parameters["consensus_order"] == "consensus-first"
+            cwl_output = output
+            cwl_temporary = scratch
+            cwl_final_temporary = None
+            if native_order:
+                owned = Path(tempfile.mkdtemp(prefix="sjaracne-cwl-", dir=str(scratch)))
+                cwl_output = owned / "outputs"
+                cwl_temporary = owned / "tasks"
+                cwl_final_temporary = owned / "final-tmp"
+                cwl_temporary.mkdir()
+                cwl_final_temporary.mkdir()
+                record["engine_output_dir"] = str(cwl_output)
+                record["engine_work_dir"] = str(owned)
+            command = [tool, "--preserve-environment", "PYTHONPATH", "--tmpdir-prefix", str(cwl_temporary) + os.sep, "--outdir", str(cwl_output)]
+            if cwl_final_temporary is not None:
+                command += ["--tmp-outdir-prefix", str(cwl_final_temporary) + os.sep]
             if not args.serial:
                 command += ["--parallel"]
-            command += [str(PACKAGE / "cwl/sjaracne_workflow.cwl"), str(job_file)]
+            cwl_workflow = "consensus_before_dpi.cwl" if native_order else "dpi_before_consensus.cwl"
+            command += [str(PACKAGE / "cwl" / cwl_workflow), str(job_file)]
         write_json(job_file, job)
         record.update(state="running", argv=command, job_file=str(job_file))
         write_json(manifest_path, record)
@@ -724,10 +849,13 @@ def main(argv=None):
         finally:
             _EXECUTION_CONTEXT.reset(token)
         if engine == "sprocket":
-            outputs_json, published = publish_sprocket_outputs(engine_root, output, runtime, parameters)
+            outputs_json, published = publish_sprocket_outputs(engine_root, output, runtime, parameters, input_hashes)
             record.update(engine_outputs_json=str(outputs_json), published_outputs=published)
         else:
-            record["published_outputs"] = validate_cwl_outputs(output)
+            if parameters["consensus_order"] == "consensus-first":
+                record["published_outputs"] = publish_native_cwl_outputs(cwl_output, output, runtime, parameters, input_hashes)
+            else:
+                record["published_outputs"] = validate_cwl_outputs(output)
         record["state"] = "complete"
         write_json(manifest_path, record)
     except (ValueError, OSError, subprocess.SubprocessError) as error:

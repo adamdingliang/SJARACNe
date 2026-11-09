@@ -2,6 +2,11 @@
 
 cwlVersion: v1.0
 class: ExpressionTool
+label: Create resample adjacency filenames
+doc: |
+  Return the historical TF_run_*.adj output filenames in resample order.
+  The DPI-first workflow pairs this array with the seed array by dotproduct;
+  the filename prefix is retained for both TF and SIG network roles.
 
 requirements:
  - class: InlineJavascriptRequirement

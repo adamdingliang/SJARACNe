@@ -33,7 +33,8 @@ class TestDynamicDpiWrapper(unittest.TestCase):
             output, scratch = root / 'output', root / 'scratch'
             expression, hubs = write_multihub_dpi_inputs(root)
             args = ['sjaracne', 'local', '--engine', 'cwl', '--network-type', 'TF',
-                    '-e', str(expression), '-g', str(hubs), '-o', str(output), '-tmp', str(scratch)]
+                    '-e', str(expression), '-g', str(hubs), '-o', str(output), '-tmp', str(scratch),
+                    '--consensus-order', 'dpi-first']
             args += list(extra)
             with mock.patch.object(module, 'run_shell_command_call') as launch, \
                     mock.patch.object(module, 'runtime_fingerprint', return_value={}), \
@@ -105,7 +106,7 @@ class TestDynamicDpiWrapper(unittest.TestCase):
             self.assertFalse(scratch.exists())
 
     def test_cwl_mode_and_parameters_are_forwarded_to_every_resample(self):
-        workflow = (ROOT / 'SJARACNe/cwl/sjaracne_workflow.cwl').read_text(encoding='utf-8')
+        workflow = (ROOT / 'SJARACNe/cwl/dpi_before_consensus.cwl').read_text(encoding='utf-8')
         command = (ROOT / 'SJARACNe/cwl/sjaracne.cwl').read_text(encoding='utf-8')
         for name in ('dynamic_dpi', 'dpi_href', 'dpi_slope', 'dpi_max', 'tolerance'):
             self.assertIn(name + ': ' + name, workflow)
@@ -186,6 +187,7 @@ class TestDynamicDpiRealCwl(unittest.TestCase):
             result = subprocess.run([
                 sys.executable, '-m', 'SJARACNe.sjaracne', 'local',
                 '--engine', 'cwl', '--network-type', 'TF',
+                '--consensus-order', 'dpi-first',
                 '-e', str(expression), '-g', str(hubs), '-n', '2', '--min-recurrence', '1',
                 '-pb', '1', '--dynamic-dpi', '--dpi-href', '2',
                 '--dpi-slope', '0.1', '--dpi-max', '0.3',

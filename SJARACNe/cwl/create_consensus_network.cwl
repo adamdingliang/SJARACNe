@@ -2,6 +2,12 @@
 
 cwlVersion: v1.0
 class: CommandLineTool
+label: Build and annotate consensus from resample networks
+doc: |
+  Merge already DPI-pruned resample graphs using the inclusive recurrence
+  cutoff K, or the deprecated consensus probability when explicitly selected.
+  Use the full expression matrix to annotate the final network. This Python
+  compatibility tool does not apply another DPI pass after consensus.
 
 baseCommand: [python3, -m, SJARACNe.bin.create_consensus_network]
 

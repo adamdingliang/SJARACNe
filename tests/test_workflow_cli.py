@@ -39,8 +39,25 @@ class TestWorkflowCli(unittest.TestCase):
     def fake_engine(self, command):
         if "--output-dir" not in command:
             output = Path(command[command.index("--outdir") + 1])
+            output.mkdir(parents=True, exist_ok=True)
             for key, filename in CLI.FINAL_OUTPUTS.items():
                 (output / filename).write_text("scientific output: " + key + "\n", encoding="utf-8")
+            manifest = json.loads((self.output / "sjaracne_run.json").read_text())
+            if manifest['scientific_options']['consensus_order'] == 'consensus-first':
+                for name in ('consensus.native.stdout.txt', 'consensus.native.stderr.txt'):
+                    (output / name).write_text('', encoding='utf-8')
+                prepared = output / 'parameters.json'
+                prepared.write_text(json.dumps({'schema': CLI.PARAMETER_SCHEMA,
+                    'runtime': manifest['runtime'], 'parameters': manifest['scientific_options'],
+                    'input_sha256': manifest['original_input_sha256'],
+                    'original_input_sha256': manifest['original_input_sha256']}), encoding='utf-8')
+                (output / 'consensus_provenance.json').write_text(json.dumps({
+                    'schema': 'sjaracne-consensus-v1', 'returncode': 0,
+                    'runtime': manifest['runtime'], 'parameters': manifest['scientific_options'],
+                    'prepared_settings_sha256': CLI.sha256(prepared),
+                    'input_sha256': manifest['original_input_sha256'],
+                    'output_sha256': {name: CLI.sha256(output / name) for name in CLI.FINAL_OUTPUTS.values()}
+                }), encoding='utf-8')
             return 0
         engine_root = Path(command[command.index("--output-dir") + 1])
         run = engine_root / "runs/SJARACNe/2026-test-run"
@@ -52,8 +69,18 @@ class TestWorkflowCli(unittest.TestCase):
             path.write_text("scientific output: " + key + "\n", encoding="utf-8")
             values["SJARACNe." + key] = str(path)
         prepared = run / "parameters.json"
-        prepared.write_text(json.dumps({"runtime": manifest["runtime"], "parameters": manifest["scientific_options"]}), encoding="utf-8")
+        prepared.write_text(json.dumps({"schema": CLI.PARAMETER_SCHEMA,
+            "runtime": manifest["runtime"], "parameters": manifest["scientific_options"],
+            "input_sha256": manifest["original_input_sha256"],
+            "original_input_sha256": manifest["original_input_sha256"]}), encoding="utf-8")
         values["SJARACNe.parameters"] = str(prepared)
+        evidence = run / 'consensus_provenance.json'
+        evidence.write_text(json.dumps({'schema': 'sjaracne-consensus-v1', 'returncode': 0,
+            'runtime': manifest['runtime'], 'parameters': manifest['scientific_options'],
+            'prepared_settings_sha256': CLI.sha256(prepared),
+            'input_sha256': manifest['original_input_sha256'],
+            'output_sha256': {name: CLI.sha256(run / name) for name in CLI.FINAL_OUTPUTS.values()}}), encoding='utf-8')
+        values['SJARACNe.consensus_provenance'] = str(evidence)
         (run / "outputs.json").write_text(json.dumps(values), encoding="utf-8")
         return 0
 
@@ -116,10 +143,11 @@ class TestWorkflowCli(unittest.TestCase):
         _, launch = self.invoke(self.base + ["--engine", "cwl"])
         self.assertEqual(launch.call_args.args[0][0], "cwltool")
         job = self.read_job()
-        self.assertEqual(job["apmi_null_model"], "pchip")
-        self.assertTrue(job["dynamic_dpi"])
-        self.assertEqual(job["p_value_bootstrap"], 0.001)
-        self.assertIsNone(job["sample_number"])
+        self.assertEqual(job["scientific_options"]["apmi_null_model"], "pchip")
+        self.assertTrue(job["scientific_options"]["dynamic_dpi"])
+        self.assertEqual(job["scientific_options"]["p_value_bootstrap"], 0.001)
+        self.assertEqual(job["scientific_options"]["consensus_order"], "consensus-first")
+        self.assertIn("consensus_before_dpi.cwl", launch.call_args.args[0][-2])
 
     def test_legacy_profile_defaults_restore_replacement_affine_strict_and_pc(self):
         arguments = self.base.copy()
@@ -135,10 +163,27 @@ class TestWorkflowCli(unittest.TestCase):
         self.assertEqual(job["p_value_consensus"], 1e-5)
         self.assertNotIn("min_recurrence", job)
 
+    def test_native_cwl_reuses_scratch_parent_with_fresh_owned_children(self):
+        scratch = self.root / "shared scratch"
+        scratch.mkdir()
+        sibling = scratch / "keep.txt"
+        sibling.write_text("user data", encoding="utf-8")
+        self.invoke(self.base + ["--engine", "cwl", "-tmp", str(scratch)])
+        first = json.loads((self.output / "sjaracne_run.json").read_text())
+        self.output = self.root / "second output"
+        self.base[-1] = str(self.output)
+        self.invoke(self.base + ["--engine", "cwl", "-tmp", str(scratch)])
+        second = json.loads((self.output / "sjaracne_run.json").read_text())
+        self.assertNotEqual(first["engine_work_dir"], second["engine_work_dir"])
+        for record in (first, second):
+            self.assertEqual(Path(record["engine_work_dir"]).parent, scratch)
+            self.assertEqual(Path(record["engine_output_dir"]).parent, Path(record["engine_work_dir"]))
+        self.assertEqual(sibling.read_text(), "user data")
+
     def test_fixed_tolerance_is_explicit_default_override(self):
         self.invoke(self.base + ["--engine", "cwl", "--tolerance", "0.2"])
-        self.assertFalse(self.read_job()["dynamic_dpi"])
-        self.assertEqual(self.read_job()["tolerance"], 0.2)
+        self.assertFalse(self.read_job()["scientific_options"]["dynamic_dpi"])
+        self.assertEqual(self.read_job()["scientific_options"]["tolerance"], 0.2)
 
     def test_missing_engine_fails_before_output_without_fallback(self):
         def missing(value):
@@ -255,6 +300,30 @@ class TestWorkflowCli(unittest.TestCase):
                 with self.assertRaises(SystemExit):
                     self.invoke(arguments, callback=mutate)
                 self.assertFalse((output / "consensus_network_ncol_.txt").exists())
+
+    def test_sprocket_rejects_crossdataset_prepared_or_receipt_before_publication(self):
+        for field in ("prepared_settings_sha256", "input_sha256", "original_input_sha256"):
+            with self.subTest(field=field):
+                self.output = self.root / ("foreign_" + field)
+                arguments = self.base.copy()
+                arguments[arguments.index("-o") + 1] = str(self.output)
+                def mutate(command):
+                    self.fake_engine(command)
+                    folder = Path(command[command.index("--output-dir") + 1]) / "runs/SJARACNe/2026-test-run"
+                    path = folder / "consensus_provenance.json"
+                    receipt = json.loads(path.read_text())
+                    if field == "original_input_sha256":
+                        prepared = folder / "parameters.json"
+                        value = json.loads(prepared.read_text())
+                        value[field] = {"foreign": "dataset"}
+                        prepared.write_text(json.dumps(value))
+                        receipt["prepared_settings_sha256"] = CLI.sha256(prepared)
+                    else:
+                        receipt[field] = {"foreign": "dataset"} if field == "input_sha256" else "foreign-settings"
+                    path.write_text(json.dumps(receipt))
+                with self.assertRaises(SystemExit):
+                    self.invoke(arguments, callback=mutate)
+                self.assertFalse((self.output / "consensus_network_ncol_.txt").exists())
 
     def test_scratch_parent_contents_survive_and_execution_uses_new_child(self):
         scratch = self.root / "scratch"

@@ -317,13 +317,16 @@ def create_consensus_network(
     return out_network_path
 
 
-def create_enhanced_consensus_network(exp_mat, network, out_dir, subnet=None):
+def create_enhanced_consensus_network(exp_mat, network, out_dir, subnet=None, *, preserve_mi=False):
     """ Add more information to a consensus network to create an enhanced network.
     Args:
         exp_mat (str): path to an expression matrix file
         network (str): path to a consensus network file
         out_dir (str): path to an output directory
         subnet (str, optional): path to a gene symbol file
+        preserve_mi (bool): Preserve each finite nonnegative input MI token
+            exactly, excluding its line ending. Defaults to historical four-
+            decimal formatting; native consensus-before-DPI opts in.
     Return:
         None
     """
@@ -358,7 +361,10 @@ def create_enhanced_consensus_network(exp_mat, network, out_dir, subnet=None):
                 tokens = line.split('\t')
                 node1 = tokens[0]
                 node2 = tokens[1]
-                mi = float(tokens[2])
+                mi_token = tokens[2].rstrip("\r\n")
+                mi = float(mi_token)
+                if preserve_mi and (not math.isfinite(mi) or mi < 0):
+                    raise ValueError("Preserved MI must be finite and nonnegative")
 
                 if node1 in exp_dict:
                     temp = exp_dict[node1]
@@ -385,7 +391,8 @@ def create_enhanced_consensus_network(exp_mat, network, out_dir, subnet=None):
                 pcc, pp = stats.pearsonr(exp_values1, exp_values2)
 
                 row = (node1, node2, gene_symbol1, gene_symbol2,
-                       "{0:.4f}".format(mi), "{0:.4f}".format(pcc), "{0:.4f}".format(scc),
+                       mi_token if preserve_mi else "{0:.4f}".format(mi),
+                       "{0:.4f}".format(pcc), "{0:.4f}".format(scc),
                        "{0:.4f}".format(slope), "{0:.4f}".format(p))
                 fout.write('\t'.join(row) + '\n')
 

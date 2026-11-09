@@ -112,7 +112,7 @@ class TestWdlParameters(unittest.TestCase):
             validate_current({"bootstrap_num": 19}, 100)
         values = validate_current({"bootstrap_num": 2, "min_recurrence": 1}, 100)
         self.assertEqual(values["min_recurrence"], 1)
-        values = validate_current({"bootstrap_num": 2, "p_value_consensus": 1e-5}, 100)
+        values = validate_current({"bootstrap_num": 2, "p_value_consensus": 1e-5, "consensus_order": "dpi-first"}, 100)
         self.assertIsNone(values["min_recurrence"])
         self.assertEqual(values["p_value_consensus"], 1e-5)
         for options in ({"bootstrap_num": 2},
@@ -193,7 +193,8 @@ class TestWdlNativeCommand(unittest.TestCase):
             self.assertEqual(command[command.index(flag) + 1], expected)
         self.assertNotIn("-r", command)
         self.assertEqual(command[command.index('-M') + 1], 'pchip')
-        self.assertIn('--dynamic-dpi', command)
+        self.assertIn('--raw-mi', command)
+        self.assertNotIn('--dynamic-dpi', command)
         self.assertNotIn('-e', command)
         self.assertEqual(Path(command[0]), WDL.PACKAGE / "bin/sjaracne.exe")
 
@@ -218,14 +219,14 @@ class TestWdlNativeCommand(unittest.TestCase):
 
     def test_fixed_zero_fixed_one_and_dynamic_flags(self):
         for tolerance in (0, 1):
-            command = self.command({"tolerance": tolerance})
+            command = self.command({"tolerance": tolerance, "consensus_order": "dpi-first"})
             self.assertEqual(float(command[command.index("-e") + 1]), tolerance)
             self.assertNotIn("--dynamic-dpi", command)
-        command = self.command({"dynamic_dpi": True})
+        command = self.command({"dynamic_dpi": True, "consensus_order": "dpi-first"})
         self.assertIn("--dynamic-dpi", command)
         for flag in ("-e", "--dpi-href", "--dpi-slope", "--dpi-max"):
             self.assertNotIn(flag, command)
-        command = self.command({"dynamic_dpi": True, "dpi_href": 2,
+        command = self.command({"dynamic_dpi": True, "consensus_order": "dpi-first", "dpi_href": 2,
             "dpi_slope": 0.1, "dpi_max": 0, "apmi_null_model": "pchip",
             "p_value_bootstrap": 0.001, "subsample_spec": "80"})
         for flag, expected in (("--dpi-href", "2"), ("--dpi-slope", "0.1"),
@@ -418,7 +419,7 @@ class TestWdlTaskBoundaries(unittest.TestCase):
             self.assertFalse(Path("TF_run_001.adj").exists())
 
     def consensus_fixture(self, root, legacy=False):
-        options = {"bootstrap_num": 2, **({"p_value_consensus": 0.01} if legacy else {"min_recurrence": 1})}
+        options = {"bootstrap_num": 2, "consensus_order": "dpi-first", **({"p_value_consensus": 0.01} if legacy else {"min_recurrence": 1})}
         _, fingerprint = self.prepare(root, options)
         settings = WDL.read_json("parameters.json")
         source = root / "source_networks"
@@ -484,6 +485,9 @@ class TestWdlTaskBoundaries(unittest.TestCase):
         with work_directory() as root:
             request, fingerprint = self.consensus_fixture(root, legacy=True)
             module = importlib.import_module("SJARACNe.bin.create_consensus_network")
+            Path("results").mkdir()
+            for filename in ("consensus_network_3col_.txt", "consensus_network_ncol_.txt", "bootstrap_info_.txt", "parameter_info_.txt"):
+                (Path("results") / filename).write_text("mock output", encoding="utf-8")
             with mock.patch.object(WDL, "runtime_fingerprint", return_value=fingerprint), \
                     mock.patch.object(module, "create_consensus_network",
                                return_value="results/consensus_network_3col_.txt") as consensus, \

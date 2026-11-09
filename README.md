@@ -7,17 +7,19 @@ from gene expression data. It builds transcription factor (TF) and signaling
 [![Status](https://img.shields.io/badge/status-active-success.svg)](https://github.com/adamdingliang/SJARACNe "Active development")
 [![Issues](https://img.shields.io/github/issues/adamdingliang/SJARACNe)](https://github.com/adamdingliang/SJARACNe/issues "Open issues")
 [![Pull requests](https://img.shields.io/github/issues-pr/adamdingliang/SJARACNe)](https://github.com/adamdingliang/SJARACNe/pulls "Open pull requests")
-[![CI](https://img.shields.io/github/actions/workflow/status/adamdingliang/SJARACNe/regression.yml?branch=develop&event=push&label=CI)](https://github.com/adamdingliang/SJARACNe/actions/workflows/regression.yml?query=branch%3Adevelop "Regression status for develop")
-[![Python coverage](https://img.shields.io/codecov/c/github/adamdingliang/SJARACNe/develop?flag=python&label=Python)](https://codecov.io/gh/adamdingliang/SJARACNe "Python runtime coverage for develop")
-[![C++ core coverage](https://img.shields.io/codecov/c/github/adamdingliang/SJARACNe/develop?flag=cpp&label=C%2B%2B)](https://codecov.io/gh/adamdingliang/SJARACNe "C++ core coverage for develop")
+[![CI](https://img.shields.io/github/actions/workflow/status/adamdingliang/SJARACNe/regression.yml?branch=develop&event=push&label=develop%20CI)](https://github.com/adamdingliang/SJARACNe/actions/workflows/regression.yml?query=branch%3Adevelop "Regression status for develop")
+[![Python coverage](https://img.shields.io/codecov/c/github/adamdingliang/SJARACNe/develop?flag=python&label=develop%20Python)](https://codecov.io/gh/adamdingliang/SJARACNe "Python runtime coverage for develop")
+[![C++ core coverage](https://img.shields.io/codecov/c/github/adamdingliang/SJARACNe/develop?flag=cpp&label=develop%20C%2B%2B)](https://codecov.io/gh/adamdingliang/SJARACNe "C++ core coverage for develop")
 
 [Installation](#installation) · [Quick start](#quick-start) ·
 [Inputs](#inputs) · [Configuration](#configuration) ·
 [Documentation](#documentation) · [Citation](#citation)
 
-> This README describes `develop`, not the published PyPI
-> release. Its default workflow uses WDL 1.3 and Sprocket. PCHIP MI cutoffs and
-> dynamic DPI tolerance are experimental, even though they are defaults here.
+> This README describes the `develop` branch of SJARACNe.
+> Clone `develop` using the command below to get this implementation.
+> The default engine is WDL 1.3 / Sprocket. The current profile applies native
+> recurrence consensus before DPI, with a configurable tolerance offset of
+> 0.025. PCHIP cutoffs and dynamic DPI remain experimental.
 
 ## Features
 
@@ -36,13 +38,15 @@ from gene expression data. It builds transcription factor (TF) and signaling
 - Linux, or Linux through WSL on Windows. These are the validated workflow
   environments. On Windows, open **Ubuntu in WSL**, not Git Bash or an
   MSYS2/UCRT64 shell; native Windows execution is not covered here.
-- Python **3.14 recommended**; Python 3.11 remains a tested compatibility
-  option. uv can download the selected interpreter if it is missing.
+- Python **3.11** for the current workflow's local validation and the commands
+  below. The project's `.python-version` still selects 3.14; the earlier
+  [compatibility report](docs/python_compatibility.md) covers historical 3.11/3.14
+  checks. uv can download the explicitly selected interpreter if it is missing.
 - Git, Bash, Make and a C++ compiler for installation from source. On Ubuntu,
   the one-time setup below installs the build tools together.
 - **uv 0.11.16** for the locked installation below; see the
   [environment guide](docs/uv.md) for installation and the ordinary pip alternative.
-- **Sprocket 0.32.0**, installed separately using the
+- **Sprocket 0.32.0** for the default WDL engine, installed separately using the
   [official installation guide](https://sprocket.bio/getting-started/installation)
   and available on `PATH`. The CLI currently requires this exact version.
 
@@ -66,13 +70,14 @@ manager. Install Sprocket separately as described above.
 ### Install from source
 
 Run the following in a Linux or WSL terminal. The committed `uv.lock` selects
-the validated dependency versions; `.python-version` selects Python 3.14:
+the dependency versions. Select Python 3.11 explicitly to reproduce the
+recorded local workflow validation, overriding `.python-version`:
 
 ```bash
 git clone --branch develop https://github.com/adamdingliang/SJARACNe.git
 cd SJARACNe
 
-uv sync --locked
+uv sync --locked --python 3.11
 source .venv/bin/activate
 
 sprocket --version
@@ -85,12 +90,13 @@ installation. Missing build tools produce an installation error with setup
 instructions; the installer does not run `sudo` or install system packages for
 you. See the [native installation validation](docs/native_build_installation.md).
 
-For Python 3.11, use `uv sync --locked --python 3.11` instead. Use separate
-environments when working with both versions; do not replace an environment
-while jobs use it. Python 3.11 and 3.14 are tested; the lock's 3.11–3.14 range
-does not establish validation of every intermediate version or platform.
-See the [environment guide](docs/uv.md) and
-[Python compatibility report](docs/python_compatibility.md).
+The native consensus-first workflow has local Python 3.11 validation. The
+[Python compatibility report](docs/python_compatibility.md) records earlier
+3.11/3.14 checks and does not establish a new 3.14 result for this implementation.
+For a separate Python 3.14 environment, select `--python 3.14` explicitly;
+use separate environments and do not replace one while jobs use it. The lock's
+version range is not validation of every interpreter or platform. See the
+[environment guide](docs/uv.md).
 
 uv installs NumPy, pandas and SciPy, but **does not install Sprocket**. A missing
 or incompatible engine is an error; there is no automatic download or silent
@@ -185,8 +191,11 @@ regulator annotations (`-l`). Bundled [TF](SJARACNe/config/TF_list.txt) and
 [SIG](SJARACNe/config/SIG_list.txt) lists are reference annotations to match to
 your matrix, not automatically selected or guaranteed-current annotations.
 
-The workflow reports missing hubs and refuses to launch if none match. It
-normalizes line endings on staged copies without modifying the original inputs.
+The workflow reports missing hubs and refuses to launch if none match. The
+current dynamic DPI mode requires at least two matched source IDs, including
+sources whose final regulons are empty. Use fixed DPI (`--fixed-dpi`) for a
+single-source workflow. Input preparation normalizes line endings on staged
+copies without modifying the original files.
 
 ## Configuration
 
@@ -198,8 +207,9 @@ normalizes line endings on staged copies without modifying the original inputs.
 | Resampling | 80% of observations without replacement; 100 networks, seeds 1–100 |
 | Per-resample probability `pb` | TF: `0.001`; SIG: `0.0005` |
 | Mutual information (MI) cutoff | Experimental empirical PCHIP conversion; Npar=40 |
-| Data processing inequality (DPI) pruning | Experimental dynamic tolerance; Href=479, slope=0.05, cap=0.30 |
-| Consensus | Retain edges present in at least 20 distinct resampled networks (K=20 of 100) |
+| Operation order | Raw MI resamples → native C++ K20 consensus → supporting-run mean MI → DPI |
+| Data processing inequality (DPI) pruning | Dynamic tolerance after consensus; Href=479, slope=0.05, offset=0.025, cap=0.30 |
+| Consensus | Retain directed edges present in at least 20 distinct resampled networks; average MI over supporting runs only |
 | Local scheduling | Four task slots; 16 GiB memory budget |
 
 These are **workflow defaults**, not the defaults of every bare native
@@ -214,6 +224,26 @@ K may be appropriate, but neither a single-cell default nor a dynamic K rule
 has been validated yet. Override with `-k COUNT` as needed; `-k 6` restores the
 previous recurrence cutoff, not the full legacy workflow. See the
 [benchmark summary](https://github.com/adamdingliang/sjaracne_benchmark/pull/4).
+
+The current process is **100 × 80% resamples → K20 candidates → supporting-run
+mean MI → DPI**. The final native call streams the resample graphs and passes
+its retained graph directly to the existing DPI code. Python adds symbols and
+correlation/regression statistics to the final pruned edge list.
+
+```text
+epsilon(H) = min(0.30, dpi_offset + 0.05 * max(0, log2(H / 479)))
+```
+
+`H` counts the requested matched source rows, including zero-target hubs. The
+workflow default is `--dpi-offset 0.025`. Set it to zero to test the original
+dynamic schedule while keeping consensus first. The offset is additive and the
+cap applies after addition. Fixed DPI does not use an offset.
+
+The previous current order remains available as `--consensus-order dpi-first`;
+its omitted offset resolves to zero. The legacy profile retains its historical
+sampling, strict DPI and probability consensus. See the
+[native design and interface](docs/native_consensus_before_dpi.md) and
+[benchmark results](https://github.com/adamdingliang/sjaracne_benchmark/blob/b195f8331496c645121fc614c930ce1f58049300/benchmarks/consensus_before_dpi/README.md).
 
 ### Common overrides
 
@@ -231,9 +261,24 @@ sjaracne local --network-type TF -pb 0.002 --fixed-dpi \
 | `-k COUNT` or `--min-recurrence COUNT` | Retain edges present in at least `COUNT` distinct resampled networks. Current-profile default: **K=20**; requires `1 <= K <= n`. If `n < 20`, supply a smaller K explicitly. |
 | `--subsample-fraction 0.8` or `--subsample-size 80` | Select a fraction or exact number of observations without replacement; use only one. |
 | `--fixed-dpi` or `--tolerance 0.1` | Use strict DPI (epsilon=0), or fixed positive epsilon. Larger epsilon relaxes pruning. |
-| `--dpi-href`, `--dpi-slope`, `--dpi-max` | Adjust the dynamic tolerance schedule; incompatible with fixed DPI. |
+| `--dpi-offset VALUE` | Add a finite offset in `[0,1)` before the dynamic cap; default 0.025 for consensus-first, zero for DPI-first. Requires dynamic DPI. |
+| `--dpi-href`, `--dpi-slope`, `--dpi-max` | Adjust the dynamic tolerance schedule; incompatible with fixed DPI. Href remains 479 by default. |
+| `--consensus-order consensus-first` or `dpi-first` | Select operation order. Current defaults to consensus-first; legacy requires DPI-first. |
 | `--jobs 8`, `--memory "32 GiB"` | Change the local Sprocket task and memory budgets; `--serial` uses one task slot. |
 | `-tmp PATH` | Choose a scratch parent; only a fresh child is used, without deleting existing contents. |
+
+For an explicit offset experiment:
+
+```bash
+sjaracne local --network-type TF --dpi-offset 0.025 \
+  -e /absolute/path/input.exp -g /absolute/path/hubs.txt \
+  -o results/tf_consensus_first
+
+# Reproduce the previous current order and its original tolerance schedule:
+sjaracne local --network-type TF --consensus-order dpi-first \
+  -e /absolute/path/input.exp -g /absolute/path/hubs.txt \
+  -o results/tf_dpi_first
+```
 
 Run `sjaracne local --help` for the full interface. The
 [WDL guide](SJARACNe/wdl/README.md) explains the dynamic formula, standalone WDL
@@ -260,14 +305,32 @@ To use CWL, install Node.js separately and add the optional `cwltool` dependency
 to the prepared environment:
 
 ```bash
-uv sync --locked --extra cwl
+uv sync --locked --python 3.11 --extra cwl
 ```
 
 Select `--engine cwl` and omit the Sprocket-only `--jobs` and memory options
 from the examples above. Use `--serial` if you want CWL tasks to run one at a
-time. Engine choice and scientific profile are independent: choosing CWL alone
+time. For example:
+
+```bash
+sjaracne local --engine cwl --network-type TF \
+  -e tests/inputs/BRCA100.exp -g tests/inputs/BRCA100_TF.txt \
+  -o results/brca100_tf_cwl_check -n 2 -k 1
+```
+
+Engine choice and scientific profile are independent: choosing CWL alone
 does not restore legacy settings. CWLEXEC and the old `lsf` command have been
 removed.
+
+Workflow and step names describe the scientific operations. The default CWL
+entry point is [consensus_before_dpi.cwl](SJARACNe/cwl/consensus_before_dpi.cwl);
+explicit DPI-first runs use
+[dpi_before_consensus.cwl](SJARACNe/cwl/dpi_before_consensus.cwl).
+Both engines name the per-seed stage `resample_and_estimate_mi`. In the default
+order it estimates and significance-filters raw MI without DPI; the final stage
+selects recurrent edges, averages supporting-run MI and applies DPI.
+The [CWL workflow index](SJARACNe/cwl/README.md) explains the steps and the
+replacement paths for removed import-only aliases.
 
 See [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) for the profile
 comparison, historical overrides and native API behavior.
@@ -302,8 +365,8 @@ inputs fail rather than silently falling back. Probabilities below `0.0005`
 warn that they are outside the main assessment range; extreme-tail assessment
 has limited Monte Carlo precision.
 
-Dynamic DPI relaxes pruning as the reconstructed hub count increases above its
-reference. It addresses hub-context sensitivity as an engineering choice;
+Dynamic DPI applies the configured baseline offset and further relaxes pruning
+as the reconstructed hub count increases above its reference. It addresses hub-context sensitivity as an engineering choice;
 DREAM5 tests did not establish a dynamic-specific accuracy advantage. See the
 linked benchmark reports for the evidence and its limitations.
 
@@ -317,13 +380,17 @@ linked benchmark reports for the evidence and its limitations.
 | [Execution coverage](tests/README.md#execution-coverage) | Separate Python/C++ coverage, Codecov setup and measurement limits. |
 | [Environment and deployment guide](docs/uv.md) | uv lockfile, pip alternative, native builds and offline/HPC/cloud precautions. |
 | [Native installation validation](docs/native_build_installation.md) | Automatic C++ builds during source installation and missing-tool diagnostics. |
-| [Current validation report](docs/default_profiles_validation.md) | Default-profile and engine-parity checks, with validation limits. |
+| [Native consensus validation](docs/native_consensus_validation.md) | Native correctness, build and default-workflow regression checks. |
+| [Historical profile validation](docs/default_profiles_validation.md) | Earlier default-profile and engine-parity snapshots. |
 | [Python compatibility report](docs/python_compatibility.md) | Python 3.11/3.14 dependencies, clean source installations and scientific-output comparisons. |
 | [Benchmark index](https://github.com/adamdingliang/sjaracne_benchmark) | DREAM5, THP-1, BRCA100, LUAD and calibration analyses. |
 | [Null calibration process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m) / [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md) | PCHIP calibration design and measured accuracy. |
 | [DPI benchmark summaries](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/docs/benchmark_summaries/README.md) | Fixed and dynamic tolerance comparisons. |
 
-The benchmark repository is private and requires access; it is **not a runtime
+Dataset benchmark reports, result tables, provenance and dataset replay drivers
+belong in [sjaracne_benchmark](https://github.com/adamdingliang/sjaracne_benchmark).
+Keep the algorithm implementation, usage documentation and small correctness
+fixtures in this software repository. The benchmark repository is **not a runtime
 dependency** of SJARACNe. Related software: [scMINER](https://jyyulab.github.io/scMINER/).
 
 ## Development and testing
@@ -332,22 +399,28 @@ Install the optional CWL dependencies, Node.js and Bats in addition to the
 normal prerequisites, then run the small regression suite:
 
 ```bash
-uv sync --locked --group regression --extra cwl
-uv run --locked --no-sync python tests/run_regression.py --jobs 4
+uv sync --locked --python 3.11 --group regression --extra cwl
+uv run --locked --no-sync --python 3.11 python tests/run_regression.py --jobs 4
 ```
 
-Add `--python 3.11` to the sync command for the compatibility lane. The
-`regression` group adds the pinned build/test tools; the `cwl` extra adds CWL
+Use the same explicit Python selection for both `uv sync` and `uv run`; this
+keeps the checkout's 3.14 preference from selecting a different environment.
+The `regression` group adds the pinned build/test tools; the `cwl` extra adds CWL
 support. Sprocket, Node.js, Bats and the compiler remain system prerequisites.
 
-It tests native correctness, real CLI execution and WDL/CWL scientific parity,
+The [current workflow validation](docs/native_consensus_validation.md#workflow-validation-refresh)
+records the tested runtime revision, local Python/tool versions and results.
+The checks include real consensus-first and DPI-first workflows, TF/SIG roles,
+legacy settings, and WDL/CWL output comparisons.
+
+The suite tests native correctness, real CLI execution and WDL/CWL parity,
 without launching full dataset benchmark batches. GitHub Actions runs the
 suite on Python 3.11 and 3.14 for PRs into and pushes to `develop` and `master`
 when the workflow is present on the branch. The CI badge reports **develop's**
 push status; the separate Python and C++ badges report its uploaded execution
-coverage. They do not measure biological accuracy. Coverage may show as unknown
-until Codecov is enabled and a successful upload reaches `develop`; see the
-[coverage guide](tests/README.md#execution-coverage).
+coverage. These badges do not measure biological accuracy. See the
+[coverage guide](tests/README.md#execution-coverage) for the execution-coverage
+scope and reporting setup.
 
 ## Support and contributions
 

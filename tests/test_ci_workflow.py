@@ -251,7 +251,7 @@ class TestCIWorkflow(unittest.TestCase):
                    (urlparse(image).path, parse_qs(urlparse(image).query))
                    for _, image in badges}
         self.assertEqual(set(queries), {'python', 'cpp'})
-        for flag, label in (('python', 'Python'), ('cpp', 'C++')):
+        for flag, label in (('python', 'develop Python'), ('cpp', 'develop C++')):
             path, query = queries[flag]
             self.assertEqual(path, '/codecov/c/github/adamdingliang/SJARACNe/develop')
             self.assertEqual(query['label'], [label])

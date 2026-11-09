@@ -16,7 +16,8 @@ change.
 | MI conversion | Experimental PCHIP | Historical affine conversion, no native `-M` |
 | Per-resample `pb` | TF `0.001`; SIG `0.0005` | `1e-7` |
 | AP-MI Npar limit | 40 | 40 |
-| DPI | Experimental dynamic epsilon; Href=479, slope=0.05, cap=0.30 | Fixed strict tolerance, native `-e 0` |
+| Operation order | Raw MI → native K20/supporting-run mean MI → DPI | Per-run DPI → probability consensus |
+| DPI | Dynamic epsilon after consensus; Href=479, slope=0.05, offset=0.025, cap=0.30 | Fixed strict tolerance, native `-e 0` |
 | Consensus | Distinct-network recurrence K=20 | Explicit legacy normal-approximation `pc=1e-5` |
 | Reconstruction/annotation | Same full hub list supplied to native `-s` and `-l` | Same |
 
@@ -66,7 +67,8 @@ consensus conflict with the definition of that profile and are rejected rather
 than silently ignored. Use the current profile for mixed modern configurations.
 
 The current profile also supports explicit `-M affine`, `--fixed-dpi`,
-`--tolerance`, `-pb` and `-pc` settings. Selecting **one** old option does not
+`--tolerance` and `-pb` settings. Explicit `-pc` probability consensus requires
+`--consensus-order dpi-first`; consensus-first uses recurrence K. Selecting **one** old option does not
 restore every historical setting. For example, `-M affine` still leaves the
 current TF/SIG probability, without-replacement sampling, dynamic DPI and K=20 in
 place unless you explicitly change them.
@@ -154,3 +156,35 @@ choices. Default status does not establish biological FDR control, direct-edge
 accuracy, universal calibration or an optimal TF/SIG probability for every
 dataset. See the [workflow guide](../SJARACNe/wdl/README.md) and
 [current validation report](default_profiles_validation.md).
+
+## Retaining the previous current workflow
+
+The current profile now defaults to consensus before DPI and a dynamic offset
+of 0.025. To retain the preceding develop order with its zero-offset schedule:
+
+```bash
+sjaracne local --network-type TF --consensus-order dpi-first \
+  -e input.exp -g hubs.txt -o previous_current
+```
+
+To use the new order with the unshifted dynamic schedule, set
+`--dpi-offset 0`. Neither of these requests selects the full legacy profile.
+The bare native executable retains its previous defaults; the new `--raw-mi`
+and `--consensus-inputs` modes are explicit. Native `--dpi-offset` defaults to
+zero and requires `--dynamic-dpi`. The workflow supplies its resolved offset.
+
+The public CLI selects `cwl/consensus_before_dpi.cwl` for consensus-first and
+`cwl/dpi_before_consensus.cwl` for DPI-first. Import-only aliases have been
+removed; saved direct CWL commands and custom workflow references must use the
+[descriptive entry points and tools](../SJARACNe/cwl/README.md#updating-older-cwl-paths).
+The public CLI already selects those documents. Explicit processing order,
+scientific profiles and public input/output keys remain supported.
+
+WDL retains `wdl/sjaracne.wdl`, the `SJARACNe` workflow identifier, and its public
+input/output keys. Its descriptive display name is "Reconstruct a regulatory
+network"; task names are now `prepare_inputs`, `resample_and_estimate_mi` and
+`build_consensus_network`. This changes task/log labels and can invalidate old
+call-cache identities, so resume already-started work with its original frozen
+workflow document. The public output files, scientific defaults and adapter
+subcommands (`prepare`, `infer`, `consensus`) are unchanged. Both engines still
+use the same validated adapter and scientific settings.

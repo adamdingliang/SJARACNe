@@ -19,11 +19,11 @@ class Microarray_Set;
 class AdaptivePartitionWorkspace;
 
 //------------------------------------------------------------------------------------
-// The Matrix class represents the adjacency matrix data structure that consists a
-// list of genes and their connections to other genes.  One can think of an adjacency
-// matrix as a two dimensional array: each entry in the array is called a node;
-// a node[i,j] will present if there is a connection between gene i and gene j, absent
-// otherwise. The matrix is symmetric.
+// Sparse adjacency rows store outgoing edges for each reconstructed source.
+// MI itself is symmetric, but a selected-source graph need not contain both
+// directions of an edge. Consensus therefore counts source -> target pairs
+// independently. Row presence is tracked separately from edge count so a source
+// with no retained targets still contributes to the dynamic-DPI source count H.
 //------------------------------------------------------------------------------------
 
 class AdjacencyEdge // represents an edge between two genes
@@ -59,22 +59,28 @@ class Matrix
 public:
    Matrix()
       : nmv(), adjacencyRowsPresent(), writeTriangular(false),
-        writeReduced(false), writeEmptyGenes(false) { }
+        writeReduced(false), writeEmptyGenes(false), writeCanonicalSourceRows(false) { }
 
    AdjacencyRows nmv;
+   // Reconstruction presence, not nonempty degree: empty source rows are valid.
    std::vector<bool> adjacencyRowsPresent;
 
    bool writeTriangular; // if true, only triangular half of matrix will be written
    bool writeReduced;    // if true, intermediate nodes will be written
-   bool writeEmptyGenes; // if true, empty lines will be written
+   bool writeEmptyGenes; // if true, empty active/control lines will be written
+   // Emit even empty source IDs; write(..., ids) supplies their output order.
+   // Enabled by the raw-MI and native-consensus serialization paths.
+   bool writeCanonicalSourceRows;
 
    void saveNode(int i, int j, double mi);
 
    void read(Microarray_Set& data, const Parameter& p);
    void read(std::istream& in, Microarray_Set& data, const Parameter& p);
+   // Mark a reconstructed source even when its adjacency row contains no edges.
    void markAdjacencyRow(int geneId);
    bool hasAdjacencyRow(int geneId) const;
    bool hasEnoughSourceRowsForDpi() const;
+   // Count marked sources for dynamic DPI, independently of pruning/degree.
    std::size_t sourceRowCount() const;
 
    void writeGeneLine(std::ostream& out, const Microarray_Set& data, int geneId);
@@ -83,6 +89,19 @@ public:
 
    void write(std::ostream& out, const Microarray_Set& data,
               const std::vector<int>& ids);
+   /** Write graph metadata and adjacency rows using the selected output mode.
+    *
+    * Raw-MI and native-consensus modes preserve round-trip double precision and
+    * empty source rows. They write to a sibling temporary file and publish it
+    * only after a successful close. Ordinary inference retains its historical
+    * formatting and direct-write path.
+    *
+    * @param data Expression metadata used to translate internal gene IDs.
+    * @param ids Source IDs in output order; an empty list traverses all rows.
+    * @param p Resolved mode, provenance and final output pathname.
+    * @param writeFull If false, return without writing a network file.
+    * @throws std::string If opening, completing or publishing output fails.
+    */
    void write(const Microarray_Set& data, const std::vector<int>& ids,
               const Parameter& p, bool writeFull=true);
 

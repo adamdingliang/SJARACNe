@@ -257,7 +257,8 @@ class TestApmiNullWorkflowWiring(unittest.TestCase):
             expression, original_hubs = write_multihub_dpi_inputs(root)
             hubs = root / hub_name
             hubs.write_bytes(original_hubs.read_bytes())
-            arguments = ["sjaracne", "local", "--engine", "cwl", "-e", str(expression),
+            arguments = ["sjaracne", "local", "--engine", "cwl",
+                         "--consensus-order", "dpi-first", "-e", str(expression),
                          "-g", str(hubs), "-o", str(root / "output"),
                          "-tmp", str(root / "tmp"), *extra]
             if network_type is not None:
@@ -272,7 +273,7 @@ class TestApmiNullWorkflowWiring(unittest.TestCase):
         return rendered
 
     def test_cwl_model_is_optional_literal_string_not_an_external_file(self):
-        workflow = (PROJECT_ROOT / "SJARACNe" / "cwl" / "sjaracne_workflow.cwl").read_text()
+        workflow = (PROJECT_ROOT / "SJARACNe" / "cwl" / "dpi_before_consensus.cwl").read_text()
         command = (PROJECT_ROOT / "SJARACNe" / "cwl" / "sjaracne.cwl").read_text()
         self.assertIn("apmi_null_model: apmi_null_model", workflow)
         self.assertNotIn("allow_rare_tail", workflow)

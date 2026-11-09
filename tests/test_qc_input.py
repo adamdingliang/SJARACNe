@@ -100,7 +100,7 @@ class TestQCInput(unittest.TestCase):
 
     def test_bootstrap_has_hard_dependency_on_validation_report(self):
         workflow = (
-            PROJECT_ROOT / "SJARACNe" / "cwl" / "sjaracne_workflow.cwl"
+            PROJECT_ROOT / "SJARACNe" / "cwl" / "dpi_before_consensus.cwl"
         ).read_text(encoding="utf-8")
         qc_tool = (PROJECT_ROOT / "SJARACNe" / "cwl" / "QC_input.cwl").read_text(
             encoding="utf-8"
@@ -111,7 +111,7 @@ class TestQCInput(unittest.TestCase):
 
         self.assertIn("out: [validation_report]", workflow)
         self.assertIn(
-            "preflight_report: validate_files/validation_report", workflow
+            "preflight_report: validate_inputs/validation_report", workflow
         )
         self.assertIn(
             "validation_report:\n    type: File\n    outputBinding:", qc_tool
