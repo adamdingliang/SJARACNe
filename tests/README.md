@@ -1,102 +1,81 @@
 # Small workflow regression tests
 
-The goal is functional correctness of the complete workflow after code changes,
-not biological accuracy or performance benchmarking. Routine tests do **not**
-launch BRCA100/DREAM resampling batches or require an LSF cluster.
+The suite checks functional correctness with small fixtures. It does not run
+BRCA100/DREAM benchmark batches or require a cluster.
 
 ## Complete check (Linux or WSL)
 
-Use Python **3.11 or 3.14**, uv **0.11.16**, a C++
-compiler/Make, Node.js, `cwltool`, Bats and Sprocket 0.32.0. Install this checkout
-in the active environment so Python-module CWL commands cannot silently import
-another revision:
+Use Python **3.11 or 3.14**, uv **0.11.16**, Make, a C++ compiler, Node.js,
+`cwltool`, Bats and **Sprocket 0.32.0**. Install this checkout in the active
+environment so CWL tasks import the revision being tested:
 
 ```bash
-# Use --python 3.11 for the compatibility lane.
+# For the compatibility lane, change both Python selectors to 3.11.
 uv sync --locked --python 3.14 --group regression --extra cwl
-uv run --locked --no-sync python tests/run_regression.py --jobs 4
+uv run --locked --python 3.14 --no-sync python tests/run_regression.py --jobs 4
 ```
 
-On Ubuntu, the system prerequisites can be installed with
-`sudo apt-get install build-essential nodejs bats`. The `regression` group
-includes the build/test tools; `--extra cwl` includes optional CWL support.
-`pyproject.toml` declares the version-specific validated baselines and `uv.lock`
-also fixes their transitive dependencies. The lock is not upgraded by these
-commands. Install the separately distributed
-Sprocket executable as described in the [WDL guide](../SJARACNe/wdl/README.md).
-The runner itself installs nothing and downloads neither data nor dependencies.
+Keep that `--python` selection on later `uv run` commands, or set
+`UV_PYTHON=3.11` for a compatibility-lane session.
 
-Prepare the environment before submitting cluster jobs, rather than running
-`uv sync` in each task. `UV_PROJECT_ENVIRONMENT` and `UV_CACHE_DIR` can place
-the environment and cache on suitable scratch storage. Do not modify a prepared
-environment while it is being used by other jobs. The uv-managed workflow does
-not itself validate LSF, Slurm or cloud execution.
+On Ubuntu, install system tools with
+`sudo apt-get install build-essential nodejs bats`. The regression group and
+CWL extra supply Python tools; install Sprocket separately using the
+[workflow guide](../SJARACNe/wdl/README.md#local-use).
+`--locked` preserves the committed dependency resolution. The runner installs
+nothing and downloads neither data nor dependencies.
 
-The command can be invoked from another working directory using its absolute
-path. It creates a fresh evidence directory under the system temporary
-directory and prints the location. To choose a **new** directory explicitly:
+Prepare a dedicated environment before submitting jobs. Do not synchronize it
+while other jobs use it. Environment placement and deployment limits are in
+[the environment guide](../docs/uv.md#hpc-and-cloud-precautions).
+
+The runner prints a fresh evidence directory under the system temp directory.
+To choose a new directory:
 
 ```bash
 uv run --locked --no-sync python tests/run_regression.py --jobs 4 --output-dir /tmp/sjaracne-regression-check
 ```
 
-It performs the following checks:
-
-1. Fail early for missing dependencies or an installed Python/CWL/configuration
-   runtime whose bytes differ from this checkout. CWL jobs normally do not
-   inherit the parent's `PYTHONPATH`; setting it alone is insufficient.
-2. Force-rebuild both `sjaracne.exe` and `apmi_null_generator.exe`. The force
-   rebuild is an independent freshness safeguard, even though ordinary Make
-   builds now track native headers and Makefile changes.
-3. Run every `test_*.py` test with the freshly built native executables and
-   required-native mode. Empty/duplicate discovery, failures, errors, skips and
-   expected failures do not count as a complete successful regression.
-4. Validate all production CWL documents and run the isolated Bats CWL utility
-   tests, requiring a nonempty, all-passing plan with no skips.
-5. Record commands, versions, source/fixture hashes, native binary hashes,
-   counts and logs. Reject source/fixture changes during the check.
-6. Run real current TF/SIG defaults and the legacy profile through the CLI,
-   plus the paired WDL/CWL engine matrix. Missing Sprocket is a failure, not a
-   skipped test or a reason to switch engines silently.
+It checks dependencies and installed-runtime bytes, force-rebuilds both native
+programs, runs all `test_*.py` tests, validates production CWL, runs Bats utilities
+and executes real default workflows plus WDL/CWL parity. Missing dependencies,
+empty discovery, failures, skips, expected failures or changed source/fixtures
+prevent a successful result. Logs, versions and source/native hashes are retained.
 
 ## Coverage and fixtures
 
 | Coverage | What is checked |
 | --- | --- |
-| Scientific core compatibility | Generated six-gene/100-observation expression, three hubs, six resamples: input QC, 80% sampling, PCHIP, real DPI removals, explicit K=6 and enhanced consensus. Strict-DPI baseline settings and K6 are explicit in the historical CWL/CLI cases; answerkeys are not regenerated to match new defaults. |
-| Current default workflow | Actual Sprocket execution of the CLI for TF and SIG using twenty tiny resamples and no explicit MI/DPI/K settings; verifies role-specific pb, PCHIP, dynamic DPI, without-replacement sampling, default K=20, published outputs and provenance. |
-| Pre-sampling compatibility | Explicit legacy profile with replacement, affine conversion, fixed DPI and legacy consensus through WDL and CWL; the native low-level defaults remain unchanged. |
-| Selection compatibility | Tiny affine/PCHIP × explicit K=6/explicit legacy `-pc` matrix; explicit probability behavior remains supported and must not be deleted as obsolete. |
-| Native correctness | Sampling/seed behavior, rank caches, AP-MI workspace/null generator, PCHIP bounds/provenance/warnings, expression/hub validation, adjacency replay and DPI diagnostics/file-alias protection. |
-| Experimental dynamic DPI | Native formula/anchor/doubling/cap, exact fixed-epsilon edge equivalence, unique constructed source counting (including empty rows), invalid inputs and fixed/dynamic conflicts, opt-out compatibility, provenance and witness diagnostics. Wrapper/CWL tests cover forwarding, real dynamic-versus-fixed inference, and two scattered resamples through consensus. All use tiny synthetic data. |
-| Consensus and enrichment | Default K20 support boundaries (19/20/21), per-resample duplicate handling and directed edges; explicit smaller K, legacy probability behavior, missing/empty inputs, output schemas, symbols and finite/bounded enhanced statistics. |
-| Utilities | Byte-exact line endings; checked CWL array types/order, empty arrays, output file contents and copies. Bats fixtures/results live in per-test temporary directories, not the checkout. |
-| Standalone WDL task plumbing | Parameters/defaults/conflicts, literal argv, safe line-ending copies, runtime/input/settings hashes, seed provenance and exact consensus staging. These ordinary tests require no WDL engine. |
-| Packaging and Python compatibility | Build-backend/package-data contracts and strict cross-version output-comparator tests. CI separately builds a source archive, compiles/installs its platform wheel, and checks a fresh pip editable install. Neither needs a manual Make step. Metadata discovery must not compile; failed builds must fail installation. |
-| uv installation and native freshness | CI uses disposable source copies and a dedicated cache: clean default editable and non-editable installations, offline cache reuse, header/source rebuilds, and changed configuration assets. Missing Make/compiler installs must fail with actionable guidance; the installed runtime is probed rather than relying only on cache-key declarations. |
+| Scientific compatibility | Tiny expression/hub fixtures, sampling, MI conversion, DPI, explicit K6 and historical answerkeys. |
+| Current defaults | Real Sprocket TF/SIG runs with twenty resamples and omitted MI/DPI/K options; checks native consensus-first order, default K20, role-specific probabilities, outputs and provenance. |
+| Legacy profile | Replacement sampling, affine MI, strict DPI and probability consensus through WDL and CWL. |
+| Native inference | Seeds, rank caches, AP-MI workspace/null generation, PCHIP bounds/warnings, expression/hub validation, adjacency replay and alias protection. |
+| Dynamic DPI | Formula, offset, hub count including empty rows, cap, fixed-epsilon equivalence, conflicting options and witness diagnostics. |
+| Native consensus | Inclusive support, supporting-run mean MI, direction/zero MI, deterministic manifest order, one-file-at-a-time reading, malformed graphs, allocation failures and atomic output publication. |
+| Consensus and enhancement | K20 boundaries, duplicate handling, explicit smaller K and probability selection, missing/empty inputs, symbols and valid statistics. |
+| Workflow plumbing | Option forwarding, literal argv, line-ending copies, runtime/input/settings provenance, default and opt-in raw-graph hash verification. |
+| Utilities | CWL array types/order and isolated Bats fixtures with byte-exact output checks. |
+| Packaging | Package-data contracts, fresh archives/wheels/editable installs, correct build failures and installed runtime assets. |
+| uv deployment | Disposable editable/non-editable installations, warmed-cache offline reuse, native/configuration refresh and missing-tool errors. |
 
-The small T-cell `cnn_5.txt` golden network and the active legacy consensus
-answerkeys are intentionally retained as compatibility fixtures. The BRCA100
-input files remain bundled demonstration data used by the main README; keeping
-them does not make full resampling part of this suite. Rank-cache fixtures are
-native correctness inputs, not benchmark datasets.
+The T-cell `cnn_5.txt` network, legacy answerkeys and rank-cache inputs are
+compatibility fixtures. Bundled BRCA100 inputs support manual examples; routine
+tests do not run the full resampling examples.
 
-For a focused developer check, use, for example:
+For a focused check:
 
 ```bash
 python -m unittest discover -s tests -p 'test_create_consensus_network.py' -v
 ```
 
-Direct unit-test discovery may skip unavailable native programs for convenience.
-That is **not** equivalent to the strict complete runner. Set
-`SJARACNE_REQUIRE_NATIVE_TESTS=1` to make native discovery fail rather than skip.
-An invalid explicitly configured `SJARACNE_TEST_EXE` or
-`SJARACNE_APMI_NULL_EXE` always fails; it never silently selects another binary.
-The complete runner pins both variables and PATH to this checkout.
+Direct discovery can skip unavailable native programs. Set
+`SJARACNE_REQUIRE_NATIVE_TESTS=1` to fail instead. Invalid explicit
+`SJARACNE_TEST_EXE` or `SJARACNE_APMI_NULL_EXE` paths always fail. The complete
+runner pins both executables and the installed runtime to this checkout;
+`PYTHONPATH` alone does not control imports in CWL subprocesses.
 
-The dynamic-DPI modules are discovered by the same `test_*.py` pattern and
-therefore run in GitHub Actions without a separate benchmark job. For a focused
-check after building the native binary and installing this checkout:
+After building the native binary and installing this checkout, dynamic-DPI
+checks can also be run directly:
 
 ```bash
 python -m unittest discover -s tests -p 'test_sjaracne_dynamic_dpi.py' -v
@@ -105,94 +84,52 @@ python -m unittest discover -s tests -p 'test_dynamic_dpi_workflow.py' -v
 
 ## Removed or separated during maintenance
 
-Unused 2019 cluster logs, absolute-path job files, unreferenced 100-run
-acceptance snapshots, the disabled enhanced-output test/golden, and obsolete
-Travis configuration were removed. They remain recoverable from Git history;
-active answerkeys were not regenerated to make tests pass.
-
-Historical non-asserting CWL launchers and job templates were removed, along
-with obsolete CWLEXEC/LSF launchers and configuration templates. They remain
-recoverable from Git history. The supported local CWL implementation remains
-in [`SJARACNe/cwl`](../SJARACNe/cwl/) and is covered by automated tests and
-WDL/CWL parity checks. No cluster jobs are submitted by tests.
-
-Scientific benchmarks and large run artifacts remain in
-[`sjaracne_benchmark`](https://github.com/adamdingliang/sjaracne_benchmark).
+Unused cluster logs/templates, non-asserting launchers, stale acceptance outputs
+and obsolete CI files remain in Git history. Active answerkeys are retained;
+scientific benchmarks and large artifacts belong in
+[sjaracne_benchmark](https://github.com/adamdingliang/sjaracne_benchmark).
+The supported local CWL workflows remain under [`SJARACNe/cwl`](../SJARACNe/cwl/).
 
 ## WDL 1.3 engine parity
 
-The [WDL guide](../SJARACNe/wdl/README.md) documents the tiny real CWL/Sprocket
-comparison, which can also be run directly:
+Run the tiny real CWL/Sprocket comparison directly with:
 
 ```bash
 python tests/wdl/run_parity.py --sprocket /absolute/path/sprocket \
   --output-dir /absolute/path/new-parity-evidence
 ```
 
-It requires Sprocket 0.32.0 and fails for missing dependencies, rather than
-skipping. Its standalone runner is outside `test_*.py` discovery, but the full
-regression invokes it explicitly after the ordinary tests and CWL utilities.
-GitHub Actions installs a checksum-verified Sprocket and therefore executes
-both real default CLI runs and the paired engine matrix. No production dataset
-benchmarks are launched by either check.
-
-The tiny Sprocket fixtures use two worker slots, a 2-GiB backend budget and
-1-GiB per-task requests, rather than inheriting production resource defaults.
-The parity runner saves its generated configuration and hash in the evidence.
-These test-only scheduling settings do not change scientific profile defaults.
+The complete runner invokes this after unit/CWL/Bats checks. Sprocket 0.32.0
+is required; a missing engine fails rather than skipping. Test fixtures use two
+worker slots, a 2-GiB backend budget and 1-GiB task requests. The generated
+configuration and hash are recorded. These resource overrides do not change
+scientific defaults.
 
 ## GitHub Actions
 
-`.github/workflows/regression.yml` runs this same strict small regression on
-pull requests targeting `develop` or `master`, and on pushes to either branch.
-The workflow is introduced on `develop`; `master` gains it and the refreshed
-runner together through the next release merge, not by silently promoting
-scientific changes now. This does not change branch-protection requirements.
+[regression.yml](../.github/workflows/regression.yml) runs on pull requests to
+`develop` or `master`, pushes to either branch, and manual dispatch. Its Ubuntu
+24.04 matrix tests Python **3.11 and 3.14** independently with uv **0.11.16**,
+the committed lock and pinned Sprocket. Python 3.14 adds the optional coverage
+group; Python 3.11 is uninstrumented.
 
-The hosted matrix uses standard Ubuntu 24.04 with **Python 3.11 and 3.14**.
-Both lanes install uv **0.11.16**, sync the same committed `uv.lock` with
-`--locked --group regression --extra cwl`, and must pass independently
-(`fail-fast: false`, no allowed failures). Python markers retain the previously
-validated numerical/CWL versions for each lane; these are environment pins, not
-new published runtime dependency minimums. Only the 3.14 lane also selects
-`--group coverage` and runs the regression with `--coverage`; 3.11 remains
-uninstrumented. CI prepares one environment per lane
-under `RUNNER_TEMP`, then runs tests with `--no-sync` so execution does not
-silently update dependencies. It does not share mutable runtime environments or
-depend on a restored dependency cache.
+Each lane prepares one environment under `RUNNER_TEMP`, then uses `--no-sync`.
+It checks fresh pip source/wheel/editable installation and uv offline/cache
+behavior before the strict regression. These probes use disposable source
+copies, not the real checkout. Dependency caches and mutable environments are
+not shared between lanes.
 
-The source-install check separately verifies ordinary pip installation of a
-fresh native platform wheel and a clean editable source installation, using a
-complete requirements export from the lock for runtime and build constraints.
-A second standalone check verifies uv's default editable and non-editable
-installation, offline installation from its prepared cache, native/configuration
-cache invalidation and clear missing-tool errors. Neither check edits the real
-checkout or requires a manual Make step before installation.
-Sprocket's external binary remains pinned to
-0.32.0 and its release-archive SHA256. The lock/metadata hashes, complete
-requirements export, `pip freeze`, tool versions, test logs, counts and
-source/binary hashes are saved as a version-specific seven-day Actions artifact.
-Actions are pinned by commit SHA. Repository contents remain read-only; the
-regression job additionally allows `id-token: write` for Codecov's OIDC upload,
-not repository writes. No upload secret is required. None of this claims hosted
-or cluster success before the corresponding workflow actually runs.
-
-The job is bounded to 20 minutes (15 minutes for regression), cancels superseded
-runs, and does not invoke manual examples or large biological benchmark batches.
-Manual dispatch is also available once the workflow is present on the default
-branch. GitHub's regular PR event tests its merge revision; the run metadata
-records the tested SHA and event.
+The job limit is 20 minutes, with 15 minutes for regression. Superseded runs are
+cancelled. Actions are pinned by commit SHA; requirements exports, versions,
+logs and source/native hashes are retained as seven-day per-version artifacts.
+PR events test the merge revision, recorded in run metadata. No full biological
+benchmark batch or cluster job is submitted.
 
 ## Execution coverage
 
-The Python 3.14 CI lane collects separate Python and C++ core reports after the
-same strict tests, CWL validation, Bats utilities and real engine parity checks.
-The 3.11 lane remains the ordinary, uninstrumented compatibility check. The
-optional `coverage` group pins coverage.py **7.17.0** and gcovr **8.8**; neither
-is a published runtime requirement or installed by default.
-
-For a local measurement, use a **dedicated checkout** and a **new environment
-outside that checkout**, not an environment used by analyses:
+Python 3.14 collects separate Python and C++ core reports. The optional coverage
+group pins coverage.py **7.17.0** and gcovr **8.8**; neither is a runtime
+requirement. Use a dedicated checkout and a new environment outside it:
 
 ```bash
 export UV_PROJECT_ENVIRONMENT=/absolute/path/sjaracne-coverage-env
@@ -201,52 +138,38 @@ uv run --locked --no-sync python tests/run_regression.py --coverage --jobs 4 \
   --output-dir /absolute/path/new-coverage-evidence
 ```
 
-Coverage mode rebuilds native programs with GCC `-O0`, compile/link `--coverage`
-and atomic counter updates. It does not restore ordinary `-O3` binaries
-afterward; rebuild normally before using that checkout for analyses. The runner
-requires a virtual environment outside the checkout and temporarily installs
-its owned Python startup hook there, with checked cleanup on exit. This captures
-Python tasks even when CWL scrubs the environment. It never installs a hook in
-the package or system Python. CI's independent fresh-install/cache probes run
-before the hook is enabled.
+Coverage mode builds native programs with GCC `-O0`, `--coverage` and atomic
+counter updates. Rebuild normally before using that checkout for analyses;
+the runner does not restore `-O3` binaries. A checked temporary startup hook in
+the external virtual environment captures engine-launched Python, including
+CWL tasks. The hook is removed on exit and is never installed in system Python.
 
-After successful tests, `coverage/python.xml`, `coverage/cpp.xml` and
-`coverage/summary.json` are written under the evidence directory. Python uses
-the package's nine runtime modules, not tests, developer tools or dependencies.
-C++ core coverage includes `SJARACNe/src` and executable header lines, excluding
-the generated coefficient table and the separate null-generator command source.
-The shared AP-MI implementation is exercised by both inference and generator
-tests. WDL/CWL and frozen model data are not Python executable statements.
-Fresh packaging-test environments outside the measured source tree are not
-silently counted as instrumented runtime executions.
+Successful runs write `coverage/python.xml`, `coverage/cpp.xml` and
+`coverage/summary.json` under the evidence directory. Python measures package
+runtime modules. C++ measures `SJARACNe/src` and executable header lines,
+excluding the generated coefficient table and separate null-generator command
+source. Tests, dependencies, WDL/CWL data and fresh packaging environments are
+outside these denominators.
 
-Line and branch coverage have different denominators. GCC branch counts can
-include compiler-generated and exception paths; they are not directly comparable
-to Python decisions. These are execution measurements from an instrumented
-testing build, not biological accuracy, model calibration or production `-O3`
-numerical validation. Inspect missing paths before choosing coverage thresholds.
+Coverage measures execution, not biological accuracy or production `-O3`
+numerical equivalence. GCC branch counts include compiler-generated and
+exception paths, so Python and C++ branch percentages are not directly comparable.
 
-CI uploads the explicit XML files separately with Codecov flags `python` and
-`cpp`; report auto-discovery is disabled. Uploads use OIDC after successful
-regression, without a `CODECOV_TOKEN` secret. Fork PRs still collect and preserve
-reports but skip uploads. The job keeps repository contents read-only; its
-`id-token: write` permission allows the upload action to request an identity
-token. Codecov upload errors and per-flag project/patch statuses are
-informational, PR comments are disabled, and old flag results are not carried
-forward as if they were fresh measurements.
+CI uploads explicit XML files using Codecov flags `python` and `cpp` after
+successful regression. OIDC needs `id-token: write`, not a repository-write
+permission or upload secret. External fork PRs preserve reports but skip
+uploads. Upload failures and coverage statuses are informational; comments and
+stale flag carry-forward are disabled.
 
-Enable this repository in Codecov and authorize the
-[Codecov GitHub app](https://github.com/apps/codecov) if prompted. This account
-permission step is not performed by the runner. Codecov's default dashboard
-branch is set to `develop`; GitHub's default branch is not changed. The
-README badges filter `develop` by flag and show unknown until reports are
-successfully uploaded. See Codecov's [setup guide](https://docs.codecov.com/docs/quick-start)
+For a fork without a Codecov project, enable the
+[Codecov GitHub app](https://github.com/apps/codecov) as needed. The dashboard
+and README badges use `develop`, with separate flags; a missing upload can show
+as unknown. See Codecov's [setup guide](https://docs.codecov.com/docs/quick-start)
 and [flag documentation](https://docs.codecov.com/docs/flags).
 
 ## Ordinary pip and fresh-source installation
 
-uv is not a runtime requirement of SJARACNe2. To prepare a pip-based environment
-with the same locked dependencies, export the regression environment once:
+To prepare a separate Python 3.11 or 3.14 environment using the full lock export:
 
 ```bash
 uv export --locked --group regression --extra cwl --no-emit-project --no-hashes \
@@ -255,13 +178,12 @@ python -m pip install -r /tmp/sjaracne-locked-requirements.txt
 python -m pip install --no-deps --no-build-isolation -e .
 ```
 
-Use a separate Python 3.11 or 3.14 virtual environment; do not point pip at an
-unrelated shared environment. The export contains Python-version markers and
-does not contain the checkout itself. It intentionally omits hashes because it
-is also used as pip constraints when installing a locally built wheel; the full
-package hashes remain in `uv.lock`.
+The export excludes the checkout and includes Python-version markers. Hashes
+are omitted so it can also be used as pip constraints; artifact hashes remain
+in `uv.lock`. Historical `requirements-*.txt` snapshots do not lock all
+transitive dependencies and are not CI's dependency source.
 
-The explicit clean-source packaging check, which does perform installation, is:
+The clean-source check performs installation:
 
 ```bash
 python tests/check_source_install.py \
@@ -270,15 +192,8 @@ python tests/check_source_install.py \
   --output-dir /tmp/sjaracne-new-source-install-check
 ```
 
-The old `requirements-ci.txt`, `requirements-ci-py314.txt` and
-`requirements-build.txt` files are retained as historical top-level pin
-snapshots/fallback constraints, not the source of CI resolution. They do not
-freeze every transitive dependency; use the committed lock and its export when
-the exact migrated environment is required.
-
-The uv installation check is also available explicitly. Supply a **new**
-dedicated cache directory and a new evidence directory. The initial cache
-preparation can download dependencies; subsequent installations are offline.
+The uv check needs a new cache and evidence directory. Initial preparation may
+download dependencies; subsequent installations use the warmed cache offline:
 
 ```bash
 python tests/check_uv_install.py \
@@ -287,15 +202,13 @@ python tests/check_uv_install.py \
   --output-dir /tmp/sjaracne-new-uv-install-check
 ```
 
-This check needs the compiler/Make but not CWL, Sprocket or biological data. It
-tests the current host's prepared-cache deployment path, not arbitrary offline
-clusters, architectures or operating systems.
+It requires compiler/Make but not CWL, Sprocket or biological data. It checks the
+current host, not arbitrary offline clusters or architectures.
 
 ## Cross-Python scientific output comparison
 
-After installing this checkout in two separate environments, run the additional
-tiny compatibility comparison. Do not run it while a regression rebuilds the
-same native executable:
+Install this checkout in two environments, then run the tiny compatibility
+comparison. Do not run it while a regression rebuilds the same native executable:
 
 ```bash
 python tests/python_compatibility.py \
@@ -305,11 +218,14 @@ python tests/python_compatibility.py \
   --output-dir /absolute/path/new-python-comparison
 ```
 
-It holds expression values, hubs, native executable, seeds and Sprocket fixed.
-Current TF/SIG settings and an explicitly tuned, nonempty legacy-consensus case
-are compared. Native edges/MI and selected consensus identities must agree
-exactly; correlations and regression statistics use a small declared float64
-tolerance. Selection is independently checked rather than treating agreement
-between environments as sufficient evidence. Versions, commands, logs and
-differences are retained. This is separate from a biological benchmark or a
-claim of bitwise identity for arbitrary datasets.
+The TF/SIG cases use current-profile sampling/MI settings with explicit
+**DPI-first** order; the third case uses tuned, nonempty legacy probability
+consensus. Native consensus-first defaults are checked separately by the real
+default-workflow tests.
+
+Expression, hubs, native executable, seeds and Sprocket are fixed. Native edges,
+MI and selected consensus identities must agree exactly; correlations and
+regression statistics allow declared float64 tolerance. Selection is checked
+independently. Versions, commands, logs and differences are retained. This is
+small-fixture compatibility evidence, not a biological benchmark or universal
+bitwise-identity claim.

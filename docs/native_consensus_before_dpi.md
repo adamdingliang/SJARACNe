@@ -2,24 +2,19 @@
 
 ## Process and interface
 
-The current workflow resolves to 100 distinct seeded 80% resamples, PCHIP MI
-thresholding, inclusive K20 recurrence, arithmetic mean MI over supporting runs,
-and a single final DPI pass. Href remains 479, slope 0.05 and cap 0.30. The
-adjustable additive offset defaults to 0.025 in this workflow. No additional MI
-threshold is applied to the consensus graph.
+The current workflow uses 100 seeded 80% resamples, PCHIP cutoffs, inclusive K20
+recurrence, supporting-run arithmetic mean MI and one final DPI pass. Dynamic
+DPI uses Href=479, slope=0.05, cap=0.30 and workflow offset=0.025:
 
 ```text
 epsilon(H) = min(dpi_max, dpi_offset + dpi_slope * max(0, log2(H/dpi_href)))
 ```
 
-The native inference flag `--raw-mi` writes all matched source rows in hub-file
-order, including empty rows, and MI with 17 significant digits. It disables DPI
-for that resample. Ordinary native inference output retains its historical
-serialization unless this flag is selected.
-
-The final native invocation consumes a text manifest containing one raw graph
-path per line, in deterministic seed order. Relative paths are resolved against
-the manifest directory. Entries are literal filesystem paths, not shell expressions. For example:
+`--raw-mi` disables per-resample DPI and writes every matched source row in
+hub-file order, including empty rows, with 17-significant-digit MI.
+The consensus invocation reads a manifest of one raw-graph path per line, in
+seed order. Relative paths resolve against the manifest directory; entries are
+literal paths, not shell expressions:
 
 ```bash
 sjaracne.exe -i expression.exp -s hubs.txt -l hubs.txt \
@@ -28,116 +23,87 @@ sjaracne.exe -i expression.exp -s hubs.txt -l hubs.txt \
   --dpi-offset 0.025 --dpi-max 0.30 -o consensus.adj
 ```
 
-This mode requires the canonical complete row layout emitted by `--raw-mi`.
-Older saved adjacency files may omit empty sources or use a different row
-order. They need explicit, audited canonicalization before reuse; do not
-silently interpret a truncated graph as an empty source. Canonicalization of
-six-digit historical MI cannot recover the original unrounded values.
+Inputs must use the complete row layout emitted by `--raw-mi`. Older graphs
+with omitted/reordered sources need audited canonicalization before reuse;
+rounding lost in historical six-digit MI cannot be recovered.
 
 ## Optional raw graph hash verification
 
-`--verify-raw-hashes` is a workflow CLI option, not a bare C++ executable flag.
-It defaults to **off**. The corresponding operational workflow Boolean is
-`verify_raw_hashes`, separate from scientific options. WDL/Sprocket supports it
-with either processing order; CWL supports it for consensus-first. The public
-CLI rejects this option with CWL DPI-first, including the CWL legacy profile.
+`--verify-raw-hashes` is an operational workflow CLI option, not a C++ flag.
+Its Boolean input `verify_raw_hashes` defaults to `false`, outside scientific
+settings. WDL/Sprocket supports either order; CWL supports consensus-first and
+rejects the option for DPI-first, including legacy.
 
-Every producer still computes its output graph's SHA-256 and stores it in the
-seed receipt. By default, consensus checks the successful ordered seed set and
-matching runtime, input and prepared-settings fingerprints, and records the
-producer hashes without recomputing them from the graph files. The recorded
-hashes therefore describe producer outputs; they are not a new verification of
-the current file bytes. Enable the option to reread each graph sequentially and
-compare its SHA-256 with the recorded value before aggregation.
+Producers always compute graph SHA-256 and save it in seed receipts. Consensus
+checks ordered successful seeds and matching runtime/input/settings fingerprints.
+By default it records producer hashes without recomputing graph hashes; enable
+the option for a separate sequential pass comparing current bytes with receipts.
+The receipt records whether re-verification ran.
 
-Input, runtime/native/configuration, settings and final-output hash checks
-continue. Native parsing still rejects invalid row layouts, IDs, duplicate
-edges and invalid MI values. For unchanged inputs, this option changes no
-sampling, MI, recurrence, averaging or DPI calculation.
+Input/runtime/native/configuration, settings and final-output hash checks remain
+mandatory. Native parsing still rejects invalid row layouts, IDs, duplicate or
+self edges, and invalid MI. Verification changes no scientific calculation for
+unchanged inputs.
 
-The default removes only the separate consensus-time graph-hashing pass. It
-does not remove producer hashing, raw-file writes/transfers or the normal
-consensus input read. For 206 GB of resample graphs, it avoids an additional
-206 GB read; elapsed time depends on storage and workload. Hashing within the
-C++ aggregation read is not implemented; opt-in verification still uses a
-separate pass.
+Skipping re-verification removes one extra read of all graphs, not producer
+hashing, scatter writes/transfers or the aggregation read. For 206 GB of graphs,
+that avoids another 206 GB read. Hashing is not fused into C++ aggregation;
+opt-in verification still uses a separate pass.
 
 ## Engineering choices
 
-The final C++ call opens one raw-MI file, reads it completely from beginning to
-end, then closes it before opening the next file in manifest order. One 1 MiB
-input buffer is used. This follows the previous Python aggregation's file order
-and avoids alternating small reads across all resamples on a mechanical disk;
-an SSD is not required by the design.
+C++ reads each raw graph completely before opening the next, using one 1 MiB
+input buffer. Sequential access avoids alternating small reads across resamples
+on mechanical disks and does not require SSD storage.
 
-Support counts and double-precision MI sums for all requested source-target
-pairs are held in RAM. The outer loop follows manifest order, so each edge's
-ordinary binary64 additions remain in that order. An ordered source-target edge
-is counted once per run; support K is inclusive. The mean denominator is that
-edge's support count, so absent runs are not zero-filled. MI zero is still a
-present edge. After all inputs have been parsed and structurally validated,
-surviving edges are inserted
-directly into the existing native Matrix. Each source's accumulator arrays are
-released as its retained edges enter Matrix, before the existing DPI pass.
-Source rows with zero survivors remain part of H.
+Dense arrays hold a double-precision MI sum and uint32 support count for each
+requested source-target pair. Additions follow manifest order. An ordered edge
+counts once per run; zero MI still counts as present. Support K is inclusive,
+and absent runs do not enter the mean denominator. After structural validation,
+retained edges enter the existing native Matrix directly. Each source's arrays
+are released as its edges enter Matrix, before DPI. Empty source rows count in H.
 
-For H requested matched sources and G expression genes, the dense accumulators
-require `H * G * (sizeof(double) + sizeof(uint32_t))` bytes, normally
-**12 bytes per source-target pair**. This cost does not grow with the number of
-resamples. For example, the 9,464-source by 29,841-gene LUAD SIG panel needs about
-**3.16 GiB** for these arrays; the 9,428-source by 29,778-gene BLCA SIG panel needs
-about **3.14 GiB**. Expression data, the retained graph and DPI indices, parser
-buffers and allocator overhead are additional. A loose K can produce a large
-retained graph.
+For H matched sources and G expression genes, arrays need
+`H * G * (sizeof(double) + sizeof(uint32_t))` bytes, normally **12 bytes per pair**.
+This cost is independent of resample count. For example, 9,464 sources and
+29,841 genes require about **3.16 GiB** for arrays alone. Expression data, the
+retained graph, DPI indices, parser buffers and allocator overhead are additional;
+a smaller K can retain a larger graph.
 
-Allocation sizes are checked for overflow and allocation errors identify the
-requested accumulator dimensions and bytes. The implementation requires enough
-RAM; it does not spill aggregation caches to disk or reread all inputs in source
-blocks. The local workflow's default **8 GiB consensus request is unchanged**.
-This is a scheduling request, not a measured peak or a hard memory limit. Larger
-panels can need a higher `--consensus-memory` request and a sufficient overall
-`--memory` budget; see [workflow resources](../SJARACNe/wdl/README.md#resources-outputs-and-provenance).
+Allocation sizes are checked for overflow; allocation errors report dimensions
+and bytes. Aggregation does not spill to disk or reread inputs in source blocks.
+The default **8 GiB consensus request** is a scheduling reservation, not a peak
+estimate or hard limit. Large panels may need higher `--consensus-memory` and
+`--memory` budgets; see [workflow resources](../SJARACNe/wdl/README.md#resources-outputs-and-provenance).
 
-This removes Python per-edge aggregation caches, adjacency staging copies and
-the candidate graph write/read between consensus and DPI. Distributed scatter
-still materializes and transfers raw graphs. Producers still hash their output
-graphs; consensus-time content re-verification is opt-in as described above.
-Full-precision raw MI increases file size compared with the historical six-digit
-output. This change does not reduce MI estimation work,
-and no end-to-end speedup is claimed without a measurement.
+The design removes Python aggregation caches, adjacency staging copies and the
+candidate-graph write/read. Scatter still writes/localizes raw graphs, and
+full-precision MI uses more disk space than historical six-digit output.
+End-to-end time depends on the workload and storage.
 
-WDL remains responsible for the independent resample scatter. One post-scatter
-task invokes native consensus/DPI, then enhances only the final pruned edge
-list using the full expression matrix. Python adds gene symbols and
-correlation/regression statistics to that final pruned edge list.
-Native-order three-column and enhanced outputs preserve the native MI token
-precision; historical enhancement defaults retain their four-decimal format. The scientific calculations remain
-outside WDL. The WDL steps are `prepare_inputs`, `resample_and_estimate_mi`
-and `build_consensus_network`; the final name also covers explicit DPI-first
-runs, which combine already-pruned resamples. CWL consensus-first execution uses
-`cwl/consensus_before_dpi.cwl` and the same Python adapter, with the final step
-named `consensus_and_dpi`. Use the descriptive filenames directly; import-only
-CWL aliases have been removed. The word "native" describes the C++ implementation.
-See the [CWL workflow index](../SJARACNe/cwl/README.md).
+WDL/CWL schedule resamples independently. One final task runs native
+consensus/DPI, then Python adds gene symbols and correlation/regression statistics
+to the pruned graph using the full matrix. Consensus-first outputs preserve MI
+tokens; the older order keeps four-decimal formatting. See the
+[WDL](../SJARACNe/wdl/README.md) and [CWL](../SJARACNe/cwl/README.md) guides for
+stage names and inputs.
 
 ## Validation and compatibility
 
-Inputs must have consistent canonical source order and valid expression IDs.
-Missing, duplicated, reordered or extra source rows, duplicate targets,
-self-pairs and invalid MI values are errors. The workflow additionally checks
-all successful seed receipts and input/runtime/settings fingerprints before
-aggregation. It records the producer graph hashes and recomputes them only when
-`verify_raw_hashes` is true. Seed order determines floating-point addition order.
+Each graph must contain exactly the canonical source rows and valid unique
+non-self targets with finite, nonnegative MI. Missing, extra or reordered rows
+are errors. Seed order fixes floating-point addition order; workflow receipt and
+hash policy checks are described above.
 
-The native offset defaults to zero to preserve explicit historical native
-calls. The current consensus-first workflow supplies 0.025, whereas explicit
-DPI-first defaults to zero. Fixed DPI and dynamic tuning options conflict.
-Legacy remains full-size replacement sampling, affine MI, strict per-run DPI
-and its original probability consensus. New modes publish their native output
-only after successful processing; the wrapper publishes final workflow files
-only after a successful workflow.
+Native offset defaults to zero; the current consensus-first workflow supplies
+0.025, and explicit DPI-first defaults to zero. Dynamic tuning conflicts with
+fixed DPI. Legacy retains full-size replacement sampling, affine MI, strict
+per-run DPI and probability consensus; see the
+[compatibility guide](BACKWARD_COMPATIBILITY.md).
 
-See [the benchmark report](https://github.com/adamdingliang/sjaracne_benchmark/blob/b195f8331496c645121fc614c930ce1f58049300/benchmarks/consensus_before_dpi/README.md) for TP,
-FP, precision, recall, F1, size-weighted summaries and median-target retention.
-Those saved scientific comparisons are separate from implementation equivalence
-checks and do not establish that the selected default wins on every dataset.
+Native output is published only after successful processing; the wrapper also
+requires successful workflow provenance and final hashes before publication.
+The [benchmark report](https://github.com/adamdingliang/sjaracne_benchmark/blob/b195f8331496c645121fc614c930ce1f58049300/benchmarks/consensus_before_dpi/README.md)
+records TP, FP, precision, recall, F1, size-weighted summaries and median-target
+retention. Those scientific comparisons are separate from implementation
+equivalence and do not establish a universal default optimum.

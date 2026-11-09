@@ -15,11 +15,7 @@ from gene expression data. It builds transcription factor (TF) and signaling
 [Inputs](#inputs) · [Configuration](#configuration) ·
 [Outputs](#outputs) · [Documentation](#documentation) · [Citation](#citation)
 
-> This README describes the `develop` branch of SJARACNe2.
-> Clone `develop` using the command below to get this implementation.
-> The default engine is WDL 1.3 / Sprocket. The current profile applies native
-> recurrence consensus before DPI, with a configurable tolerance offset of
-> 0.025. PCHIP cutoffs and dynamic DPI remain experimental.
+> This README documents `develop`. Use the source installation below.
 
 ## Features
 
@@ -38,10 +34,8 @@ from gene expression data. It builds transcription factor (TF) and signaling
 - Linux, or Linux through WSL on Windows. These are the validated workflow
   environments. On Windows, open **Ubuntu in WSL**, not Git Bash or an
   MSYS2/UCRT64 shell; native Windows execution is not covered here.
-- Python **3.11** for the current workflow's local validation and the commands
-  below. The project's `.python-version` still selects 3.14; the earlier
-  [compatibility report](docs/python_compatibility.md) covers historical 3.11/3.14
-  checks. uv can download the explicitly selected interpreter if it is missing.
+- Python **3.11 or 3.14**, both tested in CI. The checkout prefers 3.14;
+  the examples below explicitly select 3.11.
 - Git, Bash, Make and a C++ compiler for installation from source. On Ubuntu,
   the one-time setup below installs the build tools together.
 - **uv 0.11.16** for the locked installation below; see the
@@ -69,9 +63,7 @@ manager. Install Sprocket separately as described above.
 
 ### Install from source
 
-Run the following in a Linux or WSL terminal. The committed `uv.lock` selects
-the dependency versions. Select Python 3.11 explicitly to reproduce the
-recorded local workflow validation, overriding `.python-version`:
+The committed `uv.lock` pins dependencies. In a Linux or WSL terminal:
 
 ```bash
 git clone --branch develop https://github.com/adamdingliang/SJARACNe2.git
@@ -84,24 +76,10 @@ sprocket --version
 sjaracne local --help
 ```
 
-`uv sync --locked` installs the Python dependencies and automatically builds
-the native C++ executables. A separate `make` command is not needed for normal
-installation. Missing build tools produce an installation error with setup
-instructions; the installer does not run `sudo` or install system packages for
-you. See the [native installation validation](docs/native_build_installation.md).
-
-The native consensus-first workflow has local Python 3.11 validation. The
-[Python compatibility report](docs/python_compatibility.md) records earlier
-3.11/3.14 checks and does not establish a new 3.14 result for this implementation.
-For a separate Python 3.14 environment, select `--python 3.14` explicitly;
-use separate environments and do not replace one while jobs use it. The lock's
-version range is not validation of every interpreter or platform. See the
-[environment guide](docs/uv.md).
-
-uv installs NumPy, pandas and SciPy, but **does not install Sprocket**. A missing
-or incompatible engine is an error; there is no automatic download or silent
-fallback. See the [WDL guide](SJARACNe/wdl/README.md#local-use) for the verified
-Sprocket archive checksum and standalone workflow instructions.
+`uv sync` installs Python dependencies and builds the native executables.
+Install Sprocket separately and make it available on `PATH`. See the
+[environment guide](docs/uv.md) for other Python versions and pip installation,
+or [native installation](docs/native_build_installation.md) for build checks.
 
 ## Quick start
 
@@ -117,26 +95,19 @@ sjaracne local --network-type TF \
   --jobs 2 --memory "8 GiB"
 ```
 
-- `-e`: prepared expression matrix.
-- `-g`: regulator IDs to reconstruct as sources, also called hubs.
-- `-o`: a **new or empty** output directory; existing results are not overwritten.
-- `-n 2 -k 1`: two resampled networks, retaining edges present in at least one.
-  This is a functional check, not a recommended scientific configuration. It
-  still processes the full bundled matrix and TF list.
-- `--jobs 2 --memory "8 GiB"`: up to two concurrent tasks within an 8-GiB
-  scheduling budget. This fits two 4-GiB inference requests or the subsequent
-  8-GiB consensus request; it is not a measured RAM requirement or a hard limit.
+- `-e` and `-g`: expression matrix and regulator IDs.
+- `-o`: a new or empty output directory.
+- `-n 2 -k 1`: a short workflow check using the full bundled matrix and hub list.
+- `--jobs 2 --memory "8 GiB"`: scheduling budget, not a measured RAM requirement.
 
 A successful run publishes network files under `results/brca100_tf_check/`
 and records its settings and completion state in `sjaracne_run.json`.
 
 ### Full TF and SIG networks
 
-Omit `-n` and `-k` to use **100 resampled networks and minimum recurrence K=20**.
-These examples allow up to three concurrent inference tasks with a 12-GiB
-scheduling budget. Use them on a host with at least three available CPUs and
-more than 12 GiB of RAM available to Linux/WSL; otherwise keep the smaller
-`--jobs 2 --memory "8 GiB"` settings above.
+Omit `-n` and `-k` to use **100 resamples and K=20**. These examples request
+three task slots and a 12-GiB scheduling budget; adjust them to fit the
+resources available to Linux/WSL.
 
 ```bash
 sjaracne local --network-type TF \
@@ -172,7 +143,7 @@ file must use tabs between fields:
 | GENE_002 | MYD88 | 1.5 | 2.2 | 2.9 |
 
 Values must already be prepared for network inference. SJARACNe2 does **not**
-normalize, log-transform or filter genes for you. With the default PCHIP model,
+normalize, log-transform or filter genes for you. For PCHIP cutoff lookup (`pb != 1`),
 the selected observation count `m` must be within **50–10,000**; the default is
 `m = ceil(0.8 * N)`, where `N` is the number of input observations.
 
@@ -206,10 +177,10 @@ copies without modifying the original files.
 | Workflow / engine | WDL 1.3 / Sprocket 0.32.0 |
 | Resampling | 80% of observations without replacement; 100 networks, seeds 1–100 |
 | Per-resample probability `pb` | TF: `0.001`; SIG: `0.0005` |
-| Mutual information (MI) cutoff | Experimental empirical PCHIP conversion; Npar=40 |
-| Operation order | Raw MI resamples → native C++ K20 consensus → supporting-run mean MI → DPI |
-| Data processing inequality (DPI) pruning | Dynamic tolerance after consensus; Href=479, slope=0.05, offset=0.025, cap=0.30 |
-| Consensus | Retain directed edges present in at least 20 distinct resampled networks; average MI over supporting runs only |
+| Mutual information (MI) cutoff | PCHIP calibration; Npar=40 |
+| Operation order | MI resampling → consensus → DPI |
+| DPI pruning | Dynamic; Href=479, slope=0.05, offset=0.025, cap=0.30 |
+| Consensus | K=20 distinct resamples; mean MI over supporting runs |
 | Local scheduling | Four task slots; 16 GiB memory budget |
 
 See [default parameter values](SJARACNe/wdl/README.md#default-parameter-values)
@@ -239,28 +210,8 @@ sjaracne local --network-type TF -pb 0.002 --fixed-dpi \
 | `--jobs 8`, `--memory "32 GiB"` | Change the local Sprocket task and memory budgets; `--serial` uses one task slot. |
 | `-tmp PATH` | Choose a scratch parent; only a fresh child is used, without deleting existing contents. |
 
-For an explicit offset experiment:
-
-```bash
-sjaracne local --network-type TF --dpi-offset 0.025 \
-  -e /absolute/path/input.exp -g /absolute/path/hubs.txt \
-  -o results/tf_consensus_first
-
-# Reproduce the previous current order and its original tolerance schedule:
-sjaracne local --network-type TF --consensus-order dpi-first \
-  -e /absolute/path/input.exp -g /absolute/path/hubs.txt \
-  -o results/tf_dpi_first
-```
-
-WDL/Sprocket supports `--verify-raw-hashes` with either processing order. CWL
-supports the option for consensus-first; the CLI rejects it with CWL DPI-first,
-including CWL legacy runs, rather than silently ignoring it. Use WDL/Sprocket
-when fresh graph-hash verification is needed with DPI-first.
-
-Run `sjaracne local --help` for the full interface. The
-[WDL guide](SJARACNe/wdl/README.md) explains the dynamic formula, standalone WDL
-inputs, task memory requests and explicit `--sprocket-config` settings. Local
-validation does not establish support for production LSF, Slurm or cloud runs.
+Run `sjaracne local --help` for all options. The [workflow guide](SJARACNe/wdl/README.md)
+covers tolerance formulas, verification options and task resources.
 
 ### Backward compatibility
 
@@ -299,18 +250,9 @@ Engine choice and scientific profile are independent: choosing CWL alone
 does not restore legacy settings. CWLEXEC and the old `lsf` command have been
 removed.
 
-Workflow and step names describe the scientific operations. The default CWL
-entry point is [consensus_before_dpi.cwl](SJARACNe/cwl/consensus_before_dpi.cwl);
-explicit DPI-first runs use
-[dpi_before_consensus.cwl](SJARACNe/cwl/dpi_before_consensus.cwl).
-Both engines name the per-seed stage `resample_and_estimate_mi`. In the default
-order it estimates and significance-filters raw MI without DPI; the final stage
-selects recurrent edges, averages supporting-run MI and applies DPI.
-The [CWL workflow index](SJARACNe/cwl/README.md) explains the steps and the
-replacement paths for removed import-only aliases.
-
-See [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) for the profile
-comparison, historical overrides and native API behavior.
+See [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) for profile
+settings and native options, or the [CWL guide](SJARACNe/cwl/README.md) for
+workflow entry points and steps.
 
 ## Outputs
 
@@ -331,22 +273,22 @@ consensus-edge probability.
 
 ## Documentation
 
-| Resource | What it covers |
+| Guide | What it covers |
 | --- | --- |
-| [Default parameters](SJARACNe/wdl/README.md#default-parameter-values) | Current values, recurrence coverage, dynamic DPI and tuning limits. |
-| [Workflow guide](SJARACNe/wdl/README.md) | WDL inputs, dynamic DPI formula, resources, outputs and provenance. |
-| [Native consensus](docs/native_consensus_before_dpi.md) | Consensus-before-DPI process, aggregation memory and optional graph-hash verification. |
-| [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) | Legacy profile, local CWL and low-level native behavior. |
-| [Regression guide](tests/README.md) | Test prerequisites, execution and retained evidence. |
-| [Execution coverage](tests/README.md#execution-coverage) | Separate Python/C++ coverage, Codecov setup and measurement limits. |
-| [Environment and deployment guide](docs/uv.md) | uv lockfile, pip alternative, native builds and offline/HPC/cloud precautions. |
-| [Native installation validation](docs/native_build_installation.md) | Automatic C++ builds during source installation and missing-tool diagnostics. |
-| [Native consensus validation](docs/native_consensus_validation.md) | Native correctness, build and default-workflow regression checks. |
-| [Historical profile validation](docs/default_profiles_validation.md) | Earlier default-profile and engine-parity snapshots. |
-| [Python compatibility report](docs/python_compatibility.md) | Python 3.11/3.14 dependencies, clean source installations and scientific-output comparisons. |
-| [Benchmark index](https://github.com/adamdingliang/sjaracne_benchmark) | DREAM5, THP-1, BRCA100, LUAD and calibration analyses. |
-| [Null calibration process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m) / [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md) | PCHIP calibration design and measured accuracy. |
-| [DPI benchmark summaries](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/docs/benchmark_summaries/README.md) | Fixed and dynamic tolerance comparisons. |
+| [Default parameters](SJARACNe/wdl/README.md#default-parameter-values) | Values, target coverage and calibration limits. |
+| [Workflow](SJARACNe/wdl/README.md) | WDL setup, inputs, resources and provenance. |
+| [Native consensus](docs/native_consensus_before_dpi.md) | Aggregation, memory and graph-hash verification. |
+| [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) | Legacy profile, CWL and native options. |
+| [Regression](tests/README.md) | Dependencies and test commands. |
+| [Execution coverage](tests/README.md#execution-coverage) | Python/C++ coverage and Codecov. |
+| [Environments](docs/uv.md) | uv, pip and deployment options. |
+| [Native installation validation](docs/native_build_installation.md) | Build checks and missing-tool handling. |
+| [Native consensus validation](docs/native_consensus_validation.md) | Dated correctness and workflow checks. |
+| [Historical profile validation](docs/default_profiles_validation.md) | K6 profile and engine-parity results. |
+| [Python compatibility](docs/python_compatibility.md) | Dated cross-version measurements. |
+| [Benchmark index](https://github.com/adamdingliang/sjaracne_benchmark) | Datasets and method comparisons. |
+| [Null calibration](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m) | Calibration design and results. |
+| [DPI benchmarks](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/docs/benchmark_summaries/README.md) | Fixed and dynamic DPI comparisons. |
 
 Dataset benchmark reports, result tables, provenance and dataset replay drivers
 belong in [sjaracne_benchmark](https://github.com/adamdingliang/sjaracne_benchmark).
@@ -369,25 +311,15 @@ keeps the checkout's 3.14 preference from selecting a different environment.
 The `regression` group adds the pinned build/test tools; the `cwl` extra adds CWL
 support. Sprocket, Node.js, Bats and the compiler remain system prerequisites.
 
-The [current workflow validation](docs/native_consensus_validation.md#workflow-validation-refresh)
-records the tested runtime revision, local Python/tool versions and results.
-The checks include real consensus-first and DPI-first workflows, TF/SIG roles,
-legacy settings, and WDL/CWL output comparisons.
-
-The suite tests native correctness, real CLI execution and WDL/CWL parity,
-without launching full dataset benchmark batches. GitHub Actions runs the
-suite on Python 3.11 and 3.14 for PRs into and pushes to `develop` and `master`
-when the workflow is present on the branch. The CI badge reports **develop's**
-push status; the separate Python and C++ badges report its uploaded execution
-coverage. These badges do not measure biological accuracy. See the
-[coverage guide](tests/README.md#execution-coverage) for the execution-coverage
-scope and reporting setup.
+The suite covers native correctness, real CLI workflows and WDL/CWL parity.
+GitHub Actions runs it on Python 3.11 and 3.14 for PRs into and pushes to
+`develop` and `master`. The badges show develop CI and execution coverage;
+see the [coverage guide](tests/README.md#execution-coverage) for details.
+[Validation records](docs/native_consensus_validation.md) preserve dated results.
 
 ## Support and contributions
 
-Report bugs or suggest improvements through
-[Issues](https://github.com/adamdingliang/SJARACNe2/issues); proposed changes can
-be submitted as [pull requests](https://github.com/adamdingliang/SJARACNe2/pulls)
+Propose changes through [pull requests](https://github.com/adamdingliang/SJARACNe2/pulls)
 against `develop`. Include the revision, command, engine version, input
 dimensions and relevant logs. Remove sensitive data before sharing reports.
 

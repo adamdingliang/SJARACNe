@@ -1,10 +1,9 @@
 # Native consensus-first workflow validation
 
-This document retains dated validation records and their original receipts.
-The [sequential-input revision](#sequential-input-revision) describes the current
-C++ read design and its focused local checks. The earlier
-[workflow refresh](#workflow-validation-refresh) and the initial snapshot below
-record the implementations tested at their stated dates.
+Dated validation records follow. Use the [native consensus guide](native_consensus_before_dpi.md)
+for current behavior and [CI](https://github.com/adamdingliang/SJARACNe2/actions/workflows/regression.yml)
+for current Python 3.11/3.14 regression results. Original counts, hashes and
+receipts are preserved for each tested revision.
 
 ## Sequential-input revision
 
@@ -40,19 +39,19 @@ Focused local checks for this revision passed on Linux/WSL:
 
 The pull-request CI runs the complete small-workflow regression under Python
 3.11 and 3.14, including real WDL/CWL execution. The dated test counts, hashes
-and JSON receipts below remain evidence for earlier revisions. No production
-bulk resampling or cold-HDD speed benchmark was run for this revision.
+and JSON receipts below remain evidence for earlier revisions. These focused checks
+did not include production bulk resampling or a cold-HDD speed benchmark.
 
 ## Initial validation snapshot
 
 Validation date: 2026-11-08. Historical feature branch: `feat/native-consensus-before-dpi`,
 based on fork develop `78096288ab35f629452ca3b9339c65175200dec0`.
 
-## Implemented behavior
+### Implemented behavior
 
-The current profile runs 100 seeded 80% resamples, keeps above-cutoff raw MI,
-selects edges supported in at least 20 runs, computes supporting-run mean MI,
-and applies the existing native DPI implementation once to that graph. Dynamic
+At this snapshot, the current profile ran 100 seeded 80% resamples, kept raw MI
+above the cutoff, selected edges supported in at least 20 runs, computed
+supporting-run mean MI and applied native DPI once to that graph. Dynamic
 DPI uses Href=479, slope=0.05, cap=0.30 and default additive offset=0.025.
 `--dpi-offset` changes the offset; `--consensus-order dpi-first` selects the
 previous current order with an omitted offset resolving to zero. The explicit
@@ -62,7 +61,7 @@ The new native modes retain 17-digit MI and every matched source row, including
 zero-target rows. The final enhanced native-order output preserves the exact MI
 tokens. Historical enhancement formatting remains four decimal places.
 
-## External dataset benchmarks
+### External dataset benchmarks
 
 Dataset-level method comparisons, result tables, saved-data equivalence evidence
 and the replay driver are maintained in the dedicated benchmark repository:
@@ -70,7 +69,7 @@ and the replay driver are maintained in the dedicated benchmark repository:
 [equivalence receipt](https://github.com/adamdingliang/sjaracne_benchmark/blob/b195f8331496c645121fc614c930ce1f58049300/benchmarks/consensus_before_dpi/native_equivalence.json).
 This document retains software correctness, build and workflow regression checks.
 
-## Functional checks
+### Functional checks
 
 The strict regression's forced native rebuild produced SHA-256
 `e9fc297e3025b8aeb6d236a57290cb05edfbdd3f23e2f429b4f3ecf2d4cd9475`.
@@ -112,7 +111,7 @@ including wrappers subsequently removed.
 The full retained run is `native_consensus_regression_20261108_py311_r2` in the
 local benchmark-results directory.
 
-## Engineering review and limits
+### Engineering review and limits
 
 Two independent design reviews, followed by implementation cross-review,
 checked support semantics, direction, empty-source H, precision, deterministic
@@ -164,8 +163,8 @@ These are small software checks, separate from dataset benchmarking.
 Fresh native SHA-256:
 `8c6ac630d698ccd6e74a29c69da76c2772fd83a5cc444d29219be2551305a894`.
 
-The tested runtime was frozen throughout the regression. Subsequent changes
-update only documentation and its badge-link assertions; the related checks
+The tested runtime was frozen throughout the regression. Changes immediately after that test
+updated only documentation and its badge-link assertions; the related checks
 were rerun after applying the README corrections. The README's Bash examples
 were syntax-checked and its `sjaracne` options parsed without executing install
 commands. This refresh does not claim a new Python 3.14 or hosted-CI result.
@@ -174,7 +173,8 @@ The badges remain explicitly scoped to develop.
 Retained local evidence: `workflow_readme_validation_20261108_8acd9c6/`, including
 `regression/manifest.json`, `regression/python_tests.json`,
 `regression/wdl_parity/summary.json` and `sig_engine_parity/receipt.json`.
-The full suite can be reproduced in the prepared Python 3.11 environment with:
+Reproduce this refresh from an isolated checkout of `8acd9c6` in the recorded
+Python 3.11 environment. The maintained runner uses the same entry point:
 
 ```bash
 python tests/run_regression.py --jobs 2 --output-dir /absolute/path/new-evidence
