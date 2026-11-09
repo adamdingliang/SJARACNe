@@ -1,4 +1,3 @@
-numpy>=1.20.1
-scipy>=1.6.1
-pandas>=1.2.3
-cwltool>=3.0.20201117141248
+# Compatibility entry point; metadata/dependencies are in pyproject.toml.
+# For the tested, fully locked environment use uv sync --locked instead.
+.

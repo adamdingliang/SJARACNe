@@ -1,6 +1,5 @@
 .idea/*
 results/
-test_sjaracne_lsf_real_data.sh
 *.exe
 psub.sh
 log
@@ -51,6 +50,8 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+*.gcda
+*.gcno
 *.cover
 .hypothesis/
 .pytest_cache/
@@ -80,8 +81,7 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# pyenv
-.python-version
+# .python-version is committed for the default uv interpreter selection.
 
 # celery beat schedule file
 celerybeat-schedule
@@ -92,6 +92,7 @@ celerybeat-schedule
 # Environments
 .env
 .venv
+.uv-cache/
 env/
 venv/
 ENV/
@@ -112,6 +113,3 @@ venv.bak/
 .mypy_cache/
 .DS_Store
 ._.DS_Store
-
-# Reproducible, machine-generated performance benchmark matrices
-/benchmarks/rank_cache/generated/

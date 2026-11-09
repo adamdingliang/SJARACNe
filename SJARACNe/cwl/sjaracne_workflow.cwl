@@ -6,6 +6,7 @@ class: Workflow
 requirements:
   - class: ScatterFeatureRequirement
   - class: InlineJavascriptRequirement
+  - class: StepInputExpressionRequirement
 
 inputs:
   exp_file:
@@ -14,14 +15,34 @@ inputs:
   probe_file:
     type: File
     label: file with a list of symbols annotated as transcription factors (hub genes) for constructing subnetworks
+  min_recurrence:
+    type: int?
+    label: Minimum number of distinct resampled networks containing an edge; defaults to 20 when both cutoff inputs are null
   p_value_consensus:
-    type: float
-    default: 1e-5
-    label: P-value threshold in building consensus network
+    type: float?
+    label: Deprecated legacy normal-approximation P-value threshold in building consensus network
   p_value_bootstrap:
-    type: float
-    default: 1e-7
-    label: P-value threshold in building bootstrap networks
+    type: double?
+    label: Explicitly required with PCHIP; omitted legacy probability resolves to 1e-7
+  apmi_null_model:
+    type: string?
+    label: Optional bundled experimental AP-MI PCHIP model name pchip
+  tolerance:
+    type: double?
+    label: Optional fixed DPI tolerance; omitted means strict zero unless dynamic_dpi is enabled
+  dynamic_dpi:
+    type: boolean
+    default: false
+    label: Experimental dynamic DPI opt-in; cannot be combined with tolerance
+  dpi_href:
+    type: int?
+    label: Optional dynamic reference source count; native default 479
+  dpi_slope:
+    type: double?
+    label: Optional dynamic epsilon increase per source-count doubling; native default 0.05
+  dpi_max:
+    type: double?
+    label: Optional dynamic epsilon cap; native default 0.30
   depth:
     type: int
     default: 40
@@ -32,15 +53,30 @@ inputs:
   bootstrap_num:
     type: int
     default: 100
-    label: Number of bootstrap networks to generate
+    label: Number of resampled networks to generate (legacy input name)
+  subsample_spec:
+    type: string?
+    label: Fixed observation count or percentage sampled without replacement in every network
+  sample_number:
+    type: int?
+    label: Explicit legacy full-size replacement sampling; set subsample_spec to null when used
   final_out_dir_name:
     type: string
     label: final output directory name
 
 outputs:
+  consensus_network:
+    type: File
+    outputSource: consensus/consensus_network
   out_dir:
     type: File
     outputSource: consensus/out_dir
+  bootstrap_info:
+    type: File
+    outputSource: consensus/bootstrap_info
+  parameter_info:
+    type: File
+    outputSource: consensus/parameter_info
 
 steps:
   # Step 0: validate input file
@@ -51,14 +87,14 @@ steps:
       probe_file: probe_file
     out: [validation_report]
 
-  # Step 1: create seeds from bootstrap number
+  # Step 1: create seeds from the resampled-network count (legacy input name)
   create_seeds:
     run: int_to_int_array.cwl
     in:
       number: bootstrap_num
     out: [int_array]
 
-  # Step 2: create adjacent matrix file names from bootstrap number
+  # Step 2: create adjacency file names from the resampled-network count
   create_adjmat_names:
     run: int_to_str_array.cwl
     in:
@@ -79,7 +115,7 @@ steps:
       input_file: probe_file
     out: [out_file]
 
-  # Step 5: bootstrapping using sjaracne with different seeds
+  # Step 5: fixed-size subsampling without replacement using different seeds
   bootstrap:
     run: sjaracne.cwl
     in:
@@ -87,9 +123,43 @@ steps:
       exp_file: ch_ending_exp/out_file
       probe_file_tf: ch_ending_probe/out_file
       probe_file_subnetwork: ch_ending_probe/out_file
-      p_value: p_value_bootstrap
+      p_value:
+        source: p_value_bootstrap
+        valueFrom: |
+          ${
+            if (self === null || typeof self === 'undefined') {
+              if (inputs.apmi_null_model === 'pchip') {
+                throw new Error('PCHIP requires explicit p_value_bootstrap; no PCHIP probability default is chosen');
+              }
+              return 1e-7;
+            }
+            return self;
+          }
+      apmi_null_model: apmi_null_model
+      tolerance: tolerance
+      dynamic_dpi: dynamic_dpi
+      dpi_href: dpi_href
+      dpi_slope: dpi_slope
+      dpi_max: dpi_max
       aracne_config_dir: aracne_config_dir
       npar_limit: depth
+      subsample_spec:
+        source: subsample_spec
+        valueFrom: |
+          ${
+            var hasSpec = self !== null && typeof self !== 'undefined';
+            var replacement = inputs.sample_number !== null &&
+                              typeof inputs.sample_number !== 'undefined' &&
+                              inputs.sample_number > 0;
+            if (replacement) {
+              if (hasSpec) {
+                throw new Error('Replacement sampling conflicts with subsample_spec');
+              }
+              return null;
+            }
+            return hasSpec ? self : '80%';
+          }
+      sample_number: sample_number
       output_file_name: create_adjmat_names/str_array
       seed: create_seeds/int_array
     scatter: [output_file_name, seed]
@@ -109,7 +179,8 @@ steps:
     run: create_consensus_network.cwl
     in:
       adjmat_dir: copy_to_dir/out_dir
+      min_recurrence: min_recurrence
       p_thresh_arg: p_value_consensus
       exp_mat: ch_ending_exp/out_file
       output_dir: final_out_dir_name
-    out: [out_dir]
+    out: [out_dir, consensus_network, bootstrap_info, parameter_info]

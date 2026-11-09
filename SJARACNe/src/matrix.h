@@ -7,6 +7,7 @@
 #ifndef MATRIX_H__
 #define MATRIX_H__
 
+#include <cstdint>
 #include <iostream>
 #include <map>
 #include <unordered_map>
@@ -41,6 +42,18 @@ typedef std::vector<AdjacencyRow> AdjacencyRows;
 
 //------------------------------------------------------------------------------------
 
+struct DpiEdgeStatistics
+{
+   DpiEdgeStatistics()
+      : preEdges(0), prunedEdges(0), postEdges(0) { }
+
+   std::uint64_t preEdges;
+   std::uint64_t prunedEdges;
+   std::uint64_t postEdges;
+};
+
+//------------------------------------------------------------------------------------
+
 class Matrix
 {
 public:
@@ -62,6 +75,7 @@ public:
    void markAdjacencyRow(int geneId);
    bool hasAdjacencyRow(int geneId) const;
    bool hasEnoughSourceRowsForDpi() const;
+   std::size_t sourceRowCount() const;
 
    void writeGeneLine(std::ostream& out, const Microarray_Set& data, int geneId);
    void writeGeneList(const Microarray_Set& data, const std::string& name,
@@ -79,6 +93,10 @@ public:
    double getNodeMI(int geneId1, int geneId2);
    void reduceOneNode(int row_idx, double epsilon, Transfac& transfac);
    void reduce(double epsilon, const std::vector<int>& ids, Transfac& transfac);
+   DpiEdgeStatistics dpiEdgeStatistics(const std::vector<int>& ids) const;
+   void writeDpiWitnessDiagnostics(const Parameter& p,
+                                   const std::vector<int>& ids,
+                                   const Transfac& transfac) const;
 };
 
 //------------------------------------------------------------------------------------
@@ -181,6 +199,9 @@ public:
                           std::vector<int>& upper);
 
    void bootStrap(std::vector<int>& boot, const std::vector<int> *arrays);
+   void sampleWithoutReplacement(std::vector<int>& sample, int sampleSize,
+                                 unsigned int seed,
+                                 const std::vector<int> *arrays) const;
    void addNoise();
 
 private:
