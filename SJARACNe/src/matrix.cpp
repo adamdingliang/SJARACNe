@@ -508,6 +508,8 @@ void Matrix::writeGeneLine(std::ostream& out, const Microarray_Set& data, int ge
 
    const Marker& marker = data.markerset[geneId];
 
+   // Canonical raw/consensus files need one row per matched source. Omitting
+   // an empty row would make it indistinguishable from an incomplete input.
    if (row.size() == 0 && !writeCanonicalSourceRows &&
        (!writeEmptyGenes || !marker.isActive && !marker.isControl))
       return;
@@ -574,6 +576,8 @@ void Matrix::writeGeneList(const Microarray_Set& data, const std::string& name,
 void Matrix::write(std::ostream& out, const Microarray_Set& data,
                    const std::vector<int>& ids)
 {
+   // Preserve supplied source order. The consensus reader consumes all raw
+   // files in that same order, including rows with no target/MI pairs.
    int numIds = ids.size();
 
    if (numIds == 0)
@@ -596,8 +600,12 @@ void Matrix::write(const Microarray_Set& data, const std::vector<int>& ids,
    if (!writeFull)
       return;
 
+   // These files are either consensus inputs or its final numerical result;
+   // rounding their MI would change subsequent means or DPI comparisons.
    const bool completePrecision = p.rawMi || !p.consensusInputs.empty();
    std::string writePath = p.outfile;
+   // Keep the final pathname untouched while the new-mode file is written.
+   // A sibling temporary stays on the destination filesystem for rename.
    if (completePrecision)
    {
 #ifdef _WIN32
@@ -617,6 +625,8 @@ void Matrix::write(const Microarray_Set& data, const std::vector<int>& ids,
       throw "Unable to open " + writePath;
    if (completePrecision)
    {
+      // max_digits10 preserves a binary64 value through text round trips.
+      // This also retains empty rows; ordinary output keeps its old defaults.
       out << std::setprecision(std::numeric_limits<double>::max_digits10);
       writeCanonicalSourceRows = true;
    }
@@ -656,6 +666,8 @@ void Matrix::write(const Microarray_Set& data, const std::vector<int>& ids,
    out << ">  DPI tolerance   " << p.eps        << std::endl;
    if (completePrecision)
       out << ">  MI output precision 17" << std::endl;
+   // Raw files declare that their MI has passed the configured cutoff but has
+   // not undergone DPI. The consensus parser also requires tolerance == 1.
    if (p.rawMi)
    {
       out << ">  DPI mode disabled-raw-mi" << std::endl;
@@ -663,6 +675,8 @@ void Matrix::write(const Microarray_Set& data, const std::vector<int>& ids,
       out << ">  Raw MI source row order supplied-hub-list-including-empty" << std::endl;
       out << ">  Raw MI source rows H " << sourceRowCount() << std::endl;
    }
+   // Record distinct directed union edges, K-selected candidates and final
+   // post-DPI edges separately; they describe different stages of the graph.
    if (!p.consensusInputs.empty())
    {
       out << ">  Consensus input runs B " << p.consensusRuns << std::endl;
@@ -720,6 +734,9 @@ void Matrix::write(const Microarray_Set& data, const std::vector<int>& ids,
 
    write(out, data, ids);
 
+   // Check close as well as insertion: buffered disk errors can surface here.
+   // Only new-mode temporary files can be discarded without touching the final
+   // destination; the ordinary inference path still writes there directly.
    out.close();
    if (!out)
    {
@@ -727,6 +744,8 @@ void Matrix::write(const Microarray_Set& data, const std::vector<int>& ids,
          std::remove(writePath.c_str());
       throw std::string("Unable to finish writing matrix: ") + writePath;
    }
+   // Publish the successfully closed file at the requested final path. If the
+   // rename fails, remove the temporary and report the publication error.
    if (completePrecision && std::rename(writePath.c_str(), p.outfile.c_str()) != 0)
    {
       std::remove(writePath.c_str());

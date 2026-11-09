@@ -42,15 +42,19 @@ struct Parameter
    int    dpiHref;            // reference count of reconstructed source rows
    double dpiSlope;           // epsilon increase per doubling above dpiHref
    double dpiMax;             // upper bound of experimental dynamic epsilon
-   double dpiOffset;          // optional dynamic epsilon offset, default zero
-   std::size_t dpiActualH;    // unique reconstructed rows, including empty rows
+   double dpiOffset;          // additive baseline before dpiMax; native default 0
+   std::size_t dpiActualH;    // unique constructed source rows, including empty rows
 
-   bool rawMi;               // above-cutoff MI output before DPI, full precision
-   bool minRecurrenceSpecified;
-   int minRecurrence;
-   std::size_t consensusRuns;
+   // Canonical resample output for later consensus: above-cutoff MI, no DPI,
+   // 17-digit weights and an explicit row for every matched -s source.
+   bool rawMi;
+   bool minRecurrenceSpecified; // distinguish explicit --min-recurrence from its default
+   int minRecurrence;           // inclusive distinct-input support K; native default 20
+   std::size_t consensusRuns;   // validated manifest input count B
+   // Counts of directed (source,target) pairs: union across inputs, then K-
+   // selected candidates, both measured before the subsequent DPI pass.
    std::uint64_t consensusUnionEdges, consensusCandidateEdges;
-   std::string consensusInputs;
+   std::string consensusInputs; // manifest path; empty means estimate/replay one graph
    std::string verbose, infile, outfile, adjfile, hub;
    std::string dpiWitnessFile;
    std::string subnetfile, annotfile, controlId, condition, home_dir;
@@ -87,6 +91,13 @@ void checkParameter(Parameter &p);
 void displayParameter(Parameter &p);
 void createOutfileName(Parameter &p );
 int resolveSubsampleSize(const std::string& spec, int populationSize);
+/**
+ * Validate and resolve min(maximum, offset + slope*max(0, log2(H/referenceHubs))).
+ * H includes constructed empty source rows; it is not the number of edges or
+ * active/nonempty hubs. Native offset defaults to zero for existing callers;
+ * the current dynamic consensus-first workflow explicitly supplies 0.025 by
+ * default. Invalid counts or nonfinite/out-of-range settings throw std::string.
+ */
 double resolveDynamicDpiEpsilon(std::size_t sourceRows, int referenceHubs,
                                 double slope, double maximum, double offset=0.0);
 

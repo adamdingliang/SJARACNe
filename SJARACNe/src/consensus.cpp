@@ -1,3 +1,9 @@
+/**
+ * @file consensus.cpp
+ * Read raw resample graphs source by source and retain directed consensus MI.
+ * Manifest order fixes floating-point addition order. The selected edges enter
+ * the existing Matrix directly; the caller applies DPI after this aggregation.
+ */
 #include "consensus.h"
 #include "matrix.h"
 
@@ -16,6 +22,8 @@
 
 namespace {
 
+// Resolve path spelling before comparing entries; stat below additionally
+// detects distinct pathnames referring to the same underlying file.
 std::string canonicalPath(const std::string& path)
 {
 #ifdef _WIN32
@@ -30,6 +38,8 @@ std::string canonicalPath(const std::string& path)
    return result;
 }
 
+// One literal path per line, relative to the manifest's own directory.
+// Preserve order and spaces: entries are not globbed, sorted or shell-expanded.
 std::vector<std::string> manifestPaths(const std::string& manifest)
 {
    const std::string resolvedManifest = canonicalPath(manifest);
@@ -62,10 +72,14 @@ std::vector<std::string> manifestPaths(const std::string& manifest)
       struct stat identity;
       if (stat(path.c_str(), &identity) != 0)
          throw std::string("Cannot stat raw consensus input: ") + path;
+      // Reject the same file twice, including hardlinks. Identical contents in
+      // distinct files are allowed: separate resamples can yield equal graphs.
       if (!identities.insert(std::make_pair(static_cast<std::uint64_t>(identity.st_dev),
                                             static_cast<std::uint64_t>(identity.st_ino))).second)
          throw std::string("Duplicate consensus input file identity (hardlink): ") + path;
       paths.push_back(path);
+      // The bound also keeps support counts and the one-based run stamps
+      // representable by the uint32_t accumulators used below.
       if (paths.size() > static_cast<std::size_t>(INT_MAX))
          throw std::string("Too many consensus inputs; supported run count is at most INT_MAX.");
    }
@@ -76,6 +90,8 @@ std::vector<std::string> manifestPaths(const std::string& manifest)
    return paths;
 }
 
+// Only existing identities can be compared; absent outputs are left to the
+// writer. This check does not synchronize later filesystem changes.
 bool sameExistingFile(const std::string& first, const std::string& second)
 {
    struct stat a, b;
@@ -84,6 +100,8 @@ bool sameExistingFile(const std::string& first, const std::string& second)
       a.st_dev == b.st_dev && a.st_ino == b.st_ino;
 }
 
+// Keep one forward-only stream per resample. Row identity/order is checked by
+// the aggregator; this reader enforces the header/data boundary and row framing.
 class RawReader
 {
 public:
@@ -94,6 +112,8 @@ public:
          throw std::string("Cannot open raw consensus input '") + filename + "': " + std::strerror(errno);
    }
 
+   // Return one canonical data row, or false only at a clean EOF. Other leading
+   // metadata is permitted, but exactly one DPI-tolerance declaration is needed.
    bool next(std::string& row)
    {
       while (std::getline(input, row))
@@ -106,6 +126,9 @@ public:
             std::istringstream header(row.substr(1));
             std::string key, subkey, value;
             header >> key >> subkey >> value;
+            // Tolerance 1 declares that the producer disabled DPI. Historical
+            // inputs need not carry the newer --raw-mi marker; seed/hash
+            // provenance is checked by the workflow adapter, not this header.
             if (key == "DPI" && subkey == "tolerance")
             {
                if (dpiHeaderSeen)
@@ -144,6 +167,8 @@ private:
    bool dataStarted, dpiHeaderSeen;
 };
 
+// Reject range errors and trailing junk instead of silently accepting a prefix.
+// Zero is valid: support is recorded by an edge's presence, not a positive MI.
 double parseMi(const std::string& token, const RawReader& reader)
 {
    errno = 0;
@@ -160,6 +185,8 @@ double parseMi(const std::string& token, const RawReader& reader)
 void validateNativeOutputPaths(const Parameter& p,
                                const std::vector<std::string>& rawInputs)
 {
+   // Compare both output roles against the data/list/manifest/raw inputs below.
+   // Repeating this after default-name resolution avoids checking only -o.
    std::vector<std::string> protectedInputs(rawInputs);
    protectedInputs.push_back(p.infile);
    protectedInputs.push_back(p.subnetfile);
@@ -181,6 +208,8 @@ std::vector<std::string> buildConsensusFromManifest(
    if (static_cast<std::size_t>(p.minRecurrence) > paths.size())
       throw std::string("Minimum recurrence exceeds the number of raw consensus inputs.");
    validateNativeOutputPaths(p, paths);
+   // All B streams remain open, but no full resample graph is cached. RAII
+   // closes them if validation fails while later rows are being consumed.
    std::vector<std::unique_ptr<RawReader> > readers;
    for (std::vector<std::string>::const_iterator path = paths.begin(); path != paths.end(); ++path)
       readers.push_back(std::unique_ptr<RawReader>(new RawReader(*path)));
@@ -190,9 +219,13 @@ std::vector<std::string> buildConsensusFromManifest(
    for (std::vector<int>::const_iterator source = sources.begin(); source != sources.end(); ++source)
       if (*source < 0 || static_cast<std::size_t>(*source) >= geneCount || !uniqueSources.insert(*source).second)
          throw std::string("Consensus requires distinct valid reconstructed source IDs.");
+   // Internal accession strings include a leading marker; raw files contain
+   // the external ID. Gene indices also define deterministic target order.
    std::unordered_map<std::string, int> geneIds;
    for (std::size_t i = 0; i < geneCount; ++i)
       geneIds.insert(std::make_pair(data.markerset[i].accnum.substr(1), static_cast<int>(i)));
+   // Reuse these O(G) arrays for one source at a time. counts is distinct-run
+   // support; seen stamps detect repeated targets without a per-run O(G) clear.
    std::vector<double> sums(geneCount, 0.0);
    std::vector<std::uint32_t> counts(geneCount, 0), seen(geneCount, 0);
    matrix.nmv.assign(geneCount, AdjacencyRow());
@@ -206,6 +239,8 @@ std::vector<std::string> buildConsensusFromManifest(
       std::fill(sums.begin(), sums.end(), 0.0);
       std::fill(counts.begin(), counts.end(), 0);
       std::fill(seen.begin(), seen.end(), 0);
+      // Lockstep rows require the complete source layout, even for empty
+      // regulons. Manifest order also fixes the order of binary64 additions.
       for (std::size_t run = 0; run < readers.size(); ++run)
       {
          RawReader& reader = *readers[run];
@@ -233,8 +268,12 @@ std::vector<std::string> buildConsensusFromManifest(
                reader.fail("self-edge for source '" + expected + "'");
             if (seen[id] == run + 1)
                reader.fail("duplicate target '" + target + "' within one resample row");
+            // Stamp zero means unseen for this source; run+1 reserves that
+            // sentinel while allowing support from the same target in later runs.
             seen[id] = static_cast<std::uint32_t>(run + 1);
             const double value = parseMi(token, reader);
+            // An absent edge adds neither weight nor support. An emitted zero
+            // adds support normally, so it is included in the mean denominator.
             sums[id] += value;
             if (!std::isfinite(sums[id]))
                reader.fail("MI sum overflow");
@@ -251,6 +290,8 @@ std::vector<std::string> buildConsensusFromManifest(
          if (cursor == firstTab + 1)
             reader.fail("empty source rows must contain only their source ID");
       }
+      // Preserve requested sources even when K selects no targets. Their
+      // explicit presence contributes to H in the later dynamic-DPI schedule.
       matrix.markAdjacencyRow(*source);
       data.markerset[*source].isActive = true;
       AdjacencyRow& selected = matrix.nmv[*source];
@@ -259,6 +300,8 @@ std::vector<std::string> buildConsensusFromManifest(
          if (counts[target] == 0)
             continue;
          ++p.consensusUnionEdges;
+         // Inclusive K selects candidate edges. Average only their supporting
+         // runs and populate Matrix directly, without a candidate-file roundtrip.
          if (counts[target] >= static_cast<std::uint32_t>(p.minRecurrence))
          {
             selected.push_back(AdjacencyEdge(static_cast<int>(target), sums[target] / counts[target]));
@@ -266,9 +309,12 @@ std::vector<std::string> buildConsensusFromManifest(
          }
       }
    }
+   // A missing row was rejected in lockstep; a remaining row is equally invalid.
+   // Do not silently ignore duplicate or unrequested sources after the hub list.
    for (std::size_t run = 0; run < readers.size(); ++run)
       if (readers[run]->next(row))
          readers[run]->fail("extra source row after the supplied hub list");
+   // Finalize the retained directed graph for existing DPI code in the caller.
    matrix.compactRows();
    return paths;
 }

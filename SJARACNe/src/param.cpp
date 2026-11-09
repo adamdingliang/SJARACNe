@@ -52,12 +52,19 @@ void checkParameter(Parameter &p)
    if (p.infile == "")
       throw std::string("No input file specified!");
 
+   // Recurrence belongs to graph aggregation, not per-resample inference.
+   // Its default may remain present in Parameter without selecting that mode;
+   // only an explicitly supplied cutoff requires a consensus manifest.
    if (p.minRecurrenceSpecified && p.consensusInputs.empty())
       throw std::string("Option '--min-recurrence' requires '--consensus-inputs'.");
    if (p.minRecurrence < 1)
       throw std::string("Minimum recurrence must be a positive integer.");
    if (!std::isfinite(p.dpiOffset) || p.dpiOffset < 0.0 || p.dpiOffset >= 1.0)
       throw std::string("Dynamic DPI '--dpi-offset' must be finite and in [0,1).");
+   // Raw output is the resample/consensus handoff format: every matched source
+   // gets a row, including empty rows, and weights retain 17 significant digits.
+   // Require unpruned unconditional inference instead of silently changing a
+   // contradictory caller request; epsilon=1 is the native no-DPI setting.
    if (p.rawMi)
    {
       if (!p.consensusInputs.empty() || !p.adjfile.empty())
@@ -69,6 +76,9 @@ void checkParameter(Parameter &p)
       if (!p.controlId.empty())
          throw std::string("Option '--raw-mi' does not support conditional reconstruction '-c'.");
    }
+   // This mode combines saved above-cutoff MI values and optionally prunes
+   // their consensus. Re-estimation, another cutoff or changed gene filtering
+   // would change the meaning of the supplied support/weight evidence.
    if (!p.consensusInputs.empty())
    {
       if (!p.adjfile.empty() || p.rawMi)
@@ -139,6 +149,9 @@ void checkParameter(Parameter &p)
    if (!std::isfinite(p.eps) || p.eps < 0.0 || p.eps > 1.0)
       throw std::string("DPI tolerance '-e' must be within [0,1]!");
 
+   // Tuning values cannot be silently accepted in fixed-DPI mode. Resolve the
+   // effective H-dependent tolerance only after the graph's rows are available;
+   // the validator call below checks parameter domains with a placeholder H.
    if (p.dynamicDpiParametersSpecified && !p.dynamicDpi)
       throw std::string("Dynamic DPI parameters require the explicit '--dynamic-dpi' option.");
 
@@ -193,8 +206,22 @@ void checkParameter(Parameter &p)
 }
 
 //------------------------------------------------------------------------------------
-// The experimental schedule changes one scalar tolerance per reconstruction;
-// sourceRows must count constructed rows, not nonempty rows or retained edges.
+/**
+ * Resolve the experimental tolerance once for a reconstructed graph.
+ *
+ * epsilon(H) = min(maximum, offset + slope * max(0, log2(H/referenceHubs))).
+ * H counts constructed source rows, including rows with no retained edges.
+ * Below the reference count there is no size-dependent increase; the cap can
+ * still reduce the returned value below offset. No graph is modified here.
+ *
+ * @param sourceRows Positive H observed in the reconstructed/consensus Matrix.
+ * @param referenceHubs Positive reference count used by the log2 schedule.
+ * @param slope Finite positive increase per doubling above referenceHubs.
+ * @param maximum Finite cap in [0,1).
+ * @param offset Finite additive baseline in [0,1), applied before the cap.
+ * @return A finite tolerance in [0, maximum].
+ * @throws std::string If a count or numeric parameter is outside its domain.
+ */
 double resolveDynamicDpiEpsilon(std::size_t sourceRows, int referenceHubs,
                                 double slope, double maximum, double offset)
 {
@@ -208,6 +235,9 @@ double resolveDynamicDpiEpsilon(std::size_t sourceRows, int referenceHubs,
       throw std::string("Dynamic DPI '--dpi-max' must be finite and in [0,1).");
    if (!std::isfinite(offset) || offset < 0.0 || offset >= 1.0)
       throw std::string("Dynamic DPI '--dpi-offset' must be finite and in [0,1).");
+   // Branch before log2 to express the nonnegative size increase directly.
+   // Native callers default offset to zero; the workflow supplies its selected
+   // offset explicitly (0.025 by default for dynamic consensus-first runs).
    const double increase = sourceRows <= static_cast<std::size_t>(referenceHubs)
       ? 0.0 : slope * std::log2(static_cast<double>(sourceRows) /
                                static_cast<double>(referenceHubs));

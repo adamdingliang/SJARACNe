@@ -150,6 +150,15 @@ int parseDynamicDpiReference(const std::string& argument)
 
 //------------------------------------------------------------------------------------
 
+/**
+ * Parse the inclusive support cutoff from decimal digits.
+ * Signs, fractions and partially parsed values are rejected before conversion;
+ * the supported run-count range is also bounded by INT_MAX in the manifest.
+ *
+ * @param text Literal value supplied to --min-recurrence.
+ * @return A cutoff in [1, INT_MAX].
+ * @throws std::string If the token is not a supported positive integer.
+ */
 int parsePositiveConsensusInteger(const std::string& text)
 {
    if (text.empty())
@@ -193,10 +202,17 @@ Parameter parseParameter(int argc, char *argv[])
          const std::size_t equal = longArgument.find('=');
          const std::string name = longArgument.substr(0, equal);
          const bool inlineValue = equal != std::string::npos;
+         // These modes share the executable but have different inputs:
+         // --raw-mi emits one above-cutoff, unpruned graph; --consensus-inputs
+         // combines previously thresholded graphs. checkParameter enforces the
+         // mutually exclusive settings before expression data are read.
          if (name == "raw-mi")
          {
             if (inlineValue)
                throw std::string("Option '--raw-mi' is a flag and takes no value.");
+            // The flag selects canonical/full-precision output; it does not
+            // silently override an explicit DPI request. Validation requires
+            // epsilon=1 and rejects dynamic DPI for raw resample output.
             p.rawMi = true;
          }
          else if (name == "consensus-inputs")
@@ -364,6 +380,9 @@ void runStandard(int argc, char *argv[])
 {
    Parameter p = parseParameter(argc, argv);
    std::srand(p.seed);
+   // Reject existing-file aliases for explicit outputs before processing.
+   // The consensus builder adds manifest raw inputs to this check; the final
+   // check below also covers any generated default output filename.
    if (p.rawMi || !p.consensusInputs.empty())
       validateNativeOutputPaths(p, std::vector<std::string>());
    Microarray_Set data;
@@ -434,6 +453,10 @@ void runStandard(int argc, char *argv[])
              << " (" << data.Get_Num_Active_Markers() << " active)"
              << ", Array No: " << nsample << std::endl;
 
+   // Consensus replay is validated to use neutral p=1/t=0 settings and no
+   // null model. It therefore reuses saved MI weights without calibrating a
+   // new cutoff; ordinary inference still resolves its resample-specific MI
+   // threshold here before computing any edges.
    if (p.thresholdSpecified)
    {
       p.thresholdMethod = "explicit -t";
@@ -537,8 +560,12 @@ void runStandard(int argc, char *argv[])
    }
 
    Matrix matrix;
+   // Keep the resolved raw paths for output-alias checks after aggregation.
    std::vector<std::string> consensusRawInputs;
 
+   // Build K-selected, supporting-run mean-MI edges directly in Matrix.
+   // This branch bypasses resampling, noise injection and MI estimation below;
+   // the existing DPI stage consumes the in-memory candidates afterward.
    if (!p.consensusInputs.empty())
    {
       consensusRawInputs = buildConsensusFromManifest(data, ids, matrix, p);
@@ -606,6 +633,9 @@ void runStandard(int argc, char *argv[])
 
    bool dpiApplied = false;
 
+   // Resolve one tolerance for the graph that will actually be pruned. In
+   // consensus mode H includes every supplied, matched source row even when K
+   // selection leaves it empty; retained edge count is not a substitute for H.
    if (p.dynamicDpi)
    {
       p.dpiActualH = matrix.sourceRowCount();
@@ -629,6 +659,9 @@ void runStandard(int argc, char *argv[])
       std::cout.precision(savedPrecision);
    }
 
+   // Both inferred and consensus candidates use the same DPI implementation.
+   // Raw-MI mode has already been validated to keep eps=1, so its resample
+   // graphs skip this entire pruning stage and remain inputs for consensus.
    if (p.eps != 1.0)
    {
       if (matrix.hasEnoughSourceRowsForDpi())
@@ -646,6 +679,8 @@ void runStandard(int argc, char *argv[])
    if (p.outfile == "")
       createOutfileName(p);
 
+   // The concrete network filename and all raw inputs are now known. Recheck
+   // them immediately before either diagnostic or network output is written.
    if (p.rawMi || !p.consensusInputs.empty())
       validateNativeOutputPaths(p, consensusRawInputs);
 
@@ -660,6 +695,8 @@ void runStandard(int argc, char *argv[])
    }
 
    const DpiEdgeStatistics dpiStatistics = matrix.dpiEdgeStatistics(ids);
+   // The writer selects canonical rows/17-digit MI and checked publication
+   // for raw/consensus modes; historical inference keeps its output format.
    matrix.write(data, ids, p);
 
    std::cout << "[DPI_STATS] pre_edges=" << dpiStatistics.preEdges
@@ -699,6 +736,8 @@ int main(int argc, char *argv[])
       std::cerr << argv[0] << ": " << s << std::endl;
       return 1;
    }
+   // Standard-library failures (for example allocation failures) must also
+   // reach workflow callers as a failed native process, rather than success.
    catch (const std::exception& error)
    {
       std::cerr << argv[0] << ": " << error.what() << std::endl;
