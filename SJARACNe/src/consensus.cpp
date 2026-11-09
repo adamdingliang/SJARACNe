@@ -102,12 +102,22 @@ bool sameExistingFile(const std::string& first, const std::string& second)
 
 // Keep one forward-only stream per resample. Row identity/order is checked by
 // the aggregator; this reader enforces the header/data boundary and row framing.
+// Larger input buffers reduce small reads on high-latency filesystems. The
+// buffer budget is 1 MiB per open input, or 100 MiB for 100 resamples.
+const std::size_t rawInputBufferBytes = 1024 * 1024;
+
 class RawReader
 {
 public:
    explicit RawReader(const std::string& name)
-      : filename(name), input(name.c_str()), lineNumber(0), dataStarted(false), dpiHeaderSeen(false)
+      : filename(name), readBuffer(new char[rawInputBufferBytes]), input(),
+        lineNumber(0), dataStarted(false), dpiHeaderSeen(false)
    {
+      // Configure the file buffer before open; libstdc++ can ignore requests
+      // made after opening. No zero-fill is needed: reads supply the bytes.
+      input.rdbuf()->pubsetbuf(readBuffer.get(),
+                              static_cast<std::streamsize>(rawInputBufferBytes));
+      input.open(name.c_str());
       if (!input.is_open())
          throw std::string("Cannot open raw consensus input '") + filename + "': " + std::strerror(errno);
    }
@@ -162,6 +172,9 @@ public:
 
 private:
    std::string filename;
+   // Member destruction is reversed, so the stream closes before its storage
+   // is released. The buffer address remains fixed for the reader's lifetime.
+   std::unique_ptr<char[]> readBuffer;
    std::ifstream input;
    std::size_t lineNumber;
    bool dataStarted, dpiHeaderSeen;
