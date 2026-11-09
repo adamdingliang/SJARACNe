@@ -87,7 +87,7 @@ and its original probability consensus. New modes publish their native output
 only after successful processing; the wrapper publishes final workflow files
 only after a successful workflow.
 
-See [the benchmark report](../benchmarks/consensus_before_dpi/README.md) for TP,
+See [the benchmark report](https://github.com/adamdingliang/sjaracne_benchmark/blob/b195f8331496c645121fc614c930ce1f58049300/benchmarks/consensus_before_dpi/README.md) for TP,
 FP, precision, recall, F1, size-weighted summaries and median-target retention.
 Those saved scientific comparisons are separate from implementation equivalence
 checks and do not establish that the selected default wins on every dataset.

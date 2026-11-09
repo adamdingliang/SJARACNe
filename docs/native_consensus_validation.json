@@ -8,6 +8,13 @@
   "bats_passed": 4,
   "complete": true,
   "cwl_documents_validated": 14,
+  "external_benchmark_evidence": {
+    "commit": "b195f8331496c645121fc614c930ce1f58049300",
+    "report": "https://github.com/adamdingliang/sjaracne_benchmark/blob/b195f8331496c645121fc614c930ce1f58049300/benchmarks/consensus_before_dpi/README.md",
+    "repository": "https://github.com/adamdingliang/sjaracne_benchmark",
+    "saved_data_equivalence_receipt": "https://github.com/adamdingliang/sjaracne_benchmark/blob/b195f8331496c645121fc614c930ce1f58049300/benchmarks/consensus_before_dpi/native_equivalence.json",
+    "scope": "Dataset-specific results are stored externally; this record retains software regression evidence."
+  },
   "finished_at_utc": "2026-11-08T18:19:36.704494+00:00",
   "independent_wdl_cwl_checks": 563,
   "independent_wdl_cwl_failures": 0,
@@ -30,10 +37,6 @@
     "passed": 388,
     "skips": 0
   },
-  "saved_raw_MI_jobs": 0,
-  "saved_raw_comparisons": 36,
-  "saved_raw_datasets": 18,
-  "saved_raw_equivalence_receipt_sha256": "0f529c8d49f11673721700d7cb33f0276654ffd71fc54823349dfd3cc2d2b5f6",
   "schema": "native-consensus-feature-validation-v1",
   "scope_note": "Local Python 3.11/Linux-WSL checks; no new Python 3.14 or hosted CI result is claimed. Historical compatibility oracles explicitly select dpi-first; new defaults are independently tested by real workflows and native fixtures.",
   "source_sha256": {

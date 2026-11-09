@@ -17,31 +17,18 @@ The new native modes retain 17-digit MI and every matched source row, including
 zero-target rows. The final enhanced native-order output preserves the exact MI
 tokens. Historical enhancement formatting remains four decimal places.
 
-## Saved scientific results
+## External dataset benchmarks
 
-All 18 saved DREAM datasets match the new native implementation at both offset
-0 and offset 0.025: **36 successful comparisons**, with exact directed edge IDs
-and binary64 numerical MI equality. B, K, resolved H/tolerance and all source
-rows were checked. This reused 100 existing raw graphs per dataset; **zero MI
-inference jobs** were launched.
-
-See the [equivalence receipt](../benchmarks/consensus_before_dpi/native_equivalence.json)
-and [full scientific report](../benchmarks/consensus_before_dpi/README.md).
-The report includes TP, FP, precision, recall, F1, size-weighted F1 and
-median-target retention, with all five historical methods retained.
-
-Older raw graphs were explicitly canonicalized into temporary files; MI tokens
-were unchanged. N1/N3 weight references use their saved full-precision baseline
-replays because their original final files rounded the output. No input
-precision lost in old raw files was recovered. Frozen scored metrics were
-inherited only after exact graph equality; gold standards were not independently
-rescored in this check.
-
-Native SHA-256 for the saved-data checks:
-`e9fc297e3025b8aeb6d236a57290cb05edfbdd3f23e2f429b4f3ecf2d4cd9475`.
-The subsequent forced rebuild produced the same binary hash.
+Dataset-level method comparisons, result tables, saved-data equivalence evidence
+and the replay driver are maintained in the dedicated benchmark repository:
+[study and results](https://github.com/adamdingliang/sjaracne_benchmark/blob/b195f8331496c645121fc614c930ce1f58049300/benchmarks/consensus_before_dpi/README.md) and
+[equivalence receipt](https://github.com/adamdingliang/sjaracne_benchmark/blob/b195f8331496c645121fc614c930ce1f58049300/benchmarks/consensus_before_dpi/native_equivalence.json).
+This document retains software correctness, build and workflow regression checks.
 
 ## Functional checks
+
+The strict regression's forced native rebuild produced SHA-256
+`e9fc297e3025b8aeb6d236a57290cb05edfbdd3f23e2f429b4f3ecf2d4cd9475`.
 
 - 17 focused new native tests passed: K boundaries, 300-run support counts,
   supporting-run means, deterministic summation order, empty rows, invalid
@@ -60,7 +47,7 @@ The complete strict regression passed under Python 3.11.15 on Linux/WSL:
 
 | Check | Result |
 | --- | --- |
-| Fresh native build | Passed; same binary hash as the saved-data checks |
+| Fresh native build | Passed; binary hash recorded above |
 | Python/native/CLI and real workflow tests | 388 passed, zero failures/errors/skips |
 | Production CWL documents | 14 validated |
 | Bats utility tests | 4 passed |
@@ -94,5 +81,5 @@ scratch child. Failed publication is recorded as failure, with evidence kept.
 
 These local checks validate Linux/WSL execution. They do not establish native
 Windows, production multi-node HPC or hosted CI execution. The complete local
-regression uses Python 3.11; no new Python 3.14 run is claimed here. The scientific
-results do not establish a universal F1 optimum or biological FDR control.
+regression uses Python 3.11; no new Python 3.14 run is claimed here. Dataset-level
+scientific interpretation and method comparisons are documented externally.

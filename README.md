@@ -236,7 +236,7 @@ The previous current order remains available as `--consensus-order dpi-first`;
 its omitted offset resolves to zero. The legacy profile retains its historical
 sampling, strict DPI and probability consensus. See the
 [native design and interface](docs/native_consensus_before_dpi.md) and
-[benchmark results](benchmarks/consensus_before_dpi/README.md).
+[benchmark results](https://github.com/adamdingliang/sjaracne_benchmark/blob/b195f8331496c645121fc614c930ce1f58049300/benchmarks/consensus_before_dpi/README.md).
 
 ### Common overrides
 
@@ -365,14 +365,17 @@ linked benchmark reports for the evidence and its limitations.
 | [Execution coverage](tests/README.md#execution-coverage) | Separate Python/C++ coverage, Codecov setup and measurement limits. |
 | [Environment and deployment guide](docs/uv.md) | uv lockfile, pip alternative, native builds and offline/HPC/cloud precautions. |
 | [Native installation validation](docs/native_build_installation.md) | Automatic C++ builds during source installation and missing-tool diagnostics. |
-| [Native consensus validation](docs/native_consensus_validation.md) | Current native/default-workflow checks and exact saved-data equivalence. |
+| [Native consensus validation](docs/native_consensus_validation.md) | Native correctness, build and default-workflow regression checks. |
 | [Historical profile validation](docs/default_profiles_validation.md) | Earlier default-profile and engine-parity snapshots. |
 | [Python compatibility report](docs/python_compatibility.md) | Python 3.11/3.14 dependencies, clean source installations and scientific-output comparisons. |
 | [Benchmark index](https://github.com/adamdingliang/sjaracne_benchmark) | DREAM5, THP-1, BRCA100, LUAD and calibration analyses. |
 | [Null calibration process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m) / [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md) | PCHIP calibration design and measured accuracy. |
 | [DPI benchmark summaries](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/docs/benchmark_summaries/README.md) | Fixed and dynamic tolerance comparisons. |
 
-The benchmark repository is private and requires access; it is **not a runtime
+Dataset benchmark reports, result tables, provenance and dataset replay drivers
+belong in [sjaracne_benchmark](https://github.com/adamdingliang/sjaracne_benchmark).
+Keep the algorithm implementation, usage documentation and small correctness
+fixtures in this software repository. The benchmark repository is **not a runtime
 dependency** of SJARACNe. Related software: [scMINER](https://jyyulab.github.io/scMINER/).
 
 ## Development and testing
