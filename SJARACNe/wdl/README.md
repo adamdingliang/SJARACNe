@@ -1,5 +1,9 @@
 # Default WDL 1.3 / Sprocket workflow
 
+This guide documents the retained SJARACNe2 `master` snapshot, where DPI
+runs before recurrence consensus. For the current native consensus-before-DPI
+workflow, see the [public `develop` guide](https://github.com/adamdingliang/SJARACNe2/blob/develop/SJARACNe/wdl/README.md).
+
 The public local workflow now uses **WDL 1.3 and Sprocket** by default. It
 validates and stages inputs, scatters seeded reconstructions, then runs the
 existing consensus/enhancement implementation. MI estimation and DPI still run

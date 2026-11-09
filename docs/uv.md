@@ -1,6 +1,6 @@
 # Environments and deployment with uv
 
-Use uv **0.11.16** to prepare reusable SJARACNe environments from the committed
+Use uv **0.11.16** to prepare reusable SJARACNe2 environments from the committed
 lockfile. uv installs the Python package and triggers its native C++ build;
 it **does not install Sprocket** or system build tools. Package installation
 and CLI help do not require Sprocket, but the default WDL workflow does.
@@ -12,7 +12,7 @@ cache and workflow checks.
 ## Contents
 
 - [One-time setup on Ubuntu or Ubuntu in WSL](#one-time-setup-on-ubuntu-or-ubuntu-in-wsl)
-- [Install SJARACNe with uv](#install-sjaracne-with-uv)
+- [Install SJARACNe2 with uv](#install-sjaracne2-with-uv)
 - [Prepare Sprocket for workflows](#prepare-sprocket-for-workflows)
 - [Choose a Python version](#choose-a-python-version)
 - [Dependency sources and optional tools](#dependency-sources-and-optional-tools)
@@ -46,7 +46,7 @@ curl -LsSf https://astral.sh/uv/0.11.16/install.sh | sh
 
 Open a new Ubuntu shell if needed, then check `uv --version`.
 
-## Install SJARACNe with uv
+## Install SJARACNe2 with uv
 
 Run these commands from the repository root (the directory containing
 `pyproject.toml` and `uv.lock`):
@@ -56,7 +56,7 @@ uv sync --locked
 uv run --locked --no-sync sjaracne local --help
 ```
 
-`uv sync --locked` installs SJARACNe and its Python dependencies into `.venv`,
+`uv sync --locked` installs SJARACNe2 and its Python dependencies into `.venv`,
 and automatically builds the native programs. No separate Make step is needed.
 Missing build tools stop installation with an actionable error; see the
 [native installation validation](native_build_installation.md).
@@ -90,7 +90,7 @@ not found, add `export PATH="$HOME/.cargo/bin:$PATH"` to `~/.bashrc` and open a
 new shell. For a downloaded binary, use its actual installation directory.
 Alternatively, pass `--sprocket /absolute/path/to/sprocket` to `sjaracne local`.
 
-SJARACNe neither installs the engine automatically nor silently falls back to
+SJARACNe2 neither installs the engine automatically nor silently falls back to
 CWL. Once both the package and engine are ready, follow the
 [workflow examples](../SJARACNe/wdl/README.md#local-use).
 
@@ -225,7 +225,7 @@ Official references: [cache behavior](https://docs.astral.sh/uv/concepts/cache/)
 
 ## Ordinary pip alternative
 
-uv is not a runtime dependency of SJARACNe. An ordinary source installation
+uv is not a runtime dependency of SJARACNe2. An ordinary source installation
 still uses the standard setuptools backend:
 
 ```bash

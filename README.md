@@ -1,22 +1,27 @@
-# SJARACNe
+# SJARACNe2
 
-SJARACNe is a command-line tool for reconstructing gene regulatory networks
+SJARACNe2 is a command-line tool for reconstructing gene regulatory networks
 from gene expression data. It builds transcription factor (TF) and signaling
 (SIG) networks for exploring candidate regulators and their target genes.
 
-[![Status](https://img.shields.io/badge/status-active-success.svg)](https://github.com/adamdingliang/SJARACNe "Active development")
-[![Issues](https://img.shields.io/github/issues/adamdingliang/SJARACNe)](https://github.com/adamdingliang/SJARACNe/issues "Open issues")
-[![Pull requests](https://img.shields.io/github/issues-pr/adamdingliang/SJARACNe)](https://github.com/adamdingliang/SJARACNe/pulls "Open pull requests")
-[![CI](https://img.shields.io/github/actions/workflow/status/adamdingliang/SJARACNe/regression.yml?branch=develop&event=push&label=CI)](https://github.com/adamdingliang/SJARACNe/actions/workflows/regression.yml?query=branch%3Adevelop "Regression status for develop")
-[![Python coverage](https://img.shields.io/codecov/c/github/adamdingliang/SJARACNe/develop?flag=python&label=Python)](https://codecov.io/gh/adamdingliang/SJARACNe "Python runtime coverage for develop")
-[![C++ core coverage](https://img.shields.io/codecov/c/github/adamdingliang/SJARACNe/develop?flag=cpp&label=C%2B%2B)](https://codecov.io/gh/adamdingliang/SJARACNe "C++ core coverage for develop")
+This project is a fork and derivative of
+[jyyulab/SJARACNe](https://github.com/jyyulab/SJARACNe). For compatibility,
+the command remains `sjaracne`, the Python package remains `SJARACNe`, and
+internal paths and workflow identifiers are unchanged.
+
+[![Status](https://img.shields.io/badge/status-active-success.svg)](https://github.com/adamdingliang/SJARACNe2 "Active development")
+[![Issues](https://img.shields.io/github/issues/adamdingliang/SJARACNe2)](https://github.com/adamdingliang/SJARACNe2/issues "Open issues")
+[![Pull requests](https://img.shields.io/github/issues-pr/adamdingliang/SJARACNe2)](https://github.com/adamdingliang/SJARACNe2/pulls "Open pull requests")
+[![CI](https://img.shields.io/github/actions/workflow/status/adamdingliang/SJARACNe2/regression.yml?branch=develop&event=push&label=CI)](https://github.com/adamdingliang/SJARACNe2/actions/workflows/regression.yml?query=branch%3Adevelop "Regression status for develop")
+[![Python coverage](https://img.shields.io/codecov/c/github/adamdingliang/SJARACNe2/develop?flag=python&label=Python)](https://codecov.io/gh/adamdingliang/SJARACNe2 "Python runtime coverage for develop")
+[![C++ core coverage](https://img.shields.io/codecov/c/github/adamdingliang/SJARACNe2/develop?flag=cpp&label=C%2B%2B)](https://codecov.io/gh/adamdingliang/SJARACNe2 "C++ core coverage for develop")
 
 [Installation](#installation) · [Quick start](#quick-start) ·
 [Inputs](#inputs) · [Configuration](#configuration) ·
 [Documentation](#documentation) · [Citation](#citation)
 
-> For the current workflow with **native consensus before DPI**, use the
-> [public `develop` guide and installation instructions](https://github.com/adamdingliang/SJARACNe/blob/develop/README.md).
+> For the current SJARACNe2 workflow with **native consensus before DPI**, use the
+> [public `develop` guide and installation instructions](https://github.com/adamdingliang/SJARACNe2/blob/develop/README.md).
 >
 > This README documents the retained `master` snapshot, not the published PyPI
 > release. That snapshot applies DPI before recurrence consensus and uses
@@ -73,8 +78,8 @@ Run the following in a Linux or WSL terminal. The committed `uv.lock` selects
 the validated dependency versions; `.python-version` selects Python 3.14:
 
 ```bash
-git clone --branch master https://github.com/adamdingliang/SJARACNe.git
-cd SJARACNe
+git clone --branch master https://github.com/adamdingliang/SJARACNe2.git
+cd SJARACNe2
 
 uv sync --locked
 source .venv/bin/activate
@@ -169,7 +174,7 @@ file must use tabs between fields:
 | GENE_001 | STAT1 | 2.1 | 3.4 | 1.8 |
 | GENE_002 | MYD88 | 1.5 | 2.2 | 2.9 |
 
-Values must already be prepared for network inference. SJARACNe does **not**
+Values must already be prepared for network inference. SJARACNe2 does **not**
 normalize, log-transform or filter genes for you. With the default PCHIP model,
 the selected observation count `m` must be within **50–10,000**; the default is
 `m = ceil(0.8 * N)`, where `N` is the number of input observations.
@@ -328,7 +333,7 @@ linked benchmark reports for the evidence and its limitations.
 | [DPI benchmark summaries](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/docs/benchmark_summaries/README.md) | Fixed and dynamic tolerance comparisons. |
 
 The benchmark repository is private and requires access; it is **not a runtime
-dependency** of SJARACNe. Related software: [scMINER](https://jyyulab.github.io/scMINER/).
+dependency** of SJARACNe2. Related software: [scMINER](https://jyyulab.github.io/scMINER/).
 
 ## Development and testing
 
@@ -356,8 +361,8 @@ until Codecov is enabled and a successful upload reaches `develop`; see the
 ## Support and contributions
 
 Report bugs or suggest improvements through
-[Issues](https://github.com/adamdingliang/SJARACNe/issues); proposed changes can
-be submitted as [pull requests](https://github.com/adamdingliang/SJARACNe/pulls)
+[Issues](https://github.com/adamdingliang/SJARACNe2/issues); proposed changes can
+be submitted as [pull requests](https://github.com/adamdingliang/SJARACNe2/pulls)
 against `develop`. Include the revision, command, engine version, input
 dimensions and relevant logs. Remove sensitive data before sharing reports.
 

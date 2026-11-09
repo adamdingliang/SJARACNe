@@ -233,11 +233,11 @@ class TestCIWorkflow(unittest.TestCase):
         self.assertEqual([label for label, _, _ in badges[:6]],
                          ['Status', 'Issues', 'Pull requests', 'CI',
                           'Python coverage', 'C++ core coverage'])
-        repository = 'https://github.com/adamdingliang/SJARACNe'
+        repository = 'https://github.com/adamdingliang/SJARACNe2'
         expected = [
             ('https://img.shields.io/badge/status-active-success.svg', repository),
-            ('https://img.shields.io/github/issues/adamdingliang/SJARACNe', repository + '/issues'),
-            ('https://img.shields.io/github/issues-pr/adamdingliang/SJARACNe', repository + '/pulls'),
+            ('https://img.shields.io/github/issues/adamdingliang/SJARACNe2', repository + '/issues'),
+            ('https://img.shields.io/github/issues-pr/adamdingliang/SJARACNe2', repository + '/pulls'),
         ]
         for (_, image, target), (expected_image, expected_target) in zip(badges[:3], expected):
             self.assertEqual(image, expected_image)
@@ -253,5 +253,5 @@ class TestCIWorkflow(unittest.TestCase):
         self.assertEqual(set(queries), {'python', 'cpp'})
         for flag, label in (('python', 'Python'), ('cpp', 'C++')):
             path, query = queries[flag]
-            self.assertEqual(path, '/codecov/c/github/adamdingliang/SJARACNe/develop')
+            self.assertEqual(path, '/codecov/c/github/adamdingliang/SJARACNe2/develop')
             self.assertEqual(query['label'], [label])
