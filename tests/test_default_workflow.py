@@ -26,7 +26,8 @@ FINAL_FILES = (
     "consensus_network_3col_.txt", "consensus_network_ncol_.txt",
     "bootstrap_info_.txt", "parameter_info_.txt",
 )
-PATH_HEADER = re.compile(r"^(>\s+(?:Input file\s+|Subnetwork file\s+|Output network:\s+)).*$")
+PATH_HEADER = re.compile(
+    r"^(>\s+(?:Input file\s+|Subnetwork file\s+|Output network:\s+|Consensus input manifest\s+)).*$")
 
 
 def header(text, name):
