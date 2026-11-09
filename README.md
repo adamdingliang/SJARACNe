@@ -288,24 +288,6 @@ engine directory recorded in `sjaracne_run.json`. Correlations and regressions
 use the full input matrix. The output regression p-value is **not** an MI or
 consensus-edge probability.
 
-## Scientific scope
-
-Inferred edges are candidate associations, not verified direct or causal
-regulation. The provisional TF/SIG probabilities are operating choices, not
-universal optima or biological false-discovery-rate guarantees.
-
-PCHIP converts sample count and probability to an MI cutoff using a bundled
-empirical null surface. It requires Npar=40, `m=50..10000` and probabilities
-`1e-7..0.05` (with `pb=1` reserved for preserving all MI candidates). Unsupported
-inputs fail rather than silently falling back. Probabilities below `0.0005`
-warn that they are outside the main assessment range; extreme-tail assessment
-has limited Monte Carlo precision.
-
-Dynamic DPI relaxes pruning as the reconstructed hub count increases above its
-reference. It addresses hub-context sensitivity as an engineering choice;
-DREAM5 tests did not establish a dynamic-specific accuracy advantage. See the
-linked benchmark reports for the evidence and its limitations.
-
 ## Documentation
 
 | Resource | What it covers |

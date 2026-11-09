@@ -78,12 +78,25 @@ annotation-list length or emitted-edge count. Larger epsilon relaxes pruning;
 H at or below Href resolves to zero. The native executable calculates and records
 the actual tolerance.
 
-Default status does not remove scientific limitations. The TF/SIG probabilities
-are provisional operating points, not universal optima. PCHIP calibration does
-not establish biological FDR, and dynamic tolerance does not guarantee more
-accurate direct edges. Native principal-range and extreme-tail warnings remain
-visible in the retained logs. Unsupported model inputs fail rather than silently
-extrapolating or selecting another model.
+### Interpretation and calibration limits
+
+Inferred edges are candidate associations, not verified direct or causal
+regulation. The provisional TF/SIG probabilities are operating choices, not
+universal optima or biological false-discovery-rate guarantees.
+
+PCHIP converts sample count and probability to an MI cutoff using a bundled
+empirical null surface. It requires Npar=40, `m=50..10000` and probabilities
+`1e-7..0.05` (with `pb=1` reserved for preserving all MI candidates). Unsupported
+inputs fail rather than silently falling back or extrapolating. Probabilities
+below `0.0005` warn that they are outside the main assessment range; extreme-tail
+assessment has limited Monte Carlo precision. These warnings remain visible in
+the retained logs.
+
+Dynamic DPI relaxes pruning as the reconstructed hub count increases above its
+reference. It addresses hub-context sensitivity as an engineering choice;
+DREAM5 tests did not establish a dynamic-specific accuracy advantage. See the
+[DPI benchmark summaries](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/docs/benchmark_summaries/README.md)
+for the evidence and its limitations.
 
 ## Explicit alternatives
 
