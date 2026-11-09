@@ -43,6 +43,8 @@ with an explicit probability; no filename or hub-list biology is inferred.
 Inputs retain the [main README format and ID-matching rules](../../README.md#inputs).
 The same full hub list supplies native `-s` and `-l`.
 
+## Default parameter values
+
 | Setting | Current workflow default |
 | --- | --- |
 | Resampled networks | 100, seeds 1 through 100 |
@@ -52,6 +54,18 @@ The same full hub list supplies native `-s` and `-l`.
 | Per-resample probability | TF `0.001`; SIG `0.0005` |
 | DPI | Experimental dynamic epsilon, Href=479, slope=0.05, cap=0.30 |
 | Consensus | Distinct-network recurrence K=20, inclusive; 20 of 100 by default |
+
+### Recurrence cutoff
+
+K=20 is a practical consensus setting, not a biological false-discovery-rate
+guarantee or an optimum for every dataset. Inspect target coverage; the bundled
+BRCA100 example becomes sparse at K20. For **scRNA-seq**, a smaller user-selected
+K may be appropriate, but neither a single-cell default nor a dynamic K rule
+has been validated yet. Override with `-k COUNT` as needed; `-k 6` restores the
+previous recurrence cutoff, not the full legacy workflow. See the
+[benchmark summary](https://github.com/adamdingliang/sjaracne_benchmark/pull/4).
+
+### Dynamic DPI tolerance
 
 Dynamic tolerance is one scalar for each reconstruction:
 
