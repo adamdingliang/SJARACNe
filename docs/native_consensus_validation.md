@@ -3,7 +3,7 @@
 For the latest local workflow checks, see the [validation refresh](#workflow-validation-refresh).
 The initial implementation snapshot and its original receipts are retained below.
 
-Validation date: 2026-11-08. Feature branch: `feat/native-consensus-before-dpi`,
+Validation date: 2026-11-08. Historical feature branch: `feat/native-consensus-before-dpi`,
 based on fork develop `78096288ab35f629452ca3b9339c65175200dec0`.
 
 ## Implemented behavior
@@ -93,7 +93,7 @@ scientific interpretation and method comparisons are documented externally.
 ## Workflow validation refresh
 
 Refresh date: **2026-11-08 (America/New_York)**. Tested runtime revision:
-[`8acd9c6`](https://github.com/adamdingliang/SJARACNe2/commit/8acd9c6a1a0399eb369705df62711f72b39fb23b).
+[`8acd9c6`](https://github.com/adamdingliang/SJARACNe/commit/8acd9c6a1a0399eb369705df62711f72b39fb23b).
 The complete strict regression rebuilt both native executables and ran against
 an unchanged source tree on Linux/WSL with Python **3.11.15**,
 Sprocket **0.32.0** and cwltool **3.1.20240508115724**.

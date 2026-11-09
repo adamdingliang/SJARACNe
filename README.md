@@ -4,10 +4,10 @@ SJARACNe is a command-line tool for reconstructing gene regulatory networks
 from gene expression data. It builds transcription factor (TF) and signaling
 (SIG) networks for exploring candidate regulators and their target genes.
 
-[![Status](https://img.shields.io/badge/status-active-success.svg)](https://github.com/adamdingliang/SJARACNe2 "Active development")
-[![Issues](https://img.shields.io/github/issues/adamdingliang/SJARACNe2)](https://github.com/adamdingliang/SJARACNe2/issues "Open issues")
-[![Pull requests](https://img.shields.io/github/issues-pr/adamdingliang/SJARACNe2)](https://github.com/adamdingliang/SJARACNe2/pulls "Open pull requests")
-[![CI](https://img.shields.io/github/actions/workflow/status/adamdingliang/SJARACNe2/regression.yml?branch=develop&event=push&label=develop%20CI)](https://github.com/adamdingliang/SJARACNe2/actions/workflows/regression.yml?query=branch%3Adevelop "Regression status for develop")
+[![Status](https://img.shields.io/badge/status-active-success.svg)](https://github.com/adamdingliang/SJARACNe "Active development")
+[![Issues](https://img.shields.io/github/issues/adamdingliang/SJARACNe)](https://github.com/adamdingliang/SJARACNe/issues "Open issues")
+[![Pull requests](https://img.shields.io/github/issues-pr/adamdingliang/SJARACNe)](https://github.com/adamdingliang/SJARACNe/pulls "Open pull requests")
+[![CI](https://img.shields.io/github/actions/workflow/status/adamdingliang/SJARACNe/regression.yml?branch=develop&event=push&label=develop%20CI)](https://github.com/adamdingliang/SJARACNe/actions/workflows/regression.yml?query=branch%3Adevelop "Regression status for develop")
 [![Python coverage](https://img.shields.io/codecov/c/github/adamdingliang/SJARACNe/develop?flag=python&label=develop%20Python)](https://codecov.io/gh/adamdingliang/SJARACNe "Python runtime coverage for develop")
 [![C++ core coverage](https://img.shields.io/codecov/c/github/adamdingliang/SJARACNe/develop?flag=cpp&label=develop%20C%2B%2B)](https://codecov.io/gh/adamdingliang/SJARACNe "C++ core coverage for develop")
 
@@ -15,8 +15,8 @@ from gene expression data. It builds transcription factor (TF) and signaling
 [Inputs](#inputs) · [Configuration](#configuration) ·
 [Documentation](#documentation) · [Citation](#citation)
 
-> This README describes `feat/native-consensus-before-dpi` in SJARACNe2.
-> Clone that branch using the command below to get this implementation.
+> This README describes the `develop` branch of SJARACNe.
+> Clone `develop` using the command below to get this implementation.
 > The default engine is WDL 1.3 / Sprocket. The current profile applies native
 > recurrence consensus before DPI, with a configurable tolerance offset of
 > 0.025. PCHIP cutoffs and dynamic DPI remain experimental.
@@ -38,7 +38,7 @@ from gene expression data. It builds transcription factor (TF) and signaling
 - Linux, or Linux through WSL on Windows. These are the validated workflow
   environments. On Windows, open **Ubuntu in WSL**, not Git Bash or an
   MSYS2/UCRT64 shell; native Windows execution is not covered here.
-- Python **3.11** for the current feature's local validation and the commands
+- Python **3.11** for the current workflow's local validation and the commands
   below. The project's `.python-version` still selects 3.14; the earlier
   [compatibility report](docs/python_compatibility.md) covers historical 3.11/3.14
   checks. uv can download the explicitly selected interpreter if it is missing.
@@ -71,11 +71,11 @@ manager. Install Sprocket separately as described above.
 
 Run the following in a Linux or WSL terminal. The committed `uv.lock` selects
 the dependency versions. Select Python 3.11 explicitly to reproduce the
-current feature validation, overriding `.python-version`:
+recorded local workflow validation, overriding `.python-version`:
 
 ```bash
-git clone --branch feat/native-consensus-before-dpi https://github.com/adamdingliang/SJARACNe2.git
-cd SJARACNe2
+git clone --branch develop https://github.com/adamdingliang/SJARACNe.git
+cd SJARACNe
 
 uv sync --locked --python 3.11
 source .venv/bin/activate
@@ -90,9 +90,9 @@ installation. Missing build tools produce an installation error with setup
 instructions; the installer does not run `sudo` or install system packages for
 you. See the [native installation validation](docs/native_build_installation.md).
 
-The refreshed feature workflow has local Python 3.11 validation. The
+The native consensus-first workflow has local Python 3.11 validation. The
 [Python compatibility report](docs/python_compatibility.md) records earlier
-3.11/3.14 checks and does not establish a new 3.14 result for this feature.
+3.11/3.14 checks and does not establish a new 3.14 result for this implementation.
 For a separate Python 3.14 environment, select `--python 3.14` explicitly;
 use separate environments and do not replace one while jobs use it. The lock's
 version range is not validation of every interpreter or platform. See the
@@ -409,7 +409,7 @@ The `regression` group adds the pinned build/test tools; the `cwl` extra adds CW
 support. Sprocket, Node.js, Bats and the compiler remain system prerequisites.
 
 The [current workflow validation](docs/native_consensus_validation.md#workflow-validation-refresh)
-records the tested feature revision, local Python/tool versions and results.
+records the tested runtime revision, local Python/tool versions and results.
 The checks include real consensus-first and DPI-first workflows, TF/SIG roles,
 legacy settings, and WDL/CWL output comparisons.
 
@@ -418,17 +418,15 @@ without launching full dataset benchmark batches. GitHub Actions runs the
 suite on Python 3.11 and 3.14 for PRs into and pushes to `develop` and `master`
 when the workflow is present on the branch. The CI badge reports **develop's**
 push status; the separate Python and C++ badges report its uploaded execution
-coverage. The working Codecov badge URLs retain the original `SJARACNe` project
-slug; they report develop coverage, not this feature branch's coverage.
-They do not measure biological accuracy. See the
+coverage. These badges do not measure biological accuracy. See the
 [coverage guide](tests/README.md#execution-coverage) for the execution-coverage
 scope and reporting setup.
 
 ## Support and contributions
 
 Report bugs or suggest improvements through
-[Issues](https://github.com/adamdingliang/SJARACNe2/issues); proposed changes can
-be submitted as [pull requests](https://github.com/adamdingliang/SJARACNe2/pulls)
+[Issues](https://github.com/adamdingliang/SJARACNe/issues); proposed changes can
+be submitted as [pull requests](https://github.com/adamdingliang/SJARACNe/pulls)
 against `develop`. Include the revision, command, engine version, input
 dimensions and relevant logs. Remove sensitive data before sharing reports.
 
