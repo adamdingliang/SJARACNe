@@ -13,7 +13,7 @@ from gene expression data. It builds transcription factor (TF) and signaling
 
 [Installation](#installation) · [Quick start](#quick-start) ·
 [Inputs](#inputs) · [Configuration](#configuration) ·
-[Documentation](#documentation) · [Citation](#citation)
+[Outputs](#outputs) · [Documentation](#documentation) · [Citation](#citation)
 
 > This README describes the `develop` branch of SJARACNe2.
 > Clone `develop` using the command below to get this implementation.
