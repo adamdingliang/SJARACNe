@@ -4,15 +4,6 @@ SJARACNe2 is a command-line tool for reconstructing gene regulatory networks
 from gene expression data. It builds transcription factor (TF) and signaling
 (SIG) networks for exploring candidate regulators and their target genes.
 
-SJARACNe2 is developed as a fork of the original
-[SJARACNe](https://github.com/jyyulab/SJARACNe). The repository remains in the
-original GitHub fork network.
-
-The official tool and repository name is **SJARACNe2**. For compatibility, the
-command remains `sjaracne`, the Python distribution and namespace remain
-`SJARACNe`, and internal source paths and workflow identifiers retain their
-existing names. Install this version from the source repository below.
-
 [![Status](https://img.shields.io/badge/status-active-success.svg)](https://github.com/adamdingliang/SJARACNe2 "Active development")
 [![Issues](https://img.shields.io/github/issues/adamdingliang/SJARACNe2)](https://github.com/adamdingliang/SJARACNe2/issues "Open issues")
 [![Pull requests](https://img.shields.io/github/issues-pr/adamdingliang/SJARACNe2)](https://github.com/adamdingliang/SJARACNe2/pulls "Open pull requests")
