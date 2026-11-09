@@ -1,17 +1,13 @@
-# Default WDL 1.3 / Sprocket workflow
+# WDL 1.3 / Sprocket workflow
 
 This guide documents the retained SJARACNe2 `master` snapshot, where DPI
 runs before recurrence consensus. For the current native consensus-before-DPI
 workflow, see the [public `develop` guide](https://github.com/adamdingliang/SJARACNe2/blob/develop/SJARACNe/wdl/README.md).
 
-The public local workflow now uses **WDL 1.3 and Sprocket** by default. It
-validates and stages inputs, scatters seeded reconstructions, then runs the
-existing consensus/enhancement implementation. MI estimation and DPI still run
-in the native C++ executable; WDL does not reimplement those calculations.
-
-This branch also makes experimental **PCHIP MI cutoffs and dynamic DPI** the
-current-profile defaults. The retained CWL path and an explicit pre-sampling
-legacy profile are documented in [BACKWARD_COMPATIBILITY.md](../../docs/BACKWARD_COMPATIBILITY.md).
+The workflow prepares inputs, scatters native MI/DPI reconstructions, then
+combines and enhances their networks in Python. The current profile uses
+experimental PCHIP cutoffs and dynamic DPI. See the
+[compatibility guide](../../docs/BACKWARD_COMPATIBILITY.md) for legacy settings and CWL.
 
 ## Local use
 
@@ -22,8 +18,7 @@ For the Linux x86_64 archive from the
 [0.32.0 release](https://github.com/stjude-rust-labs/sprocket/releases/tag/v0.32.0),
 the SHA256 is
 `27dbf45e3ceaad9e13d416fdf44e8741af1a98c6a516723b27057e695cab0756`.
-The CLI checks the engine; it does not silently install Sprocket or fall back to
-CWL when it is missing. Sprocket is not a Python package dependency.
+Sprocket is installed separately. The CLI rejects a missing or incompatible engine.
 
 Choose the network type explicitly:
 
@@ -57,12 +52,10 @@ The same full hub list supplies native `-s` and `-l`.
 
 ### Recurrence cutoff
 
-K=20 is a practical consensus setting, not a biological false-discovery-rate
-guarantee or an optimum for every dataset. Inspect target coverage; the bundled
-BRCA100 example becomes sparse at K20. For **scRNA-seq**, a smaller user-selected
-K may be appropriate, but neither a single-cell default nor a dynamic K rule
-has been validated yet. Override with `-k COUNT` as needed; `-k 6` restores the
-previous recurrence cutoff, not the full legacy workflow. See the
+K20 is a practical operating point, not biological FDR control or a universal
+optimum. Inspect target coverage: the bundled BRCA100 example becomes sparse.
+Use `-k COUNT` to adjust it; `-k 6` restores only the prior cutoff. A smaller K
+may suit scRNA-seq, but no single-cell default or dynamic K rule is validated. See the
 [benchmark summary](https://github.com/adamdingliang/sjaracne_benchmark/pull/4).
 
 ### Dynamic DPI tolerance
@@ -73,9 +66,8 @@ Dynamic tolerance is one scalar for each reconstruction:
 epsilon(H) = min(dpi_max, dpi_slope * max(0, log2(H / dpi_href)))
 ```
 
-H counts unique reconstructed source rows, including empty rows. It is not
-annotation-list length or emitted-edge count. Larger epsilon relaxes pruning;
-H at or below Href resolves to zero. The native executable calculates and records
+`H` counts unique reconstructed source rows, including empty rows. Larger
+epsilon relaxes pruning; `H <= Href` gives zero. The native executable records
 the actual tolerance.
 
 ### Interpretation and calibration limits
@@ -84,13 +76,12 @@ Inferred edges are candidate associations, not verified direct or causal
 regulation. The provisional TF/SIG probabilities are operating choices, not
 universal optima or biological false-discovery-rate guarantees.
 
-PCHIP converts sample count and probability to an MI cutoff using a bundled
-empirical null surface. It requires Npar=40, `m=50..10000` and probabilities
-`1e-7..0.05` (with `pb=1` reserved for preserving all MI candidates). Unsupported
-inputs fail rather than silently falling back or extrapolating. Probabilities
-below `0.0005` warn that they are outside the main assessment range; extreme-tail
-assessment has limited Monte Carlo precision. These warnings remain visible in
-the retained logs.
+PCHIP lookup uses a bundled empirical null surface with Npar=40,
+`m=50..10000` and probabilities `1e-7..0.05`. The special `pb=1` value bypasses
+lookup to preserve all MI candidates. Unsupported lookup inputs fail rather
+than falling back or extrapolating. Probabilities below `0.0005` warn about
+limited assessment; extreme-tail Monte Carlo precision is limited. Warnings
+remain in the retained logs.
 
 Dynamic DPI relaxes pruning as the reconstructed hub count increases above its
 reference. It addresses hub-context sensitivity as an engineering choice;
@@ -146,22 +137,16 @@ sprocket --skip-config-search --config SJARACNe/wdl/sprocket.local.toml \
   run SJARACNe/wdl/sjaracne.wdl @wdl-inputs.json --output-dir /absolute/path/wdl-output
 ```
 
-Omitted scientific options resolve through the same shared profile code used by
-the CLI. The reduced example explicitly uses K6; otherwise the current default
-is K20 and fewer than 20 resamples require a smaller explicit K. This is not an
-automatic support-fraction rule. Set `profile` to `legacy` to use that profile; its network type is
-optional. Optional inputs include `aracne_config_dir`, `subsample_spec`, `depth`,
+Omitted options use the same profile resolver as the CLI. The example sets K6
+explicitly; fewer than 20 resamples require a smaller K. For `profile: legacy`,
+network type is optional. Other inputs include `aracne_config_dir`, `subsample_spec`, `depth`,
 `p_value_bootstrap`, `apmi_null_model`, `min_recurrence`, `p_value_consensus`,
 `tolerance`, `dynamic_dpi`, `dpi_href`, `dpi_slope` and `dpi_max`. Explicit sampling
 mode uses `sampling_method`; conflicting replacement/unique inputs are rejected.
 
-Do not copy the old standalone document's defaults from historical reports.
-Omissions now select the current profile, not affine/strict settings. Raw CWL
-keeps its older MI/sampling/DPI defaults, but an omitted consensus cutoff now
-uses K20; specify `min_recurrence: 6` to retain its prior recurrence cutoff.
-Engine selection through the public CLI always forwards a fully resolved
-scientific profile. A smaller K may be appropriate for scRNA-seq, but neither
-a scRNA-seq default nor dynamic K has been validated; inspect target coverage.
+Direct CWL inputs retain affine/strict-DPI defaults but use K20 when selection
+is omitted; set `min_recurrence: 6` for the prior cutoff. The public CLI always
+forwards its fully resolved scientific profile to either engine.
 
 ## Resources, outputs and provenance
 
@@ -175,11 +160,9 @@ These are scheduling requests, not a claim that every dataset fits those sizes.
 The bundled direct-WDL configuration uses two CPUs/two scatter slots and a
 16-GiB budget. An explicit `--sprocket-config` selects custom engine settings.
 
-The CLI publishes the familiar four final network/metadata files in its output
-directory and saves `sjaracne_run.json` with resolved options and engine output
-locations. It refuses a nonempty output directory rather than overwriting a
-previous run. Engine work, logs and task attempts are retained. `-tmp` remains
-accepted for choosing a scratch parent; existing files there are not deleted.
+The CLI publishes four final network/metadata files and `sjaracne_run.json`.
+Use a new or empty output directory; engine work, logs and attempts are retained.
+`-tmp` selects a scratch parent whose existing contents are preserved.
 
 Direct WDL outputs include `out_dir` (the enhanced network **file**, a historical
 name), `consensus_network` (three columns), `bootstrap_info`, `parameter_info`,
@@ -197,13 +180,12 @@ subset. Its regression p-value is not an MI or consensus-edge probability.
 
 No expression transformation, gene filtering or hub reordering is introduced.
 Line endings are normalized on staged copies without changing original files.
-The old CWL line-ending helper's staging defect is not copied into WDL.
+WDL normalizes its own staged copies independently of the retained CWL helper.
 
 ## Regression and validation limits
 
-The complete small regression now requires pinned Sprocket and executes real
-default CLI and CWL/WDL comparison tests. CI verifies the release archive SHA256
-before installing the engine. A focused paired-engine run remains available:
+The complete regression requires pinned Sprocket and runs real CLI and
+CWL/WDL comparisons. CI verifies the engine archive checksum. For a focused run:
 
 ```bash
 python tests/wdl/run_parity.py --sprocket /absolute/path/sprocket \
@@ -216,9 +198,7 @@ enhancement, with independent recurrence/mean-MI checks. Current TF/SIG defaults
 explicit fixed/dynamic settings and the legacy profile are covered. CRLF and
 invalid-input checks are separate from biological accuracy.
 
-See the [historical default-profile validation report](../../docs/default_profiles_validation.md).
-The [initial standalone parity report](../../docs/wdl13_parity.md) records the
-earlier opt-in defaults and is historical evidence, not a description of the new
-default profile. Cluster/cloud, container, production-scale memory, cache and
-failure-recovery validation remain separate work; the local configuration keeps
-call caching and retries disabled.
+The [profile](../../docs/default_profiles_validation.md) and
+[initial parity](../../docs/wdl13_parity.md) reports preserve dated evidence.
+They do not validate production-scale resources or remote/container backends.
+The local configuration disables call caching and retries.

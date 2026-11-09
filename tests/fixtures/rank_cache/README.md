@@ -9,8 +9,7 @@ The files were moved without byte changes from
 `edf7a2f` when the historical performance benchmarks were separated from the
 engine repository. Historical benchmark tools, timing results and their
 provenance are maintained in
-[sjaracne_benchmark](https://github.com/adamdingliang/sjaracne_benchmark)
-(currently private).
+[sjaracne_benchmark](https://github.com/adamdingliang/sjaracne_benchmark).
 
 - `tied_counts.exp` and `tied_hubs.txt` exercise tied expression values and hub
   ordering.

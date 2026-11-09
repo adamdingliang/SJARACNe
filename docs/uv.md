@@ -1,13 +1,11 @@
 # Environments and deployment with uv
 
-Use uv **0.11.16** to prepare reusable SJARACNe2 environments from the committed
-lockfile. uv installs the Python package and triggers its native C++ build;
-it **does not install Sprocket** or system build tools. Package installation
-and CLI help do not require Sprocket, but the default WDL workflow does.
+Use uv **0.11.16** and the committed lockfile to install SJARACNe2 and build
+its native programs. Install Make, a compiler and **Sprocket 0.32.0** separately.
+CLI help does not require Sprocket; WDL execution does.
 
-This guide covers environment setup and deployment, not inference settings.
-See the [validation report](uv_validation.md) for the tested installation,
-cache and workflow checks.
+See the [workflow guide](../SJARACNe/wdl/README.md) for inference settings and
+the [historical uv report](uv_validation.md) for migration evidence.
 
 ## Contents
 
@@ -22,19 +20,15 @@ cache and workflow checks.
 
 ## One-time setup on Ubuntu or Ubuntu in WSL
 
-Use a Linux terminal, or **Ubuntu in WSL** on Windows. Git Bash and
-MSYS2/UCRT64 are not substitutes for WSL. A source installation needs Make and
-a C++ compiler, even though the Python installer invokes them automatically.
-For Ubuntu or Ubuntu in WSL, install those prerequisites once:
+Use Linux or **Ubuntu in WSL** on Windows. Install the Ubuntu build tools once:
 
 ```bash
 sudo apt update
 sudo apt install --yes build-essential git curl
 ```
 
-Other Linux distributions should use their package manager for the equivalent
-compiler and Make packages. The installer does not run `sudo` or install
-system packages automatically.
+Other Linux distributions need equivalent compiler/Make packages. The installer
+does not install system packages; native Windows/MSYS2 builds are unsupported.
 
 Install the pinned uv version using the
 [official installation instructions](https://docs.astral.sh/uv/getting-started/installation/#installing-a-specific-version).
@@ -56,19 +50,14 @@ uv sync --locked
 uv run --locked --no-sync sjaracne local --help
 ```
 
-`uv sync --locked` installs SJARACNe2 and its Python dependencies into `.venv`,
-and automatically builds the native programs. No separate Make step is needed.
-Missing build tools stop installation with an actionable error; see the
-[native installation validation](native_build_installation.md).
+`uv sync --locked` installs into `.venv` and builds the native programs. No
+separate Make step is needed; see [native installation](native_build_installation.md).
 
-**This does not install Sprocket.** The `--help` command checks the CLI, not
-whether the default workflow is ready to run. Complete the next section before
-launching a WDL workflow.
+The help command checks CLI loading. Complete the Sprocket setup below before
+running a WDL workflow.
 
-Activate `.venv` with `source .venv/bin/activate` to use `sjaracne` directly.
-Alternatively, `uv run --locked --no-sync sjaracne ...` uses the prepared
-environment without activation or resynchronization. `--no-sync` is for an
-already-prepared environment, not initial installation or dependency updates.
+Activate `.venv` to use `sjaracne` directly, or use `uv run --locked --no-sync`
+with the prepared environment. Synchronize explicitly after dependency changes.
 
 ## Prepare Sprocket for workflows
 
@@ -90,8 +79,7 @@ not found, add `export PATH="$HOME/.cargo/bin:$PATH"` to `~/.bashrc` and open a
 new shell. For a downloaded binary, use its actual installation directory.
 Alternatively, pass `--sprocket /absolute/path/to/sprocket` to `sjaracne local`.
 
-SJARACNe2 neither installs the engine automatically nor silently falls back to
-CWL. Once both the package and engine are ready, follow the
+A missing or incompatible engine fails explicitly. Then follow the
 [workflow examples](../SJARACNe/wdl/README.md#local-use).
 
 ## Choose a Python version
@@ -103,11 +91,9 @@ interpreter if one is missing. To use an existing interpreter explicitly:
 uv sync --locked --python /path/to/python3.14 --no-python-downloads
 ```
 
-The lock resolves Python **3.11 through 3.14**. Only 3.11 and 3.14 have the
-documented regression coverage; intermediate versions are not newly validated
-by being resolvable. The package's historical `requires-python >=3.7.6`
-metadata is retained for ordinary installers, not as a current support claim.
-`uv sync` rejects interpreters outside its narrower locked range.
+The lock covers Python **3.11–3.14**; CI tests 3.11 and 3.14. Intermediate
+versions are resolvable but unvalidated. Historical package metadata allows
+`>=3.7.6`; that is not the maintained validation range.
 
 To maintain a separate Python 3.11 environment, choose a dedicated absolute
 path rather than replacing an environment used by running jobs:
@@ -134,10 +120,9 @@ warning from the checkout's default 3.14 preference when using `--no-sync`.
 | [`uv.lock`](../uv.lock) | Resolved package versions, sources and artifact hashes, including transitive dependencies. |
 | [`.python-version`](../.python-version) | Preferred interpreter family; not an installed Python binary. |
 
-The lock fixes direct and transitive dependency versions. The
-[Python compatibility report](python_compatibility.md) lists the validated
-numerical stacks and optional cwltool versions; cwltool is not installed by
-the default synchronization.
+The lock fixes direct and transitive versions. The
+[Python compatibility report](python_compatibility.md) records the original
+validated stacks. Optional cwltool is excluded from a default sync.
 
 No dependency groups are selected by default. Add optional CWL support with:
 
@@ -158,16 +143,15 @@ before running the complete suite; see the [regression guide](../tests/README.md
 Use the same extras/groups when resynchronizing: an ordinary exact `uv sync`
 can remove packages that are no longer selected.
 
-`--locked` rejects a stale lockfile rather than updating it. Do not regenerate
-the lock as part of ordinary execution. Dependency upgrades should be explicit
-reviewed changes, followed by both regression lanes. A lockfile does not prove
-identical numerical output across operating systems, CPUs or compiler builds.
+`--locked` rejects stale metadata instead of updating the lock. Review dependency
+upgrades separately and run both regression lanes; a lock does not guarantee
+identical numerics across platforms or compilers.
 
 ## Native builds and cache invalidation
 
-Normal source installation builds C++ through setuptools and Make. For C++
-development, `make -C SJARACNe` remains available as an explicit rebuild.
-An unchanged cached `uv sync` does not necessarily recompile native programs.
+Source installation builds C++ through setuptools/Make. An unchanged cached
+sync can reuse its native build. For source development, `make -C SJARACNe`
+remains available.
 
 Cache keys cover native sources, headers, the Makefile, build metadata and
 runtime assets. Edits invalidate the cached package build; a changed compiler
@@ -185,11 +169,9 @@ the package's build cache avoids reinstalling an older cached native wheel.
 
 ## HPC and cloud precautions
 
-Prepare an environment or container **once before submitting jobs**, then
-execute it without modification. Do not install or synchronize dependencies in
-every resample task. For example, a job can invoke
-`/path/to/prepared-env/bin/sjaracne` directly; uv need not be installed in the
-runtime image solely to execute an already-installed package.
+Prepare the environment or container **before submitting jobs** and keep it
+unchanged. Tasks can call `/path/to/prepared-env/bin/sjaracne` directly without
+uv or per-resample dependency synchronization.
 
 - **Isolation:** use a dedicated environment, not global Python, an unrelated
   Conda environment or an environment being modified by other analyses.
@@ -213,11 +195,9 @@ runtime image solely to execute an already-installed package.
   runtime does not depend on a separate source checkout. Pin and test the
   image as well as the lockfile.
 
-uv is not a scheduler or workflow engine. It does not add or validate LSF,
-Slurm, AWS or Azure execution; that remains Sprocket/backend/container work.
-The current documented workflow uses host execution without container
-isolation. Container deployment is a recommendation, not a newly implemented
-or validated backend.
+The documented backend runs on the local host without container isolation.
+These deployment recommendations do not validate a container, scheduler or
+cloud backend.
 
 Official references: [cache behavior](https://docs.astral.sh/uv/concepts/cache/),
 [Python management](https://docs.astral.sh/uv/concepts/python-versions/) and
@@ -240,11 +220,9 @@ Pip also builds the native executables automatically. The same compiler/Make
 prerequisites apply; Sprocket still requires separate installation for WDL
 execution, and `--help` alone does not verify it.
 
-For Python 3.11, select that interpreter and use `tests/requirements-ci.txt`
-instead. These retained requirements files are **historical top-level
-validation snapshots**, not the authoritative dependency definitions or full
-transitive locks. Pip does not read `uv.lock`; the simple fallback above may
-resolve different transitive versions.
+For Python 3.11, use that interpreter and `tests/requirements-ci.txt`. These
+requirements files are historical top-level pins, not full transitive locks.
+Pip does not read `uv.lock`; export its constraints when exact pins are needed.
 
 To supply pip with the lock's complete runtime/build constraints, export them
 on a machine with uv, then transfer the export along with the package if needed:

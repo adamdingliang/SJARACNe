@@ -1,10 +1,10 @@
 # Automatic native builds during installation
 
-Scope: `feat/wdl13-scientific-parity`, following `6920ffe`, October 29, 2026
-(America/New_York). This is an installation/build improvement, not a change to
-network inference, dependency versions or scientific defaults.
+Source installations build the native programs automatically. See the
+[environment guide](uv.md) for current commands. The validation section records
+the original October 29, 2026 checks; its counts are historical.
 
-## User-facing change
+## Installation
 
 On Ubuntu, including Ubuntu through WSL on Windows, install system prerequisites
 once:
@@ -29,7 +29,7 @@ not supported; use an Ubuntu/WSL terminal rather than Git Bash/UCRT64.
 
 ## Build behavior and safety
 
-The setuptools build command now starts with a dedicated public `build_native`
+The setuptools build command starts with a public `build_native`
 subcommand. Both regular wheels and PEP 660 editable installs execute it before
 Python package data is collected. Metadata/source discovery does not compile.
 The subcommand exposes source/output mappings for editable installs; it does
@@ -46,15 +46,16 @@ Make dependencies remain in place. Advanced users may still call Make
 directly, and compiler/toolchain changes need an explicit rebuild as described
 in the [environment guide](uv.md).
 
-CI no longer manually builds the checkout before `uv sync`, so it exercises
+CI uses the installation build path before regression, so it exercises
 the same automatic build path as a new user. Independent clean-source probes
 cover default editable and non-editable uv installs, plus pip editable and
 source-archive/wheel installs. No prebuilt native programs are supplied to
 those probes.
 
-## Validation
+## Historical validation
 
-Checks use CPython 3.11.15 and 3.14.5 with the unchanged locked dependency
+Scope: `feat/wdl13-scientific-parity`, following `6920ffe`, October 29, 2026
+(America/New_York). Checks used CPython 3.11.15 and 3.14.5 with the unchanged locked dependency
 versions. The clean-install tests deliberately exclude prebuilt executables
 and object files; they never manually invoke Make before installation.
 

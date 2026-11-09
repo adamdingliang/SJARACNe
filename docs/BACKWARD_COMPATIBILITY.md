@@ -1,13 +1,13 @@
 # Backward-compatible workflows
 
-This branch changes the public workflow defaults. An unchanged command is not a
-promise of an unchanged inferred network. Use the explicit `legacy` profile when
-you want the scientific settings used before the sampling-without-replacement
-change.
+This guide covers the retained DPI-before-consensus `master` snapshot. Use
+`--profile legacy` for the settings preceding sampling without replacement.
+For native consensus before DPI, see the
+[`develop` compatibility guide](https://github.com/adamdingliang/SJARACNe2/blob/develop/docs/BACKWARD_COMPATIBILITY.md).
 
 ## Current and historical profiles
 
-| Setting | Current profile, now the workflow default | `--profile legacy` |
+| Setting | Current profile on this branch | `--profile legacy` |
 | --- | --- | --- |
 | Local workflow/engine | WDL 1.3 / Sprocket | WDL 1.3 / Sprocket; CWL remains selectable |
 | Network type | Explicit `--network-type TF` or `SIG`, even when supplying `pb` | Optional; does not select a different legacy probability |
@@ -46,11 +46,8 @@ sjaracne local --engine cwl --profile legacy \
   -o legacy_cwl_brca100_tf -tmp /absolute/path/cwl-scratch
 ```
 
-CWL additionally needs Node.js. CWLEXEC and the old `sjaracne lsf` command have
-been removed, including their configuration templates and launchers. They are
-not installed, invoked or retained as an optional execution dependency.
-Old `lsf`, `-j` and `--config-json` invocations now fail instead of submitting
-jobs or silently switching engines.
+CWL also needs Node.js. CWLEXEC, its launchers and the `lsf`, `-j` and
+`--config-json` interfaces are removed; those invocations fail explicitly.
 
 Use WDL/Sprocket with an explicit `--sprocket-config` for separately configured
 scheduler backends. Cluster execution remains unvalidated here; old CWLEXEC
@@ -106,19 +103,17 @@ The familiar final files remain:
 - `bootstrap_info_.txt`
 - `parameter_info_.txt`
 
-The new CLI additionally saves its resolved scientific options and engine/output
-locations in `sjaracne_run.json`. Sprocket retains per-seed adjacencies, command
-provenance and native logs. A nonempty output directory is not silently reused or
+The CLI records resolved options and engine paths in `sjaracne_run.json`.
+Sprocket retains per-seed graphs, provenance and logs. Existing outputs are not
 overwritten.
 
 ## Direct native executable
 
-Low-level `sjaracne.exe` defaults remain unchanged. This is deliberate: blindly
-applying workflow defaults would break legitimate all-gene, single-hub,
-conditional and adjacency-replay uses. In particular:
+Bare `sjaracne.exe` retains its historical defaults and its all-gene, single-hub,
+conditional and replay interfaces:
 
-- Omitting native `-M` still selects affine conversion when a probability cutoff
-  is requested; workflow PCHIP is passed explicitly as `-M pchip`.
+- Omitting native `-M` selects affine conversion. Native depth defaults to
+  `-N 20`; the workflow supplies `-N 40` and current-profile `-M pchip` explicitly.
 - `-r 1` retains full-size replacement sampling; `-u` is the separate unique
   subsampling option. They cannot be combined.
 - Fixed `-e` remains available; `-e 1` disables DPI.
@@ -133,12 +128,9 @@ conditional and adjacency-replay uses. In particular:
 The existing Python `get_mi_cutoff(m, p)` callable is also retained. It requires
 explicit numeric inputs; workflow role defaults do not change that API.
 
-This is **configuration and scientific-workflow compatibility**, not universal
-byte-for-byte historical reproduction. The current executable includes newer
-input validation, safety checks, duplicate handling and provenance. Numerical
-libraries, compiler versions and platforms may also differ. Exact historical
-reproduction requires the pinned historical source/executable, inputs,
-configuration and numerical environment.
+Compatibility covers settings and supported scientific operations. Exact
+historical bytes require the pinned source, binary, inputs and numerical
+environment; validation, duplicate handling and metadata may differ.
 
 A narrow local compatibility check compared the verified pre-sampling native
 executable at `e59973a` with the current executable using the legacy settings.
@@ -147,10 +139,7 @@ produced byte-identical adjacency **bodies**. This is useful evidence that the
 retained replacement/affine/strict-DPI path reproduces that small example; it
 does not establish identical metadata or universal fidelity across datasets,
 compilers and platforms. Artifact provenance is recorded in the
-[current validation report](default_profiles_validation.md).
+[historical validation report](default_profiles_validation.md).
 
-The new PCHIP and dynamic-DPI defaults remain experimental scientific operating
-choices. Default status does not establish biological FDR control, direct-edge
-accuracy, universal calibration or an optimal TF/SIG probability for every
-dataset. See the [workflow guide](../SJARACNe/wdl/README.md) and
-[current validation report](default_profiles_validation.md).
+For PCHIP calibration and inference limits, see the
+[workflow guide](../SJARACNe/wdl/README.md#interpretation-and-calibration-limits).

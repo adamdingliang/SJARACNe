@@ -1,8 +1,8 @@
-# uv migration validation
+# Historical uv migration validation
 
-The measured six-resample/default-K6 workflow checks below are historical.
-Current consensus defaults to K20; see the
-[active configuration guide](../README.md#configuration).
+This October 29, 2026 snapshot measured K6. Results below describe that
+revision; see the [environment guide](uv.md) for current installation and
+[workflow defaults](../SJARACNe/wdl/README.md#default-parameter-values) for K20.
 
 Scope: `feat/wdl13-scientific-parity`, following `8a4f9f1`, on October 29,
 2026 (America/New_York). This changes package/environment management and native
