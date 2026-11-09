@@ -42,6 +42,12 @@ with an explicit probability; no filename or hub-list biology is inferred.
 Inputs retain the [main README format and ID-matching rules](../../README.md#inputs).
 The same full hub list supplies native `-s` and `-l`.
 
+## Default parameter values
+
+The current profile resolves to **100 × 80% resamples → K20 candidates →
+supporting-run mean MI → DPI**. These are workflow defaults; bare native
+executable calls can have different defaults.
+
 | Setting | Current workflow default |
 | --- | --- |
 | Resampled networks | 100, seeds 1 through 100 |
@@ -54,10 +60,28 @@ The same full hub list supplies native `-s` and `-l`.
 | Consensus | Distinct-network recurrence K=20, inclusive; 20 of 100 by default |
 | Raw-graph hash re-verification (operational) | `verify_raw_hashes=false`; enable with `--verify-raw-hashes` |
 
+### Recurrence cutoff
+
+K=20 is a practical consensus setting, not a biological false-discovery-rate
+guarantee or an optimum for every dataset. Inspect target coverage; the bundled
+BRCA100 example becomes sparse at K20. For **scRNA-seq**, a smaller user-selected
+K may be appropriate, but neither a single-cell default nor a dynamic K rule
+has been validated yet. Override with `-k COUNT` as needed; `-k 6` restores the
+previous recurrence cutoff, not the full legacy workflow. See the
+[benchmark summary](https://github.com/adamdingliang/sjaracne_benchmark/pull/4).
+
+### Dynamic DPI tolerance
+
 Dynamic tolerance is one scalar for the final consensus graph:
 
 ```text
 epsilon(H) = min(dpi_max, dpi_offset + dpi_slope * max(0, log2(H / dpi_href)))
+```
+
+With the workflow defaults:
+
+```text
+epsilon(H) = min(0.30, 0.025 + 0.05 * max(0, log2(H / 479)))
 ```
 
 H counts unique reconstructed source rows, including empty rows. It is not
@@ -68,6 +92,10 @@ enter the supporting-run MI mean denominator. Raw MI files retain 17 significant
 digits, including every constructed source row even when it has no edges.
 Native-order final three-column and enhanced outputs preserve the computed MI
 tokens; the prior order keeps its historical four-decimal MI formatting.
+
+The workflow default is `--dpi-offset 0.025`. The offset is additive and the
+cap applies after addition. Set it to zero to test the original dynamic
+schedule while keeping consensus first. Fixed DPI does not use an offset.
 
 Default status does not remove scientific limitations. The TF/SIG probabilities
 are provisional operating points, not universal optima. PCHIP calibration does
@@ -80,6 +108,8 @@ extrapolating or selecting another model.
 
 `--dpi-offset 0` removes the added tolerance. `--consensus-order dpi-first
 --dpi-offset 0` retains the previous current-profile order and tolerance schedule.
+When `--consensus-order dpi-first` is selected without an explicit offset,
+the offset resolves to zero.
 Consensus-first requires minimum recurrence; probability consensus requires
 `--consensus-order dpi-first` or the legacy profile. Explicit fixed tolerance
 bypasses the dynamic schedule and cannot be combined with an explicit offset.
@@ -181,8 +211,7 @@ adapter as WDL. Its stages are `prepare_inputs`, `create_resample_seeds`,
 recorded owned engine output directory. The retained low-level CWL workflow
 is named `cwl/dpi_before_consensus.cwl`. Use these descriptive filenames
 directly; the earlier import-only aliases have been removed. See the
-[CWL index](../cwl/README.md) for the entry-point, step and older-path mapping. A smaller K may be appropriate for scRNA-seq, but neither
-a scRNA-seq default nor dynamic K has been validated; inspect target coverage.
+[CWL index](../cwl/README.md) for the entry-point, step and older-path mapping.
 
 ## Resources, outputs and provenance
 

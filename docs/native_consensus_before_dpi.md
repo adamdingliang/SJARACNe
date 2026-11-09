@@ -108,9 +108,10 @@ and no end-to-end speedup is claimed without a measurement.
 
 WDL remains responsible for the independent resample scatter. One post-scatter
 task invokes native consensus/DPI, then enhances only the final pruned edge
-list using the full expression matrix. Native-order three-column and enhanced
-outputs preserve the native MI token precision; historical enhancement defaults
-retain their four-decimal format. The scientific calculations remain
+list using the full expression matrix. Python adds gene symbols and
+correlation/regression statistics to that final pruned edge list.
+Native-order three-column and enhanced outputs preserve the native MI token
+precision; historical enhancement defaults retain their four-decimal format. The scientific calculations remain
 outside WDL. The WDL steps are `prepare_inputs`, `resample_and_estimate_mi`
 and `build_consensus_network`; the final name also covers explicit DPI-first
 runs, which combine already-pruned resamples. CWL consensus-first execution uses

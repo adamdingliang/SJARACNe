@@ -212,53 +212,9 @@ copies without modifying the original files.
 | Consensus | Retain directed edges present in at least 20 distinct resampled networks; average MI over supporting runs only |
 | Local scheduling | Four task slots; 16 GiB memory budget |
 
-These are **workflow defaults**, not the defaults of every bare native
-executable invocation. Memory settings are scheduling requests, not a guarantee
-that a dataset fits. Larger datasets may need higher budgets and task memory
-requests; see [resources and outputs](SJARACNe/wdl/README.md#resources-outputs-and-provenance).
-
-K=20 is a practical consensus setting, not a biological false-discovery-rate
-guarantee or an optimum for every dataset. Inspect target coverage; the bundled
-BRCA100 example becomes sparse at K20. For **scRNA-seq**, a smaller user-selected
-K may be appropriate, but neither a single-cell default nor a dynamic K rule
-has been validated yet. Override with `-k COUNT` as needed; `-k 6` restores the
-previous recurrence cutoff, not the full legacy workflow. See the
-[benchmark summary](https://github.com/adamdingliang/sjaracne_benchmark/pull/4).
-
-The current process is **100 × 80% resamples → K20 candidates → supporting-run
-mean MI → DPI**. The final native call finishes each raw-MI file before opening
-the next, using one 1 MiB input buffer. It accumulates support and MI sums in RAM
-and passes the retained graph directly to the existing DPI code, without an
-intermediate candidate graph or aggregation cache. Dense accumulator memory
-scales with the number of hubs multiplied by the number of expression genes;
-larger panels can need higher `--consensus-memory` and `--memory` budgets. See
-[the algorithm and memory requirements](docs/native_consensus_before_dpi.md#engineering-choices).
-Python adds symbols and correlation/regression statistics to the final pruned
-edge list.
-
-Raw-graph hash re-verification at consensus is **off by default**. Producers
-still compute and record each resample graph's SHA-256; consensus records those
-hashes and checks seed, runtime, input and settings provenance without rereading
-every graph solely to hash it. Add `--verify-raw-hashes` when a fresh byte-level
-comparison with the producer hashes is required. Native format checks and
-input/runtime/configuration, settings and final-output hash checks remain in
-place. This operational option does not change scientific settings or results
-for unchanged inputs. See [verification behavior](docs/native_consensus_before_dpi.md#optional-raw-graph-hash-verification).
-
-```text
-epsilon(H) = min(0.30, dpi_offset + 0.05 * max(0, log2(H / 479)))
-```
-
-`H` counts the requested matched source rows, including zero-target hubs. The
-workflow default is `--dpi-offset 0.025`. Set it to zero to test the original
-dynamic schedule while keeping consensus first. The offset is additive and the
-cap applies after addition. Fixed DPI does not use an offset.
-
-The previous current order remains available as `--consensus-order dpi-first`;
-its omitted offset resolves to zero. The legacy profile retains its historical
-sampling, strict DPI and probability consensus. See the
-[native design and interface](docs/native_consensus_before_dpi.md) and
-[benchmark results](https://github.com/adamdingliang/sjaracne_benchmark/blob/b195f8331496c645121fc614c930ce1f58049300/benchmarks/consensus_before_dpi/README.md).
+See [default parameter values](SJARACNe/wdl/README.md#default-parameter-values)
+for consensus and DPI settings. The [native consensus guide](docs/native_consensus_before_dpi.md)
+explains aggregation, memory requirements and hash verification.
 
 ### Common overrides
 
@@ -395,7 +351,9 @@ linked benchmark reports for the evidence and its limitations.
 
 | Resource | What it covers |
 | --- | --- |
+| [Default parameters](SJARACNe/wdl/README.md#default-parameter-values) | Current values, recurrence coverage, dynamic DPI and tuning limits. |
 | [Workflow guide](SJARACNe/wdl/README.md) | WDL inputs, dynamic DPI formula, resources, outputs and provenance. |
+| [Native consensus](docs/native_consensus_before_dpi.md) | Consensus-before-DPI process, aggregation memory and optional graph-hash verification. |
 | [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) | Legacy profile, local CWL and low-level native behavior. |
 | [Regression guide](tests/README.md) | Test prerequisites, execution and retained evidence. |
 | [Execution coverage](tests/README.md#execution-coverage) | Separate Python/C++ coverage, Codecov setup and measurement limits. |
