@@ -152,9 +152,11 @@ optional. Optional inputs include `aracne_config_dir`, `subsample_spec`, `depth`
 mode uses `sampling_method`; conflicting replacement/unique inputs are rejected.
 
 Do not copy the old standalone document's defaults from historical reports.
-Omissions now select the current profile, not affine/strict settings. Raw CWL
-keeps its older MI/sampling/DPI defaults, but an omitted consensus cutoff now
-uses K20; specify `min_recurrence: 6` to retain its prior recurrence cutoff.
+Omissions now select the current profile, not affine/strict settings. Direct
+`cwl/dpi_before_consensus.cwl` jobs retain the older MI/sampling/DPI defaults,
+but an omitted consensus cutoff uses K20; specify `min_recurrence: 6` to retain
+the prior recurrence cutoff. The consensus-first CWL entry point uses the same
+profile resolver as WDL.
 Engine selection through the public CLI always forwards a fully resolved
 scientific profile. For consensus-first, the CLI uses
 `cwl/consensus_before_dpi.cwl`, whose tasks invoke the same validated JSON
