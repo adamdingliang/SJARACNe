@@ -1,22 +1,15 @@
-# Python 3.11 and 3.14 compatibility
+# Historical Python 3.11 and 3.14 compatibility
 
-The K6 workflow measurements below are historical; current consensus defaults
-to K20. See the [active configuration guide](../README.md#configuration).
+This is the **pre-uv validation at `8a4f9f1`**, completed October 28, 2026
+and finalized October 29 on Linux/WSL. It followed `5188c52` on
+`feat/wdl13-scientific-parity`. Counts, K6 workflow results and requirements-file
+provenance describe that snapshot, not current defaults.
 
-This report records the **pre-uv** validation at `8a4f9f1`; its measurements and
-requirements-file provenance are retained unchanged. The subsequent
-[uv migration](uv.md) centralizes active dependencies in `pyproject.toml` and
-locks transitive versions. See the [migration validation](uv_validation.md)
-for checks of that later environment-management change.
-
-Validation scope: Linux/WSL, on `feat/wdl13-scientific-parity`, following
-`5188c52`. This is installation and small-workflow validation, not a new
-biological benchmark. Full commands, source hashes and dependency inventories
-are retained with the local evidence.
-
-Checks completed October 28, 2026 (America/New_York); report finalized October
-29. The README now recommends Python 3.14 with its tested constraints while
-retaining Python 3.11 as a compatibility option.
+For active setup and checks, use the [environment guide](uv.md) and
+[regression guide](../tests/README.md). The later
+[uv migration report](uv_validation.md) records the move to `pyproject.toml`
+and a transitive lockfile. At this validation date, Python 3.14 became the
+recommended tested environment and 3.11 remained a compatibility option.
 
 ## Tested environments
 
@@ -29,10 +22,8 @@ retaining Python 3.11 as a compatibility option.
 | cwltool | 3.1.20240508115724 | 3.3.20260925135507 |
 | Sprocket | 0.32.0 | 0.32.0 |
 
-The 3.11 numerical/CWL pins are unchanged. The 3.14 lane deliberately uses
-versions with compatible binary distributions, rather than trying to build the
-old numerical stack on an unsupported interpreter. Both use pip 26.2.2,
-setuptools 84.2.1, wheel 0.48.0 and build 1.6.1.
+Python 3.11 kept its numerical/CWL pins; 3.14 used compatible binary
+versions. Both used pip 26.2.2, setuptools 84.2.1, wheel 0.48.0 and build 1.6.1.
 
 Exact top-level pins are in
 [`requirements-ci.txt`](../tests/requirements-ci.txt),
@@ -55,16 +46,13 @@ requirement to use those patches indefinitely.
   failures and version-specific evidence artifacts.
 - Include packaging controls in the strict regression's source hashes.
 
-The native estimator, cutoff coefficients, sampling, DPI and consensus rules
-were not changed. The optional CWL dependency remains optional; the default
-workflow still uses the separately installed Sprocket executable. Nothing is
-published to PyPI by these checks.
+This work preserved the estimator, coefficients, sampling, DPI and consensus.
+CWL remained optional; Sprocket was installed separately. No PyPI release was
+made by these checks.
 
-The existing package metadata's historical `>=3.7.6` declaration is unchanged.
-This work tests **3.11 and 3.14**, not every version admitted by that declaration;
-it does not establish support for end-of-life interpreters. A minimum-version
-policy change is separate from recommending a tested newer environment. The
-`legacy` scientific profile does not require an obsolete Python interpreter.
+The historical package declaration `>=3.7.6` was retained. This report tests
+3.11 and 3.14, not every admitted version. The `legacy` scientific profile does
+not require an obsolete interpreter.
 
 ## Validation
 
@@ -124,7 +112,9 @@ This does not establish universal bitwise identity for arbitrary datasets.
 
 ## Reproduce
 
-Use the matching manifest in an isolated environment, then install this checkout:
+To reproduce the snapshot, use its recorded revision and matching requirements
+in isolated environments. For the maintained checkout, follow the current
+[regression guide](../tests/README.md); its comparator and defaults have evolved.
 
 ```bash
 python -m pip install -r tests/requirements-build.txt
@@ -146,25 +136,20 @@ It contains per-version source-install manifests, archives, installed-asset
 fingerprints, dependency inventories and regression results. Large execution
 artifacts and temporary environments are not committed to the repository.
 
-The original Python 3.14 controller stopped during its final parity stage,
-after all 305 Python tests, ten CWL validations and four Bats tests had passed;
-no failing test was recorded. Its incomplete manifest is preserved, not relabeled
-as a completed controller run. The detached continuation verified unchanged
-source/native hashes, reran the whole parity matrix in
-`regression314/wdl_parity-resume1`, then completed the full Python 3.11 regression
-and cross-version comparison. `controller_state.json` records the successful
-aggregate completion; `cross-version/summary.json` records the output comparison.
+The initial 3.14 controller stopped during parity after 305 tests, ten CWL
+validations and four Bats tests had passed. Its incomplete manifest is retained.
+The continuation verified unchanged hashes, reran parity in
+`regression314/wdl_parity-resume1`, and completed 3.11 plus the cross-version
+comparison. `controller_state.json` records aggregate completion;
+`cross-version/summary.json` records the comparison.
 
 ## Conditional conclusion
 
-Python 3.14 is a defensible recommended environment **with the tested dependency
-constraints**: fresh installation and all small workflow/regression checks
-passed, and the paired scientific outputs agreed. Python 3.11 remains a tested
-compatibility option with its previous numerical/CWL pins.
+Both recorded dependency stacks passed fresh installation, small workflows and
+regression. Paired fixture outputs agreed, supporting Python 3.14 alongside the
+3.11 compatibility environment at that revision.
 
-These results do not guarantee arbitrary dependency upgrades, universal bitwise
-reproducibility, biological accuracy, free-threaded Python, native Windows
-execution or remote scheduler/cloud behavior. The native scientific algorithms
-and default parameters are unchanged. No full dataset benchmark rerun or hosted
-GitHub Actions result is claimed. A uv project/lockfile migration is not part of
-this change.
+This snapshot does not establish arbitrary dependency upgrades, universal
+bitwise reproducibility, free-threaded Python, native Windows, biological
+accuracy or remote scheduler/cloud support. It records local pre-uv validation;
+later hosted CI and workflow changes are documented separately.
