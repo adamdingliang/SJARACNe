@@ -245,7 +245,7 @@ and [flag documentation](https://docs.codecov.com/docs/flags).
 
 ## Ordinary pip and fresh-source installation
 
-uv is not a runtime requirement of SJARACNe. To prepare a pip-based environment
+uv is not a runtime requirement of SJARACNe2. To prepare a pip-based environment
 with the same locked dependencies, export the regression environment once:
 
 ```bash

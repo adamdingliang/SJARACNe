@@ -1,4 +1,7 @@
-# CWL workflows and steps
+# SJARACNe2 CWL workflows and steps
+
+SJARACNe2 keeps the `sjaracne` command and the `SJARACNe/` source directory
+for compatibility.
 
 Use workflow names that state the processing order. The public CLI chooses the
 entry point after resolving the scientific profile and `--consensus-order`.

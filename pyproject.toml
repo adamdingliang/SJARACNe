@@ -25,8 +25,8 @@ cwl = ["cwltool>=3.0.20201117141248"]
 sjaracne = "SJARACNe.sjaracne:main"
 
 [project.urls]
-Homepage = "https://github.com/adamdingliang/SJARACNe"
-Issues = "https://github.com/adamdingliang/SJARACNe/issues"
+Homepage = "https://github.com/adamdingliang/SJARACNe2"
+Issues = "https://github.com/adamdingliang/SJARACNe2/issues"
 
 [tool.setuptools.dynamic]
 version = {attr = "version.__version__"}

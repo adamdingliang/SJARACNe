@@ -1,4 +1,7 @@
-# Default WDL 1.3 / Sprocket workflow
+# SJARACNe2 WDL 1.3 / Sprocket workflow
+
+SJARACNe2 keeps the `sjaracne` command and the `SJARACNe/` source directory
+for compatibility.
 
 The public local workflow now uses **WDL 1.3 and Sprocket** by default. It
 validates and stages inputs, scatters seeded raw-MI reconstructions, then runs
