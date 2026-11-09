@@ -34,6 +34,34 @@ order. They need explicit, audited canonicalization before reuse; do not
 silently interpret a truncated graph as an empty source. Canonicalization of
 six-digit historical MI cannot recover the original unrounded values.
 
+## Optional raw graph hash verification
+
+`--verify-raw-hashes` is a workflow CLI option, not a bare C++ executable flag.
+It defaults to **off**. The corresponding operational workflow Boolean is
+`verify_raw_hashes`, separate from scientific options. WDL/Sprocket supports it
+with either processing order; CWL supports it for consensus-first. The public
+CLI rejects this option with CWL DPI-first, including the CWL legacy profile.
+
+Every producer still computes its output graph's SHA-256 and stores it in the
+seed receipt. By default, consensus checks the successful ordered seed set and
+matching runtime, input and prepared-settings fingerprints, and records the
+producer hashes without recomputing them from the graph files. The recorded
+hashes therefore describe producer outputs; they are not a new verification of
+the current file bytes. Enable the option to reread each graph sequentially and
+compare its SHA-256 with the recorded value before aggregation.
+
+Input, runtime/native/configuration, settings and final-output hash checks
+continue. Native parsing still rejects invalid row layouts, IDs, duplicate
+edges and invalid MI values. For unchanged inputs, this option changes no
+sampling, MI, recurrence, averaging or DPI calculation.
+
+The default removes only the separate consensus-time graph-hashing pass. It
+does not remove producer hashing, raw-file writes/transfers or the normal
+consensus input read. For 206 GB of resample graphs, it avoids an additional
+206 GB read; elapsed time depends on storage and workload. Hashing within the
+C++ aggregation read is not implemented; opt-in verification still uses a
+separate pass.
+
 ## Engineering choices
 
 The final C++ call opens one raw-MI file, reads it completely from beginning to
@@ -47,7 +75,8 @@ pairs are held in RAM. The outer loop follows manifest order, so each edge's
 ordinary binary64 additions remain in that order. An ordered source-target edge
 is counted once per run; support K is inclusive. The mean denominator is that
 edge's support count, so absent runs are not zero-filled. MI zero is still a
-present edge. After all inputs have been validated, surviving edges are inserted
+present edge. After all inputs have been parsed and structurally validated,
+surviving edges are inserted
 directly into the existing native Matrix. Each source's accumulator arrays are
 released as its retained edges enter Matrix, before the existing DPI pass.
 Source rows with zero survivors remain part of H.
@@ -71,9 +100,10 @@ panels can need a higher `--consensus-memory` request and a sufficient overall
 
 This removes Python per-edge aggregation caches, adjacency staging copies and
 the candidate graph write/read between consensus and DPI. Distributed scatter
-still materializes and transfers raw graphs, and provenance verification still
-reads their bytes. Full-precision raw MI increases file size compared with the
-historical six-digit output. This change does not reduce MI estimation work,
+still materializes and transfers raw graphs. Producers still hash their output
+graphs; consensus-time content re-verification is opt-in as described above.
+Full-precision raw MI increases file size compared with the historical six-digit
+output. This change does not reduce MI estimation work,
 and no end-to-end speedup is claimed without a measurement.
 
 WDL remains responsible for the independent resample scatter. One post-scatter
@@ -94,8 +124,9 @@ See the [CWL workflow index](../SJARACNe/cwl/README.md).
 Inputs must have consistent canonical source order and valid expression IDs.
 Missing, duplicated, reordered or extra source rows, duplicate targets,
 self-pairs and invalid MI values are errors. The workflow additionally checks
-all successful seed receipts, input/runtime/settings fingerprints and graph
-hashes before aggregation. Seed order determines floating-point addition order.
+all successful seed receipts and input/runtime/settings fingerprints before
+aggregation. It records the producer graph hashes and recomputes them only when
+`verify_raw_hashes` is true. Seed order determines floating-point addition order.
 
 The native offset defaults to zero to preserve explicit historical native
 calls. The current consensus-first workflow supplies 0.025, whereas explicit

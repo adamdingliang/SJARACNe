@@ -56,6 +56,9 @@ class TestWorkflowCli(unittest.TestCase):
                     'runtime': manifest['runtime'], 'parameters': manifest['scientific_options'],
                     'prepared_settings_sha256': CLI.sha256(prepared),
                     'input_sha256': manifest['original_input_sha256'],
+                    'raw_hash_verification': {'requested': manifest['verify_raw_hashes'],
+                        'performed': manifest['verify_raw_hashes'],
+                        'method': 'sha256' if manifest['verify_raw_hashes'] else 'not-reverified'},
                     'output_sha256': {name: CLI.sha256(output / name) for name in CLI.FINAL_OUTPUTS.values()}
                 }), encoding='utf-8')
             return 0
@@ -79,6 +82,9 @@ class TestWorkflowCli(unittest.TestCase):
             'runtime': manifest['runtime'], 'parameters': manifest['scientific_options'],
             'prepared_settings_sha256': CLI.sha256(prepared),
             'input_sha256': manifest['original_input_sha256'],
+            'raw_hash_verification': {'requested': manifest['verify_raw_hashes'],
+                'performed': manifest['verify_raw_hashes'],
+                'method': 'sha256' if manifest['verify_raw_hashes'] else 'not-reverified'},
             'output_sha256': {name: CLI.sha256(run / name) for name in CLI.FINAL_OUTPUTS.values()}}), encoding='utf-8')
         values['SJARACNe.consensus_provenance'] = str(evidence)
         (run / "outputs.json").write_text(json.dumps(values), encoding="utf-8")
@@ -107,6 +113,86 @@ class TestWorkflowCli(unittest.TestCase):
         for filename in CLI.FINAL_OUTPUTS.values():
             self.assertTrue((self.output / filename).is_file())
         self.assertEqual(len(record["published_outputs"]), 4)
+
+    def test_raw_hash_verification_defaults_off_outside_scientific_options(self):
+        self.invoke()
+        job = self.read_job()
+        record = json.loads((self.output / "sjaracne_run.json").read_text())
+        self.assertIs(job["SJARACNe.verify_raw_hashes"], False)
+        self.assertIs(record["verify_raw_hashes"], False)
+        self.assertNotIn("verify_raw_hashes", record["scientific_options"])
+        self.assertNotIn("verify_raw_hashes", CLI.SCIENTIFIC_FIELDS)
+
+    def test_raw_hash_verification_opt_in_reaches_both_native_workflow_engines(self):
+        for engine in ("sprocket", "cwl"):
+            with self.subTest(engine=engine):
+                self.output = self.root / ("verified_" + engine)
+                arguments = self.base.copy()
+                arguments[arguments.index("-o") + 1] = str(self.output)
+                self.invoke(arguments + ["--engine", engine, "--verify-raw-hashes"])
+                job = self.read_job()
+                key = "SJARACNe.verify_raw_hashes" if engine == "sprocket" else "verify_raw_hashes"
+                self.assertIs(job[key], True)
+                record = json.loads((self.output / "sjaracne_run.json").read_text())
+                self.assertIs(record["verify_raw_hashes"], True)
+                self.assertNotIn("verify_raw_hashes", record["scientific_options"])
+
+    def test_wdl_dpi_first_accepts_hash_verification_but_legacy_cwl_rejects_it(self):
+        self.invoke(self.base + ["--consensus-order", "dpi-first", "--verify-raw-hashes"])
+        self.assertIs(self.read_job()["SJARACNe.verify_raw_hashes"], True)
+        self.output = self.root / "unsupported_cwl"
+        arguments = self.base.copy()
+        arguments[arguments.index("-o") + 1] = str(self.output)
+        with self.assertRaises(SystemExit):
+            self.invoke(arguments + ["--engine", "cwl", "--consensus-order", "dpi-first",
+                                     "--verify-raw-hashes"])
+        self.assertFalse(self.output.exists())
+
+    def test_verification_flag_does_not_accept_a_string_boolean(self):
+        with self.assertRaises(SystemExit):
+            self.invoke(self.base + ["--verify-raw-hashes", "false"])
+        self.assertFalse(self.output.exists())
+
+    def test_raw_hash_policy_must_match_before_any_final_publication(self):
+        for engine in ("sprocket", "cwl"):
+            for enabled in (False, True):
+                for mutation in ("missing", "requested", "performed", "method", "integer_boolean"):
+                    with self.subTest(engine=engine, enabled=enabled, mutation=mutation):
+                        self.output = self.root / ("policy_%s_%s_%s" % (engine, enabled, mutation))
+                        arguments = self.base.copy()
+                        arguments[arguments.index("-o") + 1] = str(self.output)
+                        arguments += ["--engine", engine]
+                        if enabled:
+                            arguments += ["--verify-raw-hashes"]
+
+                        def mutate(command):
+                            self.fake_engine(command)
+                            if "--output-dir" in command:
+                                folder = Path(command[command.index("--output-dir") + 1]) / "runs/SJARACNe/2026-test-run"
+                            else:
+                                folder = Path(command[command.index("--outdir") + 1])
+                            path = folder / "consensus_provenance.json"
+                            receipt = json.loads(path.read_text())
+                            if mutation == "missing":
+                                del receipt["raw_hash_verification"]
+                            elif mutation in ("requested", "performed"):
+                                receipt["raw_hash_verification"][mutation] = not enabled
+                            elif mutation == "method":
+                                receipt["raw_hash_verification"]["method"] = "different"
+                            else:
+                                receipt["raw_hash_verification"]["requested"] = int(enabled)
+                            path.write_text(json.dumps(receipt))
+
+                        with self.assertRaises(SystemExit):
+                            self.invoke(arguments, callback=mutate)
+                        self.assertFalse((self.output / "consensus_network_ncol_.txt").exists())
+                        self.assertEqual(json.loads((self.output / "sjaracne_run.json").read_text())["state"], "failed")
+
+    def test_non_boolean_expected_verification_policy_is_rejected(self):
+        for invalid in (0, 1, "false", {}, []):
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(ValueError, "Boolean"):
+                CLI.checked_consensus_provenance("absent.json", {}, {}, "absent-settings.json",
+                                                 expected_verify_raw_hashes=invalid)
 
     def test_explicit_smaller_k_remains_supported(self):
         self.invoke(self.base + ["-n", "6", "-k", "6"])
@@ -148,6 +234,7 @@ class TestWorkflowCli(unittest.TestCase):
         self.assertEqual(job["scientific_options"]["p_value_bootstrap"], 0.001)
         self.assertEqual(job["scientific_options"]["consensus_order"], "consensus-first")
         self.assertIn("consensus_before_dpi.cwl", launch.call_args.args[0][-2])
+        self.assertIs(job["verify_raw_hashes"], False)
 
     def test_legacy_profile_defaults_restore_replacement_affine_strict_and_pc(self):
         arguments = self.base.copy()
@@ -162,6 +249,7 @@ class TestWorkflowCli(unittest.TestCase):
         self.assertEqual(job["p_value_bootstrap"], 1e-7)
         self.assertEqual(job["p_value_consensus"], 1e-5)
         self.assertNotIn("min_recurrence", job)
+        self.assertNotIn("verify_raw_hashes", job)
 
     def test_native_cwl_reuses_scratch_parent_with_fresh_owned_children(self):
         scratch = self.root / "shared scratch"

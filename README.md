@@ -236,6 +236,15 @@ larger panels can need higher `--consensus-memory` and `--memory` budgets. See
 Python adds symbols and correlation/regression statistics to the final pruned
 edge list.
 
+Raw-graph hash re-verification at consensus is **off by default**. Producers
+still compute and record each resample graph's SHA-256; consensus records those
+hashes and checks seed, runtime, input and settings provenance without rereading
+every graph solely to hash it. Add `--verify-raw-hashes` when a fresh byte-level
+comparison with the producer hashes is required. Native format checks and
+input/runtime/configuration, settings and final-output hash checks remain in
+place. This operational option does not change scientific settings or results
+for unchanged inputs. See [verification behavior](docs/native_consensus_before_dpi.md#optional-raw-graph-hash-verification).
+
 ```text
 epsilon(H) = min(0.30, dpi_offset + 0.05 * max(0, log2(H / 479)))
 ```
@@ -270,6 +279,7 @@ sjaracne local --network-type TF -pb 0.002 --fixed-dpi \
 | `--dpi-offset VALUE` | Add a finite offset in `[0,1)` before the dynamic cap; default 0.025 for consensus-first, zero for DPI-first. Requires dynamic DPI. |
 | `--dpi-href`, `--dpi-slope`, `--dpi-max` | Adjust the dynamic tolerance schedule; incompatible with fixed DPI. Href remains 479 by default. |
 | `--consensus-order consensus-first` or `dpi-first` | Select operation order. Current defaults to consensus-first; legacy requires DPI-first. |
+| `--verify-raw-hashes` | Recompute every resample graph's SHA-256 before consensus and compare it with its producer receipt; default **off**. This is an operational check, not a scientific parameter. |
 | `--jobs 8`, `--memory "32 GiB"` | Change the local Sprocket task and memory budgets; `--serial` uses one task slot. |
 | `-tmp PATH` | Choose a scratch parent; only a fresh child is used, without deleting existing contents. |
 
@@ -285,6 +295,11 @@ sjaracne local --network-type TF --consensus-order dpi-first \
   -e /absolute/path/input.exp -g /absolute/path/hubs.txt \
   -o results/tf_dpi_first
 ```
+
+WDL/Sprocket supports `--verify-raw-hashes` with either processing order. CWL
+supports the option for consensus-first; the CLI rejects it with CWL DPI-first,
+including CWL legacy runs, rather than silently ignoring it. Use WDL/Sprocket
+when fresh graph-hash verification is needed with DPI-first.
 
 Run `sjaracne local --help` for the full interface. The
 [WDL guide](SJARACNe/wdl/README.md) explains the dynamic formula, standalone WDL

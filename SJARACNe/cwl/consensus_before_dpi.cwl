@@ -22,6 +22,10 @@ inputs:
   aracne_config_dir: Directory
   scientific_options: Any
   bootstrap_num: int
+  verify_raw_hashes:
+    type: boolean
+    default: false
+    doc: Re-read raw graph contents to verify producer SHA-256 hashes before consensus
 # Public output keys and historical filenames are preserved. out_dir is an
 # enhanced network file, despite its historical directory-like name.
 outputs:
@@ -82,4 +86,5 @@ steps:
       settings: prepare_inputs/parameters
       adjacencies: resample_and_estimate_mi/adjacency
       run_provenance: resample_and_estimate_mi/provenance
+      verify_raw_hashes: verify_raw_hashes
     out: [enhanced_network, network, bootstrap_info, parameter_info, provenance, native_stdout, native_stderr]

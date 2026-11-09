@@ -43,6 +43,26 @@ dynamic DPI with an additive offset of 0.025. The hub reference count remains
 479, the slope 0.05 and the cap 0.30. Use the public CLI to resolve omitted
 settings consistently with WDL; the shared adapter validates them again.
 
+## Optional raw graph hash verification
+
+For `consensus_before_dpi.cwl`, the operational input `verify_raw_hashes` is a
+Boolean defaulting to `false`, separate from `scientific_options`. Enable it
+with the public CLI's `--verify-raw-hashes`, or set `verify_raw_hashes: true` in a
+direct CWL job, to reread each resample graph and compare its SHA-256 with the
+producer receipt before consensus.
+
+The producer hashes remain computed and recorded. With the default, the adapter
+checks successful ordered seeds and matching runtime, input and settings
+fingerprints, and records the producer graph hashes without freshly verifying
+the graph bytes. Input/runtime/configuration, settings and final-output hash
+checks remain in place, as do native row, ID, duplicate-edge and MI checks.
+For unchanged inputs this option changes no scientific calculation or output.
+
+The retained `dpi_before_consensus.cwl` compatibility workflow does not implement
+this verification option. The public CLI rejects `--verify-raw-hashes` with CWL
+DPI-first or CWL legacy runs rather than ignoring it. Use WDL/Sprocket when
+fresh graph-hash verification is needed with DPI-first; WDL supports both orders.
+
 ## DPI before consensus
 
 The compatibility workflow makes every operation visible in its step names:

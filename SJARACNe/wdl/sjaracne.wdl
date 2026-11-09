@@ -89,6 +89,9 @@ workflow SJARACNe {
         String prepare_memory = "2 GiB"
         String inference_memory = "4 GiB"
         String consensus_memory = "8 GiB"
+        # Operational integrity check, separate from scientific parameters.
+        # False preserves metadata/seed checks without a full raw-file reread.
+        Boolean verify_raw_hashes = false
     }
 
     # Preserve omissions so direct WDL requests and the CLI share one resolver.
@@ -152,6 +155,7 @@ workflow SJARACNe {
         settings = prepare_inputs.parameters,
         adjacencies = resample_and_estimate_mi.adjacency,
         run_provenance = resample_and_estimate_mi.provenance,
+        verify_raw_hashes = verify_raw_hashes,
         task_memory = consensus_memory,
     }
 
@@ -289,6 +293,7 @@ task build_consensus_network {
         File settings
         Array[File] adjacencies
         Array[File] run_provenance
+        Boolean verify_raw_hashes = false
         String task_memory = "8 GiB"
     }
 
@@ -299,6 +304,7 @@ task build_consensus_network {
         settings: settings,
         adjacencies: adjacencies,
         run_provenance: run_provenance,
+        verify_raw_hashes: verify_raw_hashes,
     })
 
     command <<<

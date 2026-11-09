@@ -17,7 +17,7 @@ requirements:
     listing:
       - entryname: request.json
         entry: |
-          ${ return JSON.stringify({exp_file: inputs.exp_file.path, probe_file: inputs.probe_file.path, aracne_config_dir: inputs.aracne_config_dir.path, settings: inputs.settings.path, adjacencies: inputs.adjacencies.map(function(f) { return f.path; }), run_provenance: inputs.run_provenance.map(function(f) { return f.path; })}); }
+          ${ return JSON.stringify({exp_file: inputs.exp_file.path, probe_file: inputs.probe_file.path, aracne_config_dir: inputs.aracne_config_dir.path, settings: inputs.settings.path, adjacencies: inputs.adjacencies.map(function(f) { return f.path; }), run_provenance: inputs.run_provenance.map(function(f) { return f.path; }), verify_raw_hashes: inputs.verify_raw_hashes}); }
 arguments: [consensus, request.json]
 
 inputs:
@@ -27,6 +27,10 @@ inputs:
   settings: File
   adjacencies: File[]
   run_provenance: File[]
+  verify_raw_hashes:
+    type: boolean
+    default: false
+    doc: Verify raw graph SHA-256 hashes; metadata and seed checks always run
 outputs:
   enhanced_network:
     type: File
