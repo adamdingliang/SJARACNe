@@ -1,12 +1,13 @@
 # Historical Step 1: standalone WDL 1.3 scientific parity
 
-Its measured K6 results remain historical. Current consensus defaults to K20;
-see the [active workflow guide](../SJARACNe/wdl/README.md).
+This October 28, 2026 snapshot measured K6 before the default CLI adapter.
+For current execution and K20 settings, see the
+[workflow guide](../SJARACNe/wdl/README.md#default-parameter-values).
 
 This report records commit `d824d7a`, before promotion of the workflow defaults
 and addition of the default CLI adapter. Its measured results are preserved,
 not presented as measurements of the new defaults. See the
-[current-default validation report](default_profiles_validation.md) for the
+[subsequent profile-validation snapshot](default_profiles_validation.md) for the
 subsequent validation.
 
 Validation date: 2026-10-28. Implementation branch:
@@ -19,7 +20,7 @@ validations and four Bats tests**, with no skipped or expected-failure tests.
 
 ## Design
 
-The [workflow](../SJARACNe/wdl/sjaracne.wdl) uses WDL **1.3**, tested with
+The [tested workflow](https://github.com/adamdingliang/SJARACNe2/blob/d824d7a/SJARACNe/wdl/sjaracne.wdl) uses WDL **1.3**, tested with
 Sprocket **0.32.0** on the WSL/Linux local host backend. The local example has
 two task slots, no container isolation, no retries and no call caching.
 The existing Python CLI and production CWL documents are unchanged.
@@ -92,8 +93,9 @@ The regression finished before a version-string parser correction to the separat
 engine harness. No scientific/runtime files changed afterward; the corrected
 harness was then executed in full and froze its own tested source hashes.
 
-The [WDL guide](../SJARACNe/wdl/README.md) gives inputs, outputs and exact local
-commands. The engine comparison is separate from ordinary regression discovery:
+Use the pinned revision and environment above to reproduce these results.
+The [workflow guide](../SJARACNe/wdl/README.md) covers current execution.
+The historical standalone check commands were:
 
 ```bash
 python tests/wdl/run_parity.py --sprocket /absolute/path/sprocket \

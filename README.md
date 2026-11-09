@@ -15,13 +15,9 @@ from gene expression data. It builds transcription factor (TF) and signaling
 [Inputs](#inputs) · [Configuration](#configuration) ·
 [Outputs](#outputs) · [Documentation](#documentation) · [Citation](#citation)
 
-> For the current SJARACNe2 workflow with **native consensus before DPI**, use the
-> [public `develop` guide and installation instructions](https://github.com/adamdingliang/SJARACNe2/blob/develop/README.md).
->
-> This README documents the retained `master` snapshot, not the published PyPI
-> release. That snapshot applies DPI before recurrence consensus and uses
-> WDL 1.3 and Sprocket by default. PCHIP MI cutoffs and dynamic DPI tolerance
-> remain experimental.
+> This guide covers the retained **DPI-before-consensus** `master` snapshot.
+> For the current native consensus-before-DPI workflow, use the
+> [`develop` installation and guide](https://github.com/adamdingliang/SJARACNe2/blob/develop/README.md).
 
 ## Features
 
@@ -37,9 +33,8 @@ from gene expression data. It builds transcription factor (TF) and signaling
 
 ### Prerequisites
 
-- Linux, or Linux through WSL on Windows. These are the validated workflow
-  environments. On Windows, open **Ubuntu in WSL**, not Git Bash or an
-  MSYS2/UCRT64 shell; native Windows execution is not covered here.
+- Linux or **Ubuntu in WSL** on Windows. Native Windows/Git Bash/MSYS2
+  workflow execution is not validated.
 - Python **3.14 recommended**; Python 3.11 remains a tested compatibility
   option. uv can download the selected interpreter if it is missing.
 - Git, Bash, Make and a C++ compiler for installation from source. On Ubuntu,
@@ -50,8 +45,7 @@ from gene expression data. It builds transcription factor (TF) and signaling
   [official installation guide](https://sprocket.bio/getting-started/installation)
   and available on `PATH`. The CLI currently requires this exact version.
 
-The default local workflow does not require Docker. It runs trusted task
-commands directly on the host, without container isolation.
+The local workflow runs on the host without Docker or container isolation.
 
 ### One-time setup on Ubuntu or Ubuntu in WSL
 
@@ -63,9 +57,8 @@ sudo apt install --yes build-essential git curl
 curl -LsSf https://astral.sh/uv/0.11.16/install.sh | sh
 ```
 
-Open a new Ubuntu terminal so `uv` is available on `PATH`. Other Linux
-distributions should install Make and a C++ compiler through their own package
-manager. Install Sprocket separately as described above.
+Open a new terminal if `uv` is not on `PATH`. Other Linux distributions need
+Make and a C++ compiler from their package manager. Install Sprocket separately.
 
 ### Install from source
 
@@ -83,23 +76,16 @@ sprocket --version
 sjaracne local --help
 ```
 
-`uv sync --locked` installs the Python dependencies and automatically builds
-the native C++ executables. A separate `make` command is not needed for normal
-installation. Missing build tools produce an installation error with setup
-instructions; the installer does not run `sudo` or install system packages for
-you. See the [native installation validation](docs/native_build_installation.md).
+`uv sync --locked` installs dependencies and builds the native executables.
+No separate Make step is needed. See [native installation](docs/native_build_installation.md)
+for build-tool requirements and installation checks.
 
-For Python 3.11, use `uv sync --locked --python 3.11` instead. Use separate
-environments when working with both versions; do not replace an environment
-while jobs use it. Python 3.11 and 3.14 are tested; the lock's 3.11–3.14 range
-does not establish validation of every intermediate version or platform.
-See the [environment guide](docs/uv.md) and
-[Python compatibility report](docs/python_compatibility.md).
+For Python 3.11, use `uv sync --locked --python 3.11` in a separate environment.
+Both 3.11 and 3.14 are tested; other resolvable versions are not validated.
+See the [environment guide](docs/uv.md) for version selection.
 
-uv installs NumPy, pandas and SciPy, but **does not install Sprocket**. A missing
-or incompatible engine is an error; there is no automatic download or silent
-fallback. See the [WDL guide](SJARACNe/wdl/README.md#local-use) for the verified
-Sprocket archive checksum and standalone workflow instructions.
+**Install Sprocket separately.** The [workflow guide](SJARACNe/wdl/README.md#local-use)
+provides the pinned archive checksum and standalone commands.
 
 ## Quick start
 
@@ -131,10 +117,8 @@ and records its settings and completion state in `sjaracne_run.json`.
 ### Full TF and SIG networks
 
 Omit `-n` and `-k` to use **100 resampled networks and minimum recurrence K=20**.
-These examples allow up to three concurrent inference tasks with a 12-GiB
-scheduling budget. Use them on a host with at least three available CPUs and
-more than 12 GiB of RAM available to Linux/WSL; otherwise keep the smaller
-`--jobs 2 --memory "8 GiB"` settings above.
+These examples request three task slots and a 12-GiB scheduling budget.
+Use the smaller quick-start settings on memory-limited hosts.
 
 ```bash
 sjaracne local --network-type TF \
@@ -170,8 +154,8 @@ file must use tabs between fields:
 | GENE_002 | MYD88 | 1.5 | 2.2 | 2.9 |
 
 Values must already be prepared for network inference. SJARACNe2 does **not**
-normalize, log-transform or filter genes for you. With the default PCHIP model,
-the selected observation count `m` must be within **50–10,000**; the default is
+normalize, log-transform or filter genes for you. PCHIP cutoff lookup (`pb != 1`)
+requires a selected observation count `m` within **50–10,000**; the default is
 `m = ceil(0.8 * N)`, where `N` is the number of input observations.
 
 ### Regulator / hub list
@@ -206,13 +190,9 @@ normalizes line endings on staged copies without modifying the original inputs.
 | Consensus | Retain edges present in at least 20 distinct resampled networks (K=20 of 100) |
 | Local scheduling | Four task slots; 16 GiB memory budget |
 
-These are **workflow defaults**, not the defaults of every bare native
-executable invocation. Memory settings are scheduling requests, not a guarantee
-that a dataset fits. Larger datasets may need higher budgets and task memory
-requests; see [resources and outputs](SJARACNe/wdl/README.md#resources-outputs-and-provenance).
-
 See [default parameter values](SJARACNe/wdl/README.md#default-parameter-values)
-for guidance on recurrence cutoffs and dynamic DPI tolerance.
+for interpretation and [workflow resources](SJARACNe/wdl/README.md#resources-outputs-and-provenance)
+for scheduling and memory requirements.
 
 ### Common overrides
 
@@ -234,16 +214,13 @@ sjaracne local --network-type TF -pb 0.002 --fixed-dpi \
 | `--jobs 8`, `--memory "32 GiB"` | Change the local Sprocket task and memory budgets; `--serial` uses one task slot. |
 | `-tmp PATH` | Choose a scratch parent; only a fresh child is used, without deleting existing contents. |
 
-Run `sjaracne local --help` for the full interface. The
-[WDL guide](SJARACNe/wdl/README.md) explains the dynamic formula, standalone WDL
-inputs, task memory requests and explicit `--sprocket-config` settings. Local
-validation does not establish support for production LSF, Slurm or cloud runs.
+Run `sjaracne local --help` for all options. The [workflow guide](SJARACNe/wdl/README.md)
+covers standalone inputs, resources and custom Sprocket configurations.
 
 ### Backward compatibility
 
-Use the explicit legacy profile for the pre-sampling scientific settings,
-still running through Sprocket by default. The profile does not change
-scheduling budgets; specify resources separately:
+Use the legacy profile for historical sampling, MI, DPI and consensus settings.
+It uses Sprocket by default; resources remain explicit:
 
 ```bash
 sjaracne local --profile legacy \
@@ -253,20 +230,15 @@ sjaracne local --profile legacy \
 
 If retrying a failed run, choose a new output directory; failure logs are retained.
 
-CWL is a retained alternative for running the workflow locally with `cwltool`
-instead of WDL/Sprocket. Skip this setup if you use the default Sprocket engine.
-To use CWL, install Node.js separately and add the optional `cwltool` dependency
-to the prepared environment:
+For the retained local CWL engine, install Node.js and the optional CWL dependency:
 
 ```bash
 uv sync --locked --extra cwl
 ```
 
-Select `--engine cwl` and omit the Sprocket-only `--jobs` and memory options
-from the examples above. Use `--serial` if you want CWL tasks to run one at a
-time. Engine choice and scientific profile are independent: choosing CWL alone
-does not restore legacy settings. CWLEXEC and the old `lsf` command have been
-removed.
+Select `--engine cwl`; omit Sprocket resource options and use `--serial` for
+one task at a time. Engine choice does not change the scientific profile.
+CWLEXEC and the old `lsf` command are removed.
 
 See [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) for the profile
 comparison, historical overrides and native API behavior.
@@ -290,7 +262,7 @@ consensus-edge probability.
 
 ## Documentation
 
-| Resource | What it covers |
+| Guide | What it covers |
 | --- | --- |
 | [Default parameters](SJARACNe/wdl/README.md#default-parameter-values) | Default values, recurrence cutoff guidance and dynamic DPI tolerance. |
 | [Workflow guide](SJARACNe/wdl/README.md) | WDL inputs, dynamic DPI formula, resources, outputs and provenance. |
@@ -299,14 +271,15 @@ consensus-edge probability.
 | [Execution coverage](tests/README.md#execution-coverage) | Separate Python/C++ coverage, Codecov setup and measurement limits. |
 | [Environment and deployment guide](docs/uv.md) | uv lockfile, pip alternative, native builds and offline/HPC/cloud precautions. |
 | [Native installation validation](docs/native_build_installation.md) | Automatic C++ builds during source installation and missing-tool diagnostics. |
-| [Current validation report](docs/default_profiles_validation.md) | Default-profile and engine-parity checks, with validation limits. |
-| [Python compatibility report](docs/python_compatibility.md) | Python 3.11/3.14 dependencies, clean source installations and scientific-output comparisons. |
+| [Historical profile validation](docs/default_profiles_validation.md) | Dated default-profile and engine-parity evidence. |
+| [Python compatibility report](docs/python_compatibility.md) | Dated installation and cross-version output checks. |
 | [Benchmark index](https://github.com/adamdingliang/sjaracne_benchmark) | DREAM5, THP-1, BRCA100, LUAD and calibration analyses. |
 | [Null calibration process](https://github.com/adamdingliang/sjaracne_benchmark/tree/main/benchmarks/apmi_null_m_sweep/broad_grid_10m) / [results](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/benchmarks/apmi_null_m_sweep/broad_grid_10m/RESULTS.md) | PCHIP calibration design and measured accuracy. |
 | [DPI benchmark summaries](https://github.com/adamdingliang/sjaracne_benchmark/blob/main/docs/benchmark_summaries/README.md) | Fixed and dynamic tolerance comparisons. |
 
-The benchmark repository is private and requires access; it is **not a runtime
-dependency** of SJARACNe2. Related software: [scMINER](https://jyyulab.github.io/scMINER/).
+Dataset benchmarks are maintained in
+[sjaracne_benchmark](https://github.com/adamdingliang/sjaracne_benchmark), separately
+from runtime code and correctness fixtures. Related software: [scMINER](https://jyyulab.github.io/scMINER/).
 
 ## Development and testing
 
@@ -322,22 +295,16 @@ Add `--python 3.11` to the sync command for the compatibility lane. The
 `regression` group adds the pinned build/test tools; the `cwl` extra adds CWL
 support. Sprocket, Node.js, Bats and the compiler remain system prerequisites.
 
-It tests native correctness, real CLI execution and WDL/CWL scientific parity,
-without launching full dataset benchmark batches. GitHub Actions runs the
-suite on Python 3.11 and 3.14 for PRs into and pushes to `develop` and `master`
-when the workflow is present on the branch. The CI badge reports **develop's**
-push status; the separate Python and C++ badges report its uploaded execution
-coverage. They do not measure biological accuracy. Coverage may show as unknown
-until Codecov is enabled and a successful upload reaches `develop`; see the
-[coverage guide](tests/README.md#execution-coverage).
+The suite checks native correctness, CLI execution and WDL/CWL parity without
+full dataset benchmark runs. CI tests Python 3.11 and 3.14 on both maintained
+branches. Badges report **develop** CI and execution coverage; see the
+[regression guide](tests/README.md) for coverage scope and evidence.
 
 ## Support and contributions
 
-Report bugs or suggest improvements through
-[Issues](https://github.com/adamdingliang/SJARACNe2/issues); proposed changes can
-be submitted as [pull requests](https://github.com/adamdingliang/SJARACNe2/pulls)
+Submit changes as [pull requests](https://github.com/adamdingliang/SJARACNe2/pulls)
 against `develop`. Include the revision, command, engine version, input
-dimensions and relevant logs. Remove sensitive data before sharing reports.
+dimensions and relevant logs; remove sensitive data before sharing.
 
 ## Citation
 

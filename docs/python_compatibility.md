@@ -1,13 +1,12 @@
-# Python 3.11 and 3.14 compatibility
+# Historical Python 3.11 and 3.14 validation
 
-The K6 workflow measurements below are historical; current consensus defaults
-to K20. See the [active configuration guide](../README.md#configuration).
+This pre-uv snapshot at `8a4f9f1` measured K6. Use the
+[environment guide](uv.md) for active dependencies and the
+[workflow guide](../SJARACNe/wdl/README.md#default-parameter-values) for K20 settings.
 
-This report records the **pre-uv** validation at `8a4f9f1`; its measurements and
-requirements-file provenance are retained unchanged. The subsequent
-[uv migration](uv.md) centralizes active dependencies in `pyproject.toml` and
-locks transitive versions. See the [migration validation](uv_validation.md)
-for checks of that later environment-management change.
+Measurements and requirement-file provenance below are preserved. The later
+[uv migration report](uv_validation.md) records the move to `pyproject.toml`
+and a transitive lock.
 
 Validation scope: Linux/WSL, on `feat/wdl13-scientific-parity`, following
 `5188c52`. This is installation and small-workflow validation, not a new
@@ -15,8 +14,7 @@ biological benchmark. Full commands, source hashes and dependency inventories
 are retained with the local evidence.
 
 Checks completed October 28, 2026 (America/New_York); report finalized October
-29. The README now recommends Python 3.14 with its tested constraints while
-retaining Python 3.11 as a compatibility option.
+29. Test counts and dependency inventories describe that revision.
 
 ## Tested environments
 
@@ -124,7 +122,9 @@ This does not establish universal bitwise identity for arbitrary datasets.
 
 ## Reproduce
 
-Use the matching manifest in an isolated environment, then install this checkout:
+Use the recorded revision and environment to reproduce these measurements.
+For current setup, follow the [regression guide](../tests/README.md).
+The historical pip-based procedure was:
 
 ```bash
 python -m pip install -r tests/requirements-build.txt

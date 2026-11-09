@@ -1,9 +1,8 @@
-# Current defaults and pre-sampling compatibility: validation
+# Historical validation: default profiles and legacy compatibility
 
-Historical validation snapshot: its measured K6 results are preserved below.
-The current consensus default is now K20; see the
-[active configuration guide](../README.md#configuration). Historical small-run
-counts and numerical results have not been relabeled as K20 measurements.
+This 2026-10-28 snapshot measured K6. Its results are preserved; use the
+[workflow guide](../SJARACNe/wdl/README.md#default-parameter-values) for active
+K20 settings. Test counts below describe the tested revision, not current CI.
 
 Validation date: 2026-10-28 (America/New_York). Work is on the existing
 `feat/wdl13-scientific-parity` branch, following Step 1 commit `d824d7a`.
@@ -16,7 +15,7 @@ The complete small regression passed: **287 Python tests**, **ten CWL
 validations**, **four Bats tests**, and **422 assertions** in the expanded
 engine matrix, with no failed checks or skips.
 
-## Implemented defaults
+## Defaults at the tested revision
 
 | Setting | Current profile | Explicit legacy profile |
 | --- | --- | --- |
@@ -98,7 +97,9 @@ No obsolete executable is bundled or required by ordinary regression/CI.
 
 ## Evidence and reproduction
 
-Local artifacts, not committed to the repository:
+For the recorded measurements, use the pinned revision and environment above.
+The commands below run the suite from whichever revision is checked out.
+Local artifacts are not committed:
 
 - Full regression: `D:\GitHub\local_runs\wdl13_no_cwlexec_regression_20261028`.
   Its `manifest.json`, `python_tests.json`, logs and nested `wdl_parity/summary.json`
