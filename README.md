@@ -13,7 +13,7 @@ from gene expression data. It builds transcription factor (TF) and signaling
 
 [Installation](#installation) · [Quick start](#quick-start) ·
 [Inputs](#inputs) · [Configuration](#configuration) ·
-[Documentation](#documentation) · [Citation](#citation)
+[Outputs](#outputs) · [Documentation](#documentation) · [Citation](#citation)
 
 > For the current SJARACNe2 workflow with **native consensus before DPI**, use the
 > [public `develop` guide and installation instructions](https://github.com/adamdingliang/SJARACNe2/blob/develop/README.md).
