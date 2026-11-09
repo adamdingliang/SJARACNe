@@ -214,6 +214,56 @@ class TestDefaultWorkflow(unittest.TestCase):
             self.assertIn("mu:", metadata)
             self.assertIn("sigma:", metadata)
 
+    def test_optional_raw_hash_verification_preserves_real_workflow_outputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = root / "inputs"
+            fixture.mkdir()
+            expression, hubs = write_multihub_dpi_inputs(fixture)
+            baseline_options = baseline_files = baseline_parameters = None
+            for engine in ("sprocket", "cwl"):
+                for verify in (False, True):
+                    with self.subTest(engine=engine, verify_raw_hashes=verify):
+                        options = ["--network-type", "TF", "-k", "2"]
+                        if verify:
+                            options.append("--verify-raw-hashes")
+                        output, manifest, outputs = self.successful_run(
+                            root / (engine + ("_verified" if verify else "_default")),
+                            expression, hubs, *options, engine=engine, bootstrap_num=3)
+                        self.assertIs(manifest["verify_raw_hashes"], verify)
+                        self.assertNotIn("verify_raw_hashes", manifest["scientific_options"])
+                        if engine == "sprocket":
+                            receipt_path = Path(outputs["SJARACNe.consensus_provenance"])
+                        else:
+                            engine_outputs = json.loads(
+                                (output / "engine.stdout.log").read_text(encoding="utf-8"))
+                            artifact = engine_outputs["consensus_provenance"]
+                            location = artifact.get("path") or artifact["location"]
+                            parsed = urlparse(location)
+                            receipt_path = Path(unquote(parsed.path)
+                                                if parsed.scheme == "file" else location)
+                        self.assertTrue(receipt_path.is_file(), receipt_path)
+                        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+                        self.assertEqual(receipt["raw_hash_verification"], {
+                            "requested": verify, "performed": verify,
+                            "method": "sha256" if verify else "not-reverified"})
+                        self.assertEqual(len(receipt["adjacencies"]), 3)
+                        self.assertEqual([item["seed"] for item in receipt["adjacencies"]], [1, 2, 3])
+                        for item in receipt["adjacencies"]:
+                            self.assertIs(item["content_verified"], verify)
+                        self.assertEqual(receipt["parameters"], manifest["scientific_options"])
+                        files = tuple((output / name).read_bytes() for name in FINAL_FILES[:3])
+                        parameters = normalized_parameters(output / "parameter_info_.txt")
+                        if baseline_options is None:
+                            baseline_options = manifest["scientific_options"]
+                            baseline_files = files
+                            baseline_parameters = parameters
+                        else:
+                            self.assertEqual(manifest["scientific_options"], baseline_options)
+                            for name, actual, expected in zip(FINAL_FILES[:3], files, baseline_files):
+                                self.assertEqual(actual, expected, name)
+                            self.assertEqual(parameters, baseline_parameters)
+
     def test_native_consensus_cwl_wdl_parity_and_offset_zero_control(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

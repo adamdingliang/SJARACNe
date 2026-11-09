@@ -2,6 +2,7 @@
 import csv
 import importlib
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
@@ -133,7 +134,7 @@ class TestNativeConsensusAdapter(unittest.TestCase):
             record = folder / ("seed%d.json" % seed)
             WDL.write_json(record, {"seed": seed, "returncode": 0, "runtime": fingerprint,
                 "input_sha256": settings["input_sha256"], "prepared_settings_sha256": WDL.sha256("parameters.json"),
-                "adjacency_sha256": WDL.sha256(path)})
+                "adjacency_sha256": WDL.sha256(path), "adjacency_size_bytes": path.stat().st_size})
             files.append(str(path)); records.append(str(record))
         return {"exp_file": str(root / "expression.exp"), "probe_file": str(root / "hubs.txt"),
                 "settings": str(root / "parameters.json"), "adjacencies": files, "run_provenance": records}, fingerprint
@@ -159,6 +160,83 @@ class TestNativeConsensusAdapter(unittest.TestCase):
             self.assertEqual(enhanced[0]["MI"], "0.12345678901234567")
             for filename, digest in value["output_sha256"].items():
                 self.assertEqual(digest, WDL.sha256(Path("results") / filename))
+
+    def test_optional_hash_modes_preserve_science_outputs_and_avoid_default_raw_rehash(self):
+        observed = []
+        for verify in (False, True):
+            with self.subTest(verify=verify), work_directory() as root:
+                request, fingerprint = self.fixture(root)
+                request["verify_raw_hashes"] = verify
+                settings = WDL.read_json(request["settings"])
+                raw_paths = {Path(path).resolve() for path in request["adjacencies"]}
+                actual_sha = WDL.sha256
+                raw_hash_calls = []
+
+                def track_hash(path):
+                    if Path(path).resolve() in raw_paths:
+                        raw_hash_calls.append(Path(path).resolve())
+                        if not verify:
+                            raise AssertionError("Default native consensus must not rehash raw adjacency contents")
+                    return actual_sha(path)
+
+                def native(command, stdout, stderr, check):
+                    Path(command[command.index("-o") + 1]).write_text(native_output(), encoding="utf-8")
+                    return SimpleNamespace(returncode=0)
+
+                with mock.patch.object(WDL, "runtime_fingerprint", return_value=fingerprint), \
+                        mock.patch.object(WDL, "sha256", side_effect=track_hash), \
+                        mock.patch.object(WDL.subprocess, "run", side_effect=native) as run:
+                    WDL.consensus(request)
+                run.assert_called_once()
+                value = WDL.read_json("consensus_provenance.json")
+                self.assertEqual(value["parameters"], settings["parameters"])
+                self.assertNotIn("verify_raw_hashes", settings["parameters"])
+                self.assertEqual(value["raw_hash_verification"], {
+                    "requested": verify, "performed": verify,
+                    "method": "sha256" if verify else "not-reverified"})
+                self.assertEqual([item["content_verified"] for item in value["adjacencies"]], [verify] * 2)
+                self.assertEqual(len(raw_hash_calls), 2 if verify else 0)
+                files = {name: (Path("results") / name).read_bytes() for name in (
+                    "consensus_network_3col_.txt", "consensus_network_ncol_.txt",
+                    "bootstrap_info_.txt", "parameter_info_.txt")}
+                observed.append((value["parameters"], files))
+        self.assertEqual(observed[0], observed[1])
+
+    def test_opt_in_raw_hash_verification_rejects_same_length_numeric_mutation(self):
+        with work_directory() as root:
+            request, fingerprint = self.fixture(root)
+            request["verify_raw_hashes"] = True
+            path = Path(request["adjacencies"][0])
+            old = path.read_bytes()
+            altered = old.replace(b"0.12345678901234567", b"0.22345678901234567")
+            self.assertNotEqual(old, altered)
+            self.assertEqual(len(old), len(altered))
+            path.write_bytes(altered)
+            with mock.patch.object(WDL, "runtime_fingerprint", return_value=fingerprint), \
+                    mock.patch.object(WDL.subprocess, "run") as native:
+                with self.assertRaises(ValueError):
+                    WDL.consensus(request)
+                native.assert_not_called()
+            self.assertFalse(Path("results").exists())
+            self.assertFalse(Path("consensus.native.stdout.txt").exists())
+
+    def test_default_mode_detects_raw_metadata_change_during_native_before_export(self):
+        with work_directory() as root:
+            request, fingerprint = self.fixture(root)
+            path = Path(request["adjacencies"][0])
+            before = path.stat()
+
+            def native(command, stdout, stderr, check):
+                path.write_bytes(path.read_bytes().replace(b"0.12345678901234567", b"0.22345678901234567"))
+                os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns + 1000000000))
+                Path(command[command.index("-o") + 1]).write_text(native_output(), encoding="utf-8")
+                return SimpleNamespace(returncode=0)
+
+            with mock.patch.object(WDL, "runtime_fingerprint", return_value=fingerprint), \
+                    mock.patch.object(WDL.subprocess, "run", side_effect=native):
+                with self.assertRaises(ValueError):
+                    WDL.consensus(request)
+            self.assertFalse(Path("results").exists())
 
     def test_failed_native_consensus_retains_evidence_and_does_not_enhance(self):
         with work_directory() as root:

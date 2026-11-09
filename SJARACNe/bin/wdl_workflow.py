@@ -270,7 +270,7 @@ def infer(request):
     Creates the adjacency, ``native.stdout.txt``, ``native.stderr.txt`` and
     ``run_provenance.json`` in the task directory. After the native process
     returns, provenance records argv, exit status and settings/runtime/input
-    hashes; successful output also receives an adjacency hash.
+    hashes; successful output also receives an adjacency hash and byte count.
 
     Args:
         request (dict): Prepared settings and input paths, ``seed`` and optional
@@ -294,6 +294,7 @@ def infer(request):
                   "prepared_settings_sha256": sha256(request["settings"])}
     if result.returncode == 0:
         provenance["adjacency_sha256"] = sha256(output)
+        provenance["adjacency_size_bytes"] = output.stat().st_size
     write_json("run_provenance.json", provenance)
     if result.returncode:
         print(Path("native.stderr.txt").read_text(), file=sys.stderr)
@@ -304,20 +305,28 @@ def consensus(request):
     """Verify reconstruction provenance before staging shared consensus inputs.
 
     Requires one adjacency/provenance pair per seed, ordered from 1 through
-    ``bootstrap_num``. Consensus-first passes the existing localized files to
+    ``bootstrap_num``. Producer hashes are retained as reported; raw file bytes
+    are rehashed only when the operational ``verify_raw_hashes`` Boolean is true
+    (default false). Seed/settings/runtime/input checks remain unconditional.
+    Consensus-first passes the existing localized files to
     the native accumulator and DPI in one invocation. DPI-first retains the
     historical Python selector. Only final networks are enhanced from the full
     expression matrix. Successful completion hashes all four retained outputs.
 
     Args:
         request (dict): Prepared ``settings``, staged ``exp_file``, ordered
-            ``adjacencies`` and ``run_provenance`` lists, and optional config.
+            ``adjacencies`` and ``run_provenance`` lists, optional config, and
+            optional ``verify_raw_hashes`` (bool, default false). This integrity
+            policy is independent of the scientific parameters.
 
     Raises:
         ValueError: Settings/input checks fail, the reconstruction count is
             wrong or an adjacency does not match its successful provenance.
         FileExistsError: The adjacency staging directory already exists.
     """
+    verify_raw_hashes = request.get("verify_raw_hashes", False)
+    if type(verify_raw_hashes) is not bool:
+        raise ValueError("verify_raw_hashes must be a Boolean")
     settings = checked_settings(request)
     parameters = settings["parameters"]
     adjacencies, provenance_files = request["adjacencies"], request["run_provenance"]
@@ -325,23 +334,53 @@ def consensus(request):
     settings_sha256 = sha256(request["settings"])
     if len(adjacencies) != n or len(provenance_files) != n:
         raise ValueError("Expected exactly bootstrap_num adjacencies and provenance records")
-    # Reject incomplete or foreign runs before staging any consensus inputs.
+    # Check producer identity without a second full raw-data pass by default.
+    # A reported digest is not proof of the current bytes unless rehashing is
+    # explicitly enabled. Record that distinction in the completion receipt.
     validated_adjacencies = []
+    raw_snapshots = []
     for seed, (adjacency, record) in enumerate(zip(adjacencies, provenance_files), 1):
         provenance = read_json(record)
-        if (Path(adjacency).name != adjacency_name(seed) or provenance.get("seed") != seed
+        path = Path(adjacency)
+        digest = provenance.get("adjacency_sha256")
+        if (path.name != adjacency_name(seed) or provenance.get("seed") != seed
                 or provenance.get("returncode") != 0 or provenance.get("runtime") != settings["runtime"]
                 or provenance.get("input_sha256") != settings["input_sha256"]
                 or provenance.get("prepared_settings_sha256") != settings_sha256
-                or provenance.get("adjacency_sha256") != sha256(adjacency)):
+                or not isinstance(digest, str) or len(digest) != 64
+                or any(character not in "0123456789abcdef" for character in digest)
+                or not path.is_file()):
             raise ValueError("Mismatched adjacency/provenance for seed {}".format(seed))
-        validated_adjacencies.append({"seed": seed, "sha256": provenance["adjacency_sha256"]})
+        info = path.stat()
+        # Older producer receipts omitted the size. Keep them compatible while
+        # enforcing the cheap byte-count check whenever a producer supplies it.
+        if "adjacency_size_bytes" in provenance:
+            size = provenance["adjacency_size_bytes"]
+            if type(size) is not int or size != info.st_size:
+                raise ValueError("Mismatched adjacency/provenance for seed {}: byte count differs".format(seed))
+        if verify_raw_hashes and digest != sha256(path):
+            raise ValueError("Mismatched adjacency/provenance for seed {}".format(seed))
+        raw_snapshots.append((path, (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)))
+        validated_adjacencies.append({"seed": seed, "sha256": digest,
+                                      "content_verified": verify_raw_hashes,
+                                      "size_bytes": info.st_size})
+    def check_raw_unchanged():
+        # This catches ordinary replacement/truncation, not same-metadata
+        # content changes; only opt-in SHA verification checks file contents.
+        for path, before in raw_snapshots:
+            info = path.stat()
+            if (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns) != before:
+                raise ValueError("Adjacency changed during consensus: " + str(path))
+    check_raw_unchanged()
     module = importlib.import_module("SJARACNe.bin.create_consensus_network")
     native_order = parameters["consensus_order"] == "consensus-first"
     provenance = {"schema": "sjaracne-consensus-v1", "runtime": settings["runtime"],
                   "parameters": parameters, "prepared_settings_sha256": settings_sha256,
                   "input_sha256": settings["input_sha256"],
-                  "adjacencies": validated_adjacencies, "returncode": 0}
+                  "adjacencies": validated_adjacencies, "returncode": 0,
+                  "raw_hash_verification": {"requested": verify_raw_hashes,
+                      "performed": verify_raw_hashes,
+                      "method": "sha256" if verify_raw_hashes else "not-reverified"}}
     if native_order:
         command = native_consensus_command(request, parameters)
         provenance["argv"] = command
@@ -352,6 +391,7 @@ def consensus(request):
         if result.returncode:
             write_json("consensus_provenance.json", provenance)
             raise RuntimeError("Native consensus/DPI failed; see consensus.native.stdout.txt/consensus.native.stderr.txt")
+        check_raw_unchanged()
         network = export_native_consensus("consensus.adj", "results", parameters)
         provenance["native_adjacency_sha256"] = sha256("consensus.adj")
     else:
@@ -363,12 +403,14 @@ def consensus(request):
                      if parameters["p_value_consensus"] is None
                      else {"p_value": parameters["p_value_consensus"]})
         network = module.create_consensus_network(str(staging), out_dir="results", **selection)
+        check_raw_unchanged()
         for name in ("consensus.native.stdout.txt", "consensus.native.stderr.txt"):
             Path(name).touch(exist_ok=False)
     if native_order:
         module.create_enhanced_consensus_network(request["exp_file"], network, "results", preserve_mi=True)
     else:
         module.create_enhanced_consensus_network(request["exp_file"], network, "results")
+    check_raw_unchanged()
     provenance["output_sha256"] = {name: sha256(Path("results") / name) for name in (
         "consensus_network_3col_.txt", "consensus_network_ncol_.txt", "bootstrap_info_.txt", "parameter_info_.txt")}
     write_json("consensus_provenance.json", provenance)

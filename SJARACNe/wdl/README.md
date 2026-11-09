@@ -49,6 +49,7 @@ The same full hub list supplies native `-s` and `-l`.
 | Order | Raw MI resamples, K-support consensus, supporting-run mean MI, then DPI |
 | DPI | Dynamic epsilon, Href=479, slope=0.05, cap=0.30, additive offset=0.025 |
 | Consensus | Distinct-network recurrence K=20, inclusive; 20 of 100 by default |
+| Raw-graph hash re-verification (operational) | `verify_raw_hashes=false`; enable with `--verify-raw-hashes` |
 
 Dynamic tolerance is one scalar for the final consensus graph:
 
@@ -151,6 +152,18 @@ optional. Optional inputs include `aracne_config_dir`, `subsample_spec`, `depth`
 `consensus_order`. Explicit sampling
 mode uses `sampling_method`; conflicting replacement/unique inputs are rejected.
 
+The separate operational Boolean `SJARACNe.verify_raw_hashes` defaults to
+`false`. Set it to `true` to recompute each resample graph's SHA-256 before
+consensus; the CLI equivalent is `--verify-raw-hashes`. It is supported with both
+consensus-first and DPI-first, including the legacy profile, and is not part of
+the scientific parameter set. For example, add this input to the JSON above:
+
+```json
+{
+  "SJARACNe.verify_raw_hashes": true
+}
+```
+
 Do not copy the old standalone document's defaults from historical reports.
 Omissions now select the current profile, not affine/strict settings. Direct
 `cwl/dpi_before_consensus.cwl` jobs retain the older MI/sampling/DPI defaults,
@@ -196,10 +209,20 @@ actual file paths; do not assume they are at the engine output root.
 
 Every seed has a separate adjacency and provenance record. The preparation step
 freezes runtime, native binary, configuration and normalized input hashes;
-reconstructions also record the prepared-settings hash. Consensus checks the
-expected seed set and hashes. Consensus-first passes a manifest of the existing
-localized adjacency paths to native C++ without copying raw graphs or writing
-an intermediate mean-MI candidate graph. DPI-first retains Python consensus.
+reconstructions also record the prepared-settings hash and compute their output
+graph's SHA-256. Consensus always checks the successful ordered seed set and
+matching runtime, input and settings fingerprints. By default it records each
+producer's graph hash without rereading that graph to recompute the hash. Set
+`verify_raw_hashes: true` (CLI `--verify-raw-hashes`) for a fresh byte-level
+comparison before consensus. The receipt records whether re-verification ran.
+Input/runtime/configuration, settings and final-output hash checks remain in
+place. Native consensus-first parsing still checks row layout, IDs, duplicates
+and MI validity. This operational option changes no scientific calculations for
+unchanged inputs.
+
+Consensus-first passes a manifest of the existing localized adjacency paths to
+native C++ without copying raw graphs or writing an intermediate mean-MI
+candidate graph. DPI-first retains Python consensus.
 Empty networks still count as runs. Retained MI is averaged across runs
 containing an edge; enhancement uses the **full original expression matrix**,
 not a sampled subset. Its regression p-value is not an MI or consensus-edge
@@ -209,7 +232,9 @@ four final hashes before copying native-order outputs.
 Raw scatter files still need to be written and transferred/localized across
 nodes. Native integration removes Python aggregation caches, adjacency staging
 copies and the candidate-graph write/read; it does not eliminate distributed
-scatter I/O or provenance hashing. Raw files remain available according to the
+scatter I/O or producer hashing. The default skips only the separate graph-hash
+re-verification pass at consensus; opt-in verification rereads the graphs.
+Raw files remain available according to the
 engine's retention policy; no automatic deletion is introduced.
 
 No expression transformation, gene filtering or hub reordering is introduced.

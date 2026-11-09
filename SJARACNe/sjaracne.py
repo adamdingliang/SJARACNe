@@ -246,6 +246,8 @@ def build_parser():
                         help="Additive dynamic-DPI tolerance offset before the cap; current consensus-first default0.025, dpi-first default0")
     common.add_argument("--consensus-order", choices=("consensus-first", "dpi-first"),
                         help="Current default consensus-first; dpi-first retains the previous order")
+    common.add_argument("--verify-raw-hashes", action="store_true",
+                        help="Re-read and verify resample SHA-256 hashes before consensus (default: metadata checks only)")
     common.add_argument("--sprocket", default=os.environ.get("SJARACNE_SPROCKET", "sprocket"), help="Sprocket0.32.0 executable, or SJARACNE_SPROCKET")
     common.add_argument("--sprocket-config", help="Explicit trusted backend configuration")
     common.add_argument("--jobs", type=bootstrap_count, help="Sprocket-only local task budget (default4); custom config owns concurrency")
@@ -497,11 +499,17 @@ def make_cwl_job(args, parameters, expression, hubs, config):
     Returns:
         dict: CWL inputs with File and Directory objects and scientific settings.
     """
+    verify_raw_hashes = getattr(args, "verify_raw_hashes", False)
+    if type(verify_raw_hashes) is not bool:
+        raise ValueError("verify_raw_hashes must be a Boolean")
     if parameters["consensus_order"] == "consensus-first":
         return {"exp_file": {"class": "File", "path": str(expression)},
                 "probe_file": {"class": "File", "path": str(hubs)},
                 "aracne_config_dir": {"class": "Directory", "path": str(config)},
-                "scientific_options": parameters, "bootstrap_num": parameters["bootstrap_num"]}
+                "scientific_options": parameters, "bootstrap_num": parameters["bootstrap_num"],
+                "verify_raw_hashes": verify_raw_hashes}
+    if verify_raw_hashes:
+        raise ValueError("--verify-raw-hashes is unavailable for CWL dpi-first; use Sprocket or consensus-first")
     job = {"exp_file": {"class": "File", "path": str(expression)},
            "probe_file": {"class": "File", "path": str(hubs)},
            "aracne_config_dir": {"class": "Directory", "path": str(config)},
@@ -551,7 +559,8 @@ def path_within(path, root):
         return False
 
 
-def publish_sprocket_outputs(engine_root, output, expected_runtime=None, expected_parameters=None, expected_inputs=None):
+def publish_sprocket_outputs(engine_root, output, expected_runtime=None, expected_parameters=None, expected_inputs=None,
+                             expected_verify_raw_hashes=None):
     """Validate one completed execution and copy its final files without overwrite.
 
     Every required source must resolve within this execution. When supplied,
@@ -564,6 +573,8 @@ def publish_sprocket_outputs(engine_root, output, expected_runtime=None, expecte
         output: Final output directory as a pathlib.Path.
         expected_runtime: Optional CLI-preflight runtime fingerprint to verify.
         expected_parameters: Optional resolved scientific settings to verify.
+        expected_inputs: Optional original expression/hub hashes from preflight.
+        expected_verify_raw_hashes: Optional requested raw-content verification policy.
 
     Returns:
         tuple: Engine outputs.json path and published-file paths with SHA256 hashes.
@@ -589,12 +600,14 @@ def publish_sprocket_outputs(engine_root, output, expected_runtime=None, expecte
         if expected_parameters is not None and prepared.get("parameters") != expected_parameters:
             raise ValueError("Executed scientific parameters differ from the CLI request")
     consensus_evidence = None
-    if expected_parameters is not None and expected_parameters.get("consensus_order") == "consensus-first":
+    if expected_parameters is not None and (expected_parameters.get("consensus_order") == "consensus-first"
+                                            or expected_verify_raw_hashes is not None):
         consensus_path = outputs.get("SJARACNe.consensus_provenance")
         if not isinstance(consensus_path, str) or not path_within(consensus_path, engine_root):
             raise ValueError("Missing consensus completion provenance inside this execution")
         consensus_evidence = checked_consensus_provenance(
-            consensus_path, expected_runtime, expected_parameters, prepared_path, expected_inputs)
+            consensus_path, expected_runtime, expected_parameters, prepared_path, expected_inputs,
+            expected_verify_raw_hashes)
     sources = {}
     for key, filename in FINAL_OUTPUTS.items():
         value = outputs.get("SJARACNe." + key)
@@ -619,7 +632,8 @@ def publish_sprocket_outputs(engine_root, output, expected_runtime=None, expecte
     return outputs_json, published
 
 
-def checked_consensus_provenance(path, runtime, parameters, prepared_path, expected_inputs=None):
+def checked_consensus_provenance(path, runtime, parameters, prepared_path, expected_inputs=None,
+                                 expected_verify_raw_hashes=None):
     """Require successful consensus from the requested runtime and settings.
 
     Args:
@@ -628,6 +642,7 @@ def checked_consensus_provenance(path, runtime, parameters, prepared_path, expec
         parameters: Expected resolved scientific settings.
         prepared_path: Prepared settings JSON bound to this consensus execution.
         expected_inputs: Optional original expression/hub hashes from CLI preflight.
+        expected_verify_raw_hashes: Optional Boolean policy to bind to completion.
 
     Returns:
         dict: Validated completion record.
@@ -635,7 +650,18 @@ def checked_consensus_provenance(path, runtime, parameters, prepared_path, expec
     Raises:
         ValueError: Completion status, runtime or parameters differ.
     """
+    if expected_verify_raw_hashes is not None and type(expected_verify_raw_hashes) is not bool:
+        raise ValueError("Expected raw-hash verification policy must be a Boolean")
     value = json.loads(Path(path).read_text(encoding="utf-8"))
+    if expected_verify_raw_hashes is not None:
+        verification = value.get("raw_hash_verification")
+        expected = {"requested": expected_verify_raw_hashes, "performed": expected_verify_raw_hashes,
+                    "method": "sha256" if expected_verify_raw_hashes else "not-reverified"}
+        if (not isinstance(verification, dict)
+                or type(verification.get("requested")) is not bool
+                or type(verification.get("performed")) is not bool
+                or any(verification.get(key) != expected_value for key, expected_value in expected.items())):
+            raise ValueError("Consensus raw-hash verification differs from the requested policy")
     if (value.get("schema") != "sjaracne-consensus-v1" or value.get("returncode") != 0
             or value.get("runtime") != runtime or value.get("parameters") != parameters):
         raise ValueError("Consensus completion provenance differs from the requested run")
@@ -652,7 +678,8 @@ def checked_consensus_provenance(path, runtime, parameters, prepared_path, expec
     return value
 
 
-def publish_native_cwl_outputs(engine_output, output, runtime, parameters, expected_inputs=None):
+def publish_native_cwl_outputs(engine_output, output, runtime, parameters, expected_inputs=None,
+                               expected_verify_raw_hashes=None):
     """Validate all native-order CWL evidence before copying final outputs.
 
     Args:
@@ -660,6 +687,8 @@ def publish_native_cwl_outputs(engine_output, output, runtime, parameters, expec
         output: New or empty CLI output directory containing run evidence.
         runtime: Expected installed runtime fingerprint.
         parameters: Expected resolved scientific settings.
+        expected_inputs: Optional original expression/hub hashes from preflight.
+        expected_verify_raw_hashes: Optional requested raw-content verification policy.
 
     Returns:
         dict: Four published scientific outputs and their SHA-256 hashes.
@@ -670,7 +699,8 @@ def publish_native_cwl_outputs(engine_output, output, runtime, parameters, expec
     """
     published = validate_cwl_outputs(engine_output)
     evidence = checked_consensus_provenance(engine_output / "consensus_provenance.json", runtime, parameters,
-                                            engine_output / "parameters.json", expected_inputs)
+                                            engine_output / "parameters.json", expected_inputs,
+                                            expected_verify_raw_hashes)
     for filename in FINAL_OUTPUTS.values():
         if evidence.get("output_sha256", {}).get(filename) != sha256(engine_output / filename):
             raise ValueError("Final output differs from consensus provenance: " + filename)
@@ -763,6 +793,8 @@ def main(argv=None):
         with expression.open(encoding="utf-8-sig") as handle:
             observations = len(handle.readline().rstrip("\r\n").split("\t")) - 2
         parameters = resolve_options(science_request(args), observations)
+        if engine == "cwl" and parameters["consensus_order"] == "dpi-first" and args.verify_raw_hashes:
+            raise ValueError("--verify-raw-hashes is unavailable for CWL dpi-first; use Sprocket or consensus-first")
         # A custom engine config owns its backend budget; task requests stay inputs.
         for value in (args.memory, args.prepare_memory, args.inference_memory, args.consensus_memory):
             memory_bytes(value)
@@ -789,7 +821,8 @@ def main(argv=None):
     record = {"schema": "sjaracne-cli-run-v1", "state": "prepared", "engine": engine,
               "scientific_options": parameters, "runtime": runtime, "sprocket_version": version,
               "inputs": {"expression": str(expression), "hubs": str(hubs)},
-              "original_input_sha256": input_hashes, "published_outputs": {}}
+              "original_input_sha256": input_hashes, "published_outputs": {},
+              "verify_raw_hashes": args.verify_raw_hashes}
     environment = execution_env()
     try:
         job_file = output / "sjaracne_workflow.yml"
@@ -803,6 +836,7 @@ def main(argv=None):
             record["engine_output_dir"] = str(engine_root)
             job = {"SJARACNe.exp_file": str(expression), "SJARACNe.probe_file": str(hubs), "SJARACNe.aracne_config_dir": str(config)}
             job.update({"SJARACNe." + name: value for name, value in parameters.items() if name in SCIENTIFIC_FIELDS})
+            job["SJARACNe.verify_raw_hashes"] = args.verify_raw_hashes
             # Only per-task requests enter WDL; --jobs/--memory configure the engine.
             for name in ("prepare_memory", "inference_memory", "consensus_memory"):
                 job["SJARACNe." + name] = getattr(args, name)
@@ -849,11 +883,13 @@ def main(argv=None):
         finally:
             _EXECUTION_CONTEXT.reset(token)
         if engine == "sprocket":
-            outputs_json, published = publish_sprocket_outputs(engine_root, output, runtime, parameters, input_hashes)
+            outputs_json, published = publish_sprocket_outputs(
+                engine_root, output, runtime, parameters, input_hashes, args.verify_raw_hashes)
             record.update(engine_outputs_json=str(outputs_json), published_outputs=published)
         else:
             if parameters["consensus_order"] == "consensus-first":
-                record["published_outputs"] = publish_native_cwl_outputs(cwl_output, output, runtime, parameters, input_hashes)
+                record["published_outputs"] = publish_native_cwl_outputs(
+                    cwl_output, output, runtime, parameters, input_hashes, args.verify_raw_hashes)
             else:
                 record["published_outputs"] = validate_cwl_outputs(output)
         record["state"] = "complete"
