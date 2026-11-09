@@ -106,7 +106,7 @@ class TestDynamicDpiWrapper(unittest.TestCase):
             self.assertFalse(scratch.exists())
 
     def test_cwl_mode_and_parameters_are_forwarded_to_every_resample(self):
-        workflow = (ROOT / 'SJARACNe/cwl/sjaracne_workflow.cwl').read_text(encoding='utf-8')
+        workflow = (ROOT / 'SJARACNe/cwl/dpi_before_consensus.cwl').read_text(encoding='utf-8')
         command = (ROOT / 'SJARACNe/cwl/sjaracne.cwl').read_text(encoding='utf-8')
         for name in ('dynamic_dpi', 'dpi_href', 'dpi_slope', 'dpi_max', 'tolerance'):
             self.assertIn(name + ': ' + name, workflow)

@@ -2,7 +2,13 @@
 
 cwlVersion: v1.0
 class: CommandLineTool
-doc: change Windows/Mac file line ending to Unix line ending
+label: Run the historical line-ending check or convert to an explicit output
+doc: |
+  Inspect the localized expression or hub-list file. An explicit output_file
+  selects the converted LF file. For compatibility, an omitted output_file
+  returns the staged input filename; CRLF or CR conversion may leave a .tmp
+  sidecar without replacing that returned file. The DPI-first workflow keeps
+  this historical omitted-output behavior. Original user files are unchanged.
 
 requirements:
   InlineJavascriptRequirement: {}

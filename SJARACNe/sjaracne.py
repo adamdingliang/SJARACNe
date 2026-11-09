@@ -837,7 +837,7 @@ def main(argv=None):
                 command += ["--tmp-outdir-prefix", str(cwl_final_temporary) + os.sep]
             if not args.serial:
                 command += ["--parallel"]
-            cwl_workflow = "native_consensus_workflow.cwl" if native_order else "sjaracne_workflow.cwl"
+            cwl_workflow = "consensus_before_dpi.cwl" if native_order else "dpi_before_consensus.cwl"
             command += [str(PACKAGE / "cwl" / cwl_workflow), str(job_file)]
         write_json(job_file, job)
         record.update(state="running", argv=command, job_file=str(job_file))

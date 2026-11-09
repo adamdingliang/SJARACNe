@@ -2,6 +2,11 @@
 
 cwlVersion: v1.0
 class: CommandLineTool
+label: Build a historical probability consensus network
+doc: |
+  Retained low-level compatibility tool for the historical probability-based
+  consensus script. It merges supplied adjacency graphs and does not estimate
+  MI or apply DPI. New workflow entry points use the documented pipeline tools.
 
 baseCommand: get_consensus_network.py
 

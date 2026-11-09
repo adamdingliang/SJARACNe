@@ -518,7 +518,7 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
         self.assertEqual(exact['subsample_spec'], '7')
 
     def test_cwl_defaults_and_wiring_use_unique_sampling(self):
-        workflow = (PROJECT_ROOT / "SJARACNe" / "cwl" / "sjaracne_workflow.cwl").read_text(
+        workflow = (PROJECT_ROOT / "SJARACNe" / "cwl" / "dpi_before_consensus.cwl").read_text(
             encoding="utf-8"
         )
         command = (PROJECT_ROOT / "SJARACNe" / "cwl" / "sjaracne.cwl").read_text(
@@ -540,7 +540,7 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
 
     def test_cwl_wires_both_consensus_selection_modes(self):
         workflow = (
-            PROJECT_ROOT / "SJARACNe" / "cwl" / "sjaracne_workflow.cwl"
+            PROJECT_ROOT / "SJARACNe" / "cwl" / "dpi_before_consensus.cwl"
         ).read_text(encoding="utf-8")
         command = (
             PROJECT_ROOT / "SJARACNe" / "cwl" / "create_consensus_network.cwl"
@@ -562,9 +562,9 @@ class TestWorkflowSamplingConfiguration(unittest.TestCase):
             "glob: $(inputs.output_dir)/parameter_info_.txt",
             command,
         )
-        self.assertIn("outputSource: consensus/bootstrap_info", workflow)
-        self.assertIn("outputSource: consensus/parameter_info", workflow)
-        self.assertIn("outputSource: consensus/consensus_network", workflow)
+        self.assertIn("outputSource: build_consensus_network/bootstrap_info", workflow)
+        self.assertIn("outputSource: build_consensus_network/parameter_info", workflow)
+        self.assertIn("outputSource: build_consensus_network/consensus_network", workflow)
         self.assertIn(
             "out: [out_dir, consensus_network, bootstrap_info, parameter_info]",
             workflow,

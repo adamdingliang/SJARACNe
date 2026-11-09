@@ -2,6 +2,11 @@
 
 cwlVersion: v1.0
 class: CommandLineTool
+label: Annotate an existing consensus network
+doc: |
+  Retained low-level compatibility tool that annotates an existing
+  three-column consensus network using the supplied expression matrix.
+  This stage neither reconstructs MI edges nor applies DPI.
 
 requirements:
   - class: InlineJavascriptRequirement

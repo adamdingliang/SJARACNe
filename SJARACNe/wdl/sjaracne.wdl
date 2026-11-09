@@ -1,9 +1,15 @@
 version 1.3
 
-# Orchestration only: the native executable computes AP-MI, consensus and DPI;
-# Python validates task boundaries and enhances the final expression-based graph.
-# Each task sends a JSON request to the shared Python adapter; user-provided
-# values are not interpolated into shell commands.
+# Reconstruct a regulatory network from independently resampled MI estimates.
+# Current default: 100 seeded 80% resamples -> significant MI edges -> inclusive
+# K20 consensus -> supporting-run mean MI -> one final DPI pass. The dynamic
+# tolerance adds 0.025 before the cap. Explicit dpi-first and legacy settings
+# instead prune each resample before building consensus; see the task comments.
+#
+# WDL schedules tasks and their dependencies. The compiled executable performs
+# MI estimation and default consensus/DPI; the shared Python adapter validates
+# task boundaries and enhances the final graph from the full expression matrix.
+# Each task receives a JSON request, so user values are not shell-interpolated.
 
 # Scientific settings travel together, independently of the execution engine.
 # Optional fields remain unset until workflow_options.resolve_options applies
@@ -28,6 +34,8 @@ struct WorkflowOptions {
     String? consensus_order
 }
 
+# Keep the SJARACNe workflow identifier stable for existing input/output JSON
+# keys (SJARACNe.*). The workflow and task display names describe their actions.
 workflow SJARACNe {
     input {
         # Prepared expression matrix and source IDs; this workflow does not
@@ -72,6 +80,7 @@ workflow SJARACNe {
         Float? dpi_max
         # Added before the cap; consensus-first defaults to 0.025, dpi-first to zero.
         Float? dpi_offset
+        # Omitted current order is consensus-first; legacy requires dpi-first.
         String? consensus_order
 
         # Per-task scheduling requests, not the backend's total memory budget.
@@ -103,9 +112,10 @@ workflow SJARACNe {
         consensus_order: consensus_order,
     }
 
-    # Validate and stage LF-normalized copies without modifying original inputs.
-    # parameters.json binds resolved options to input and runtime/config hashes.
-    call Prepare { input:
+    # Prepare once: validate expression/hub IDs and resolve the scientific
+    # options, then stage LF-normalized copies without changing numeric values.
+    # parameters.json binds those options to input and runtime/config hashes.
+    call prepare_inputs { input:
         exp_file = exp_file,
         probe_file = probe_file,
         aracne_config_dir = aracne_config_dir,
@@ -113,59 +123,68 @@ workflow SJARACNe {
         task_memory = prepare_memory,
     }
 
-    # Independent seeded reconstructions consume the same prepared inputs.
-    # Sprocket's CPU, memory and scatter limits determine actual concurrency.
+    # One job per seed resamples observations, estimates AP-MI and retains
+    # edges passing the configured null-tail cutoff (PCHIP by current default).
+    # Consensus-first uses --raw-mi: these outputs have NO per-resample DPI.
+    # Explicit dpi-first/legacy applies DPI here before writing each graph.
+    # Backend CPU, memory and scatter limits determine actual concurrency.
     scatter (index in range(bootstrap_num)) {
-        call Infer { input:
-            exp_file = Prepare.expression,
-            probe_file = Prepare.hubs,
+        call resample_and_estimate_mi { input:
+            exp_file = prepare_inputs.expression,
+            probe_file = prepare_inputs.hubs,
             aracne_config_dir = aracne_config_dir,
-            settings = Prepare.parameters,
+            settings = prepare_inputs.parameters,
             seed = index + 1,
             task_memory = inference_memory,
         }
     }
 
-    # Wait for every reconstruction. The adapter verifies the complete seed set
-    # before native K-support/mean-MI selection and DPI. The previous order keeps
-    # Python consensus. Both enhance only the final graph from full expression.
-    call Consensus { input:
-        exp_file = Prepare.expression,
-        probe_file = Prepare.hubs,
+    # Wait for every seed and verify matching graph/provenance receipts.
+    # Consensus-first: retain edges with support >= K, average MI only over
+    # supporting runs, then apply DPI inside one C++ invocation. No candidate
+    # consensus graph is written and reread between aggregation and DPI.
+    # DPI-first/legacy: Python merges graphs already pruned in the scatter;
+    # there is no additional DPI pass here. Both orders enhance the final graph.
+    call build_consensus_network { input:
+        exp_file = prepare_inputs.expression,
+        probe_file = prepare_inputs.hubs,
         aracne_config_dir = aracne_config_dir,
-        settings = Prepare.parameters,
-        adjacencies = Infer.adjacency,
-        run_provenance = Infer.provenance,
+        settings = prepare_inputs.parameters,
+        adjacencies = resample_and_estimate_mi.adjacency,
+        run_provenance = resample_and_estimate_mi.provenance,
         task_memory = consensus_memory,
     }
 
     output {
         # Historical name retained for compatibility: out_dir is an enhanced
         # network FILE, not a directory. The CLI publishes these four final files.
-        File out_dir = Consensus.enhanced_network
-        File consensus_network = Consensus.network
-        File bootstrap_info = Consensus.bootstrap_info
-        File parameter_info = Consensus.parameter_info
+        File out_dir = build_consensus_network.enhanced_network
+        File consensus_network = build_consensus_network.network
+        File bootstrap_info = build_consensus_network.bootstrap_info
+        File parameter_info = build_consensus_network.parameter_info
         # Per-seed artifacts and prepared settings remain available for auditing.
-        Array[File] adjacencies = Infer.adjacency
-        Array[File] run_provenance = Infer.provenance
-        Array[File] native_stdout = Infer.native_stdout
-        Array[File] native_stderr = Infer.native_stderr
-        File validation_report = Prepare.validation_report
-        File parameters = Prepare.parameters
-        File consensus_provenance = Consensus.provenance
-        File consensus_native_stdout = Consensus.native_stdout
-        File consensus_native_stderr = Consensus.native_stderr
+        Array[File] adjacencies = resample_and_estimate_mi.adjacency
+        Array[File] run_provenance = resample_and_estimate_mi.provenance
+        Array[File] native_stdout = resample_and_estimate_mi.native_stdout
+        Array[File] native_stderr = resample_and_estimate_mi.native_stderr
+        File validation_report = prepare_inputs.validation_report
+        File parameters = prepare_inputs.parameters
+        File consensus_provenance = build_consensus_network.provenance
+        File consensus_native_stdout = build_consensus_network.native_stdout
+        File consensus_native_stderr = build_consensus_network.native_stderr
     }
 
     meta {
-        description: "Default SJARACNe WDL workflow, with explicit current and legacy scientific profiles."
+        name: "Reconstruct a regulatory network"
+        description: "Prepare inputs, resample and estimate MI, then build the consensus network. Current defaults perform K20/supporting-run mean MI before DPI; explicit dpi-first and legacy profiles prune each resample before consensus."
     }
 }
 
-# Runs once before the scatter: validate IDs/options, stage safe copies and
-# fingerprint the installed Python sources, native executable and model/config.
-task Prepare {
+# Validate the input bundle once before starting any resample job. Resolve
+# profile/order settings, stage safe LF copies and fingerprint the Python
+# adapter, compiled executable, input files and model/config. No expression
+# normalization, gene filtering or hub selection is performed by this task.
+task prepare_inputs {
     input {
         File exp_file
         File probe_file
@@ -198,11 +217,21 @@ task Prepare {
         cpu: 1
         memory: task_memory
     }
+
+    meta {
+        name: "Prepare and validate network inputs"
+        description: "Validate IDs and scientific settings, stage expression and hub files, and record input/runtime fingerprints before resampling."
+    }
 }
 
-# Runs once per seed: recheck prepared hashes, invoke the native executable and
-# retain stdout/stderr plus provenance linking the adjacency to its inputs.
-task Infer {
+# Resample observations and estimate significant MI edges for one seed.
+# Current defaults select 80% without replacement; legacy samples N observations
+# with replacement. The shared adapter rechecks prepared hashes before invoking
+# the executable and saves its exact command, output hashes and stdout/stderr.
+# In consensus-first mode --raw-mi skips DPI and preserves all source rows,
+# including empty rows, plus full-precision MI. With explicit dpi-first/legacy,
+# this same task also applies the configured per-resample DPI before output.
+task resample_and_estimate_mi {
     input {
         File exp_file
         File probe_file
@@ -237,11 +266,22 @@ task Infer {
         cpu: 1
         memory: task_memory
     }
+
+    meta {
+        name: "Resample observations and estimate MI"
+        description: "Estimate significant MI edges for one seeded resample. Consensus-first emits raw MI without DPI; explicit dpi-first and legacy profiles also prune this resample."
+    }
 }
 
-# Runs after all seeds: verify matching adjacencies/provenance and pass localized
-# paths to native consensus/DPI without copying raw graphs or candidate weights.
-task Consensus {
+# Build the final network after all resample jobs have succeeded. Verify the
+# complete seed set and matching input/runtime/graph receipts before aggregation.
+# Consensus-first runs K-support selection -> supporting-run arithmetic mean MI
+# -> DPI in C++, using localized graph paths without adapter staging copies or
+# candidate-weight files. Missing-run edges do not contribute zeros to the mean.
+# DPI-first/legacy uses Python consensus on already-pruned graphs instead.
+# Finally annotate the retained edges using the full input expression matrix;
+# final filenames and the public workflow output contract remain unchanged.
+task build_consensus_network {
     input {
         File exp_file
         File probe_file
@@ -279,5 +319,10 @@ task Consensus {
     requirements {
         cpu: 1
         memory: task_memory
+    }
+
+    meta {
+        name: "Build the consensus network"
+        description: "Verify all resample receipts and build the final annotated network. Consensus-first performs K-support and supporting-run mean MI followed by DPI; dpi-first merges previously pruned graphs."
     }
 }

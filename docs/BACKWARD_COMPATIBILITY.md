@@ -173,7 +173,19 @@ The bare native executable retains its previous defaults; the new `--raw-mi`
 and `--consensus-inputs` modes are explicit. Native `--dpi-offset` defaults to
 zero and requires `--dynamic-dpi`. The workflow supplies its resolved offset.
 
-Original low-level CWL documents remain available. The public CLI routes
-consensus-first CWL runs through the shared prepare/infer/consensus adapter,
-using the same scientific settings as WDL. Older saved jobs retain their
-explicit historical order rather than silently changing their native stages.
+The public CLI selects `cwl/consensus_before_dpi.cwl` for consensus-first and
+`cwl/dpi_before_consensus.cwl` for DPI-first. The earlier
+`native_consensus_workflow.cwl` and `sjaracne_workflow.cwl` paths remain as thin
+`$import` aliases to those documents. The earlier `native_prepare.cwl`,
+`native_infer.cwl` and `native_consensus.cwl` paths also remain aliases to the
+descriptively named tools. Older saved jobs retain their explicit processing
+order rather than silently changing their native stages.
+
+WDL retains `wdl/sjaracne.wdl`, the `SJARACNe` workflow identifier, and its public
+input/output keys. Its descriptive display name is "Reconstruct a regulatory
+network"; task names are now `prepare_inputs`, `resample_and_estimate_mi` and
+`build_consensus_network`. This changes task/log labels and can invalidate old
+call-cache identities, so resume already-started work with its original frozen
+workflow document. The public output files, scientific defaults and adapter
+subcommands (`prepare`, `infer`, `consensus`) are unchanged. Both engines still
+use the same validated adapter and scientific settings.

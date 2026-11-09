@@ -103,7 +103,21 @@ defaults, supported overrides and low-level native behavior are detailed in the
 
 ## Direct WDL inputs
 
-The standalone document is [`sjaracne.wdl`](sjaracne.wdl), workflow `SJARACNe`.
+The standalone document is [`sjaracne.wdl`](sjaracne.wdl). Its display name is
+"Reconstruct a regulatory network". The public workflow identifier remains
+`SJARACNe`, preserving existing `SJARACNe.*` input and output keys.
+
+| Step | Operation |
+| --- | --- |
+| `prepare_inputs` | Validate expression/hub IDs and options, normalize line endings and record input/runtime hashes. |
+| `resample_and_estimate_mi` | For each seed, resample observations, estimate MI and apply its significance cutoff. The default consensus-first order emits raw MI without DPI; explicit DPI-first applies DPI here. |
+| `build_consensus_network` | Verify all resample receipts, combine their edges and enhance the final graph. Consensus-first performs K-support selection, supporting-run mean MI and DPI in one C++ invocation; DPI-first combines already-pruned graphs. |
+
+The WDL document supports both processing orders, so the final step has an
+order-neutral name. The selected `consensus_order` determines where DPI runs.
+Task names and descriptions change how the engine labels its logs; scientific
+options, native commands and final output schemas are unchanged.
+
 Example JSON for a six-resample functional check:
 
 ```json
@@ -143,10 +157,14 @@ keeps its older MI/sampling/DPI defaults, but an omitted consensus cutoff now
 uses K20; specify `min_recurrence: 6` to retain its prior recurrence cutoff.
 Engine selection through the public CLI always forwards a fully resolved
 scientific profile. For consensus-first, the CLI uses
-`cwl/native_consensus_workflow.cwl`, whose tasks invoke the same validated JSON
-adapter as WDL. Its scatter adjacencies, provenance and logs remain in the
+`cwl/consensus_before_dpi.cwl`, whose tasks invoke the same validated JSON
+adapter as WDL. Its stages are `prepare_inputs`, `create_resample_seeds`,
+`resample_and_estimate_mi` and `consensus_and_dpi`. Its scatter adjacencies, provenance and logs remain in the
 recorded owned engine output directory. The retained low-level CWL workflow
-remains DPI-first. A smaller K may be appropriate for scRNA-seq, but neither
+is named `cwl/dpi_before_consensus.cwl`; `cwl/sjaracne_workflow.cwl` is a
+forwarding compatibility alias. `cwl/native_consensus_workflow.cwl` forwards to
+`cwl/consensus_before_dpi.cwl`. See the [CWL index](../cwl/README.md) for the
+complete entry-point and step mapping. A smaller K may be appropriate for scRNA-seq, but neither
 a scRNA-seq default nor dynamic K has been validated; inspect target coverage.
 
 ## Resources, outputs and provenance

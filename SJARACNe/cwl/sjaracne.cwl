@@ -2,7 +2,13 @@
 
 cwlVersion: v1.0
 class: CommandLineTool
-doc: Scalable solution of ARACNe that dramatically improves the computational performance.
+label: Resample observations, estimate MI and apply DPI
+doc: |
+  Low-level native tool retained for the DPI-before-consensus workflow.
+  One invocation resamples observations, estimates MI, filters significant
+  edges and applies the configured fixed or dynamic DPI tolerance. This tool
+  does not pass --raw-mi; its output is a per-resample DPI-pruned graph.
+  Use resample_and_estimate_mi.cwl in the consensus-first workflow.
 
 baseCommand: sjaracne.exe
 

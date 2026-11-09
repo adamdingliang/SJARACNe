@@ -28,7 +28,7 @@ from urllib.parse import unquote, urlparse
 
 ROOT = Path(__file__).resolve().parents[2]
 WDL = ROOT / "SJARACNe/wdl/sjaracne.wdl"
-CWL = ROOT / "SJARACNe/cwl/sjaracne_workflow.cwl"
+CWL = ROOT / "SJARACNe/cwl/dpi_before_consensus.cwl"
 NATIVE = ROOT / "SJARACNe/bin/sjaracne.exe"
 SPROCKET_VERSION = "0.32.0"
 PATH_HEADER = re.compile(r"^(>\s+(?:Input file|Subnetwork file)\s+).*$")
@@ -344,7 +344,7 @@ class ParityRun:
             artifacts = [str(path.relative_to(output)) for path in output.rglob("*")
                          if path.name.startswith("TF_run_") or path.name in ("run_provenance.json", "native.stdout.txt")]
             infer_calls = [str(path.relative_to(output)) for path in output.rglob("*")
-                           if path.is_dir() and re.fullmatch(r"(?:call[-_])?Infer(?:[-_].*)?", path.name)]
+                           if path.is_dir() and re.fullmatch(r"(?:call[-_])?resample_and_estimate_mi(?:[-_].*)?", path.name)]
             self.check(name + ":no_native_artifacts", not artifacts, artifacts)
             self.check(name + ":no_infer_calls", not infer_calls, infer_calls)
             return {"command": entry, "execution": str(output), "failed_as_expected": True}

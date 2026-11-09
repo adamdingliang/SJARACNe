@@ -147,7 +147,7 @@ class TestWorkflowCli(unittest.TestCase):
         self.assertTrue(job["scientific_options"]["dynamic_dpi"])
         self.assertEqual(job["scientific_options"]["p_value_bootstrap"], 0.001)
         self.assertEqual(job["scientific_options"]["consensus_order"], "consensus-first")
-        self.assertIn("native_consensus_workflow.cwl", launch.call_args.args[0][-2])
+        self.assertIn("consensus_before_dpi.cwl", launch.call_args.args[0][-2])
 
     def test_legacy_profile_defaults_restore_replacement_affine_strict_and_pc(self):
         arguments = self.base.copy()

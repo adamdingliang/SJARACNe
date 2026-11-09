@@ -307,6 +307,16 @@ time. Engine choice and scientific profile are independent: choosing CWL alone
 does not restore legacy settings. CWLEXEC and the old `lsf` command have been
 removed.
 
+Workflow and step names describe the scientific operations. The default CWL
+entry point is [consensus_before_dpi.cwl](SJARACNe/cwl/consensus_before_dpi.cwl);
+explicit DPI-first runs use
+[dpi_before_consensus.cwl](SJARACNe/cwl/dpi_before_consensus.cwl).
+Both engines name the per-seed stage `resample_and_estimate_mi`. In the default
+order it estimates and significance-filters raw MI without DPI; the final stage
+selects recurrent edges, averages supporting-run MI and applies DPI.
+The [CWL workflow index](SJARACNe/cwl/README.md) explains the steps and the retained
+old entry-point aliases.
+
 See [Backward compatibility](docs/BACKWARD_COMPATIBILITY.md) for the profile
 comparison, historical overrides and native API behavior.
 

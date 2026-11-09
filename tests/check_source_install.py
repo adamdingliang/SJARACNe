@@ -35,6 +35,9 @@ PACKAGE_ASSETS = (
     'SJARACNe/config/config_threshold.txt', 'SJARACNe/config/config_kernel.txt',
     'SJARACNe/config/TF_list.txt', 'SJARACNe/config/SIG_list.txt',
     'SJARACNe/cwl/sjaracne.cwl', 'SJARACNe/cwl/sjaracne_workflow.cwl',
+    'SJARACNe/cwl/consensus_before_dpi.cwl', 'SJARACNe/cwl/dpi_before_consensus.cwl',
+    'SJARACNe/cwl/prepare_inputs.cwl', 'SJARACNe/cwl/resample_and_estimate_mi.cwl',
+    'SJARACNe/cwl/consensus_and_dpi.cwl', 'SJARACNe/cwl/native_consensus_workflow.cwl',
     'SJARACNe/wdl/sjaracne.wdl', 'SJARACNe/wdl/sprocket.local.toml',
 )
 SOURCE_ASSETS = (

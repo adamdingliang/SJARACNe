@@ -273,7 +273,7 @@ class TestApmiNullWorkflowWiring(unittest.TestCase):
         return rendered
 
     def test_cwl_model_is_optional_literal_string_not_an_external_file(self):
-        workflow = (PROJECT_ROOT / "SJARACNe" / "cwl" / "sjaracne_workflow.cwl").read_text()
+        workflow = (PROJECT_ROOT / "SJARACNe" / "cwl" / "dpi_before_consensus.cwl").read_text()
         command = (PROJECT_ROOT / "SJARACNe" / "cwl" / "sjaracne.cwl").read_text()
         self.assertIn("apmi_null_model: apmi_null_model", workflow)
         self.assertNotIn("allow_rare_tail", workflow)
