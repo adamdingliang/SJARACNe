@@ -4,18 +4,23 @@
 // Modifications by S.V. Rice, 2017; this version assumes adaptive_partitioning
 //------------------------------------------------------------------------------------
 
+#include <cerrno>
+#include <climits>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <iomanip>
 #include <sstream>
+#include "apmi.h"
+#include "apmi_null_model.h"
 #include "matrix.h"
 #include "parseargs.h"
 
 //------------------------------------------------------------------------------------
 
-const int NUM_OPTIONS = 20;
+const int NUM_OPTIONS = 27;
 
 const char *option[NUM_OPTIONS] =
 {
@@ -23,6 +28,12 @@ const char *option[NUM_OPTIONS] =
 "-c <+/-probeId %>  Conditional network reconstruction, default: NONE [****]\n"
 "                   [format: \"+24 0.35\", \"-1973_s_at 0.4\"]",
 "-e <tolerance>     DPI tolerance, default: 1",
+"--dynamic-dpi      Opt in to experimental hub-size-dependent DPI; requires -s,\n"
+"                   excludes fixed -e, adjacency replay -j and conditional -c",
+"--dpi-href <count> Dynamic DPI reference source rows, positive integer; default: 479",
+"--dpi-slope <s>    Dynamic DPI increase per doubling of H above href;\n"
+"                   finite positive value, default: 0.05",
+"--dpi-max <value>  Dynamic DPI epsilon cap, finite in [0,1); default: 0.30",
 "-f <mean> <cv>     Gene filter by the mean and coefficient of variance (cv) of\n"
 "                   the expression values, default: mean=0, cv=0",
 "-H <ARACNE_HOME>   Directory containing ARACNE configuration files,\n"
@@ -36,16 +47,23 @@ const char *option[NUM_OPTIONS] =
 "                   default: determined by program",
 "-l <file>          File containing a list of probes annotated as transcription\n"
 "                   factors in the input dataset, default: NONE [***]",
+"-M pchip           Opt in to the bundled experimental AP-MI PCHIP cutoff;\n"
+"                   requires -N 40, m=50..10000 and p=1e-7..0.05; no tail flag",
 "-N <npar_limit>    Maximum allowed value of npar, default: 20",
 "-S <Seed>	    Initial seed for random number generator, default: 1",
 "-n <level>         Array measurement noise level, default: 0",
 "-o <file>          Output file name (optional) [*]",
 "-p <p-value>       P-value for MI threshold (e.g., 1e-7), default: 1 [**]",
-"-r <sample_number> Bootstrap sample number, default: 0",
+"-r <sample_number> Legacy full-size bootstrap with replacement; retained only\n"
+"                   for reproducibility, default: 0 (disabled)",
 "-s <file>          File containing a list of probes for which a subnetwork will\n"
 "                   be constructed, default: NONE",
 "-t <threshold>     MI threshold, default: 0",
-"-v <verbose>       on|off, default: off"
+"-u <count|percent> Fixed-size subsampling without replacement, e.g. 80 or 80%;\n"
+"                   default: disabled in the native command",
+"-v <verbose>       on|off, default: off",
+"-W <file>          Benchmark diagnostic: per-source counts of pre-DPI edges\n"
+"                   with at least 1, 2, 3, 5, or 10 qualifying witnesses"
 };
 
 const int NUM_USAGE_NOTES = 4;
@@ -93,6 +111,40 @@ void writeUsage(const char *progname)
 
 //------------------------------------------------------------------------------------
 
+double parseFiniteNumericOption(const char *optionName, const char *argument)
+{
+   const std::string text = argument == NULL ? "" : argument;
+   if (text.empty())
+      throw std::string("Option '") + optionName + "' requires a finite numeric value.";
+
+   errno = 0;
+   char *end = NULL;
+   const double value = std::strtod(text.c_str(), &end);
+   if (errno == ERANGE || end == text.c_str() || *end != '\0' || !std::isfinite(value))
+      throw std::string("Option '") + optionName + "' requires a finite numeric value, not '" +
+            text + "'.";
+   return value;
+}
+
+//------------------------------------------------------------------------------------
+
+int parseDynamicDpiReference(const std::string& argument)
+{
+   if (argument.empty())
+      throw std::string("Option '--dpi-href' requires a positive integer.");
+   for (std::string::const_iterator c = argument.begin(); c != argument.end(); ++c)
+      if (*c < '0' || *c > '9')
+         throw std::string("Option '--dpi-href' requires a positive integer, not '") + argument + "'.";
+   errno = 0;
+   char *end = NULL;
+   const long value = std::strtol(argument.c_str(), &end, 10);
+   if (errno == ERANGE || *end != '\0' || value < 1 || value > INT_MAX)
+      throw std::string("Option '--dpi-href' must be an integer in [1,2147483647].");
+   return static_cast<int>(value);
+}
+
+//------------------------------------------------------------------------------------
+
 Parameter parseParameter(int argc, char *argv[])
 {
    Parameter p; // initializes parameters to default values
@@ -108,7 +160,40 @@ Parameter parseParameter(int argc, char *argv[])
                 p.controlId  = temp.substr(1);
                 p.percent    = std::atof(ARGF());
             break;
-      case 'e': p.eps        = std::atof(ARGF()); break; // DPI tolerance
+      case 'e': p.eps        = parseFiniteNumericOption("-e", ARGF()); // DPI tolerance
+                p.epsSpecified = true;
+                break;
+      case '-':
+      {
+         // Long options are parsed only at an option boundary. ARGF still
+         // consumes short-option values normally, even when a filename begins
+         // with '--', preserving the historical single-character interface.
+         const std::string longArgument = _arg;
+         _arg = (char *)"";
+         const std::size_t equal = longArgument.find('=');
+         const std::string name = longArgument.substr(0, equal);
+         const bool inlineValue = equal != std::string::npos;
+         if (name == "dynamic-dpi")
+         {
+            if (inlineValue)
+               throw std::string("Option '--dynamic-dpi' is a flag and takes no value.");
+            p.dynamicDpi = true;
+         }
+         else if (name == "dpi-href" || name == "dpi-slope" || name == "dpi-max")
+         {
+            const std::string value = inlineValue ? longArgument.substr(equal + 1) : ARGF();
+            p.dynamicDpiParametersSpecified = true;
+            if (name == "dpi-href")
+               p.dpiHref = parseDynamicDpiReference(value);
+            else if (name == "dpi-slope")
+               p.dpiSlope = parseFiniteNumericOption("--dpi-slope", value.c_str());
+            else
+               p.dpiMax = parseFiniteNumericOption("--dpi-max", value.c_str());
+         }
+         else
+            throw std::string("unknown parameter --") + longArgument;
+         break;
+      }
       case 'f': p.mean       = std::atof(ARGF());        // mean
                 p.cv         = std::atof(ARGF());        // coefficient of variance
                 break;
@@ -118,21 +203,54 @@ Parameter parseParameter(int argc, char *argv[])
       case 'j': p.adjfile    = ARGF(); break;            // adjacency matrix file
       case 'k': p.sigma      = std::atof(ARGF()); break; // gaussian kernel width
       case 'l': p.annotfile  = ARGF(); break;            // TF annotation file
+      case 'M': p.nullModelFile = ARGF();                 // AP-MI null model
+                if (p.nullModelFile == "")
+                   throw std::string("Option '-M' requires the bundled model name 'pchip'.");
+                break;
       case 'N': p.nparLimit  = std::atoi(ARGF()); break; // max npar value
       case 'S': p.seed       = std::atoi(ARGF()); break; // seed
       case 'n': p.correction = std::atof(ARGF()); break; // correction for noise
       case 'o': p.outfile    = ARGF(); break;            // output file
-      case 'p': p.pvalue     = std::atof(ARGF()); break; // p-value
+      case 'p': p.pvalue     = parseFiniteNumericOption("-p", ARGF()); break; // p-value
       case 'r': p.sample     = std::atoi(ARGF()); break; // bootstrap sample number
       case 's': p.subnetfile = ARGF();                   // subset of probes
                 if (p.subnetfile == "")
                    throw std::string("Option '-s' requires a subnetwork file.");
                 break;
-      case 't': p.threshold  = std::atof(ARGF()); break; // mi threshold
+      case 't': p.threshold  = parseFiniteNumericOption("-t", ARGF()); // mi threshold
+                p.thresholdSpecified = true;
+                break;
+      case 'u': p.subsampleSpec = ARGF();                // unique subsample
+                if (p.subsampleSpec == "")
+                   throw std::string("Option '-u' requires an exact count or "
+                                     "percentage such as 80%.");
+                break;
       case 'v': p.verbose    = ARGF(); break;            // verbose
+      case 'W': p.dpiWitnessFile = ARGF();               // DPI witness diagnostic
+                if (p.dpiWitnessFile == "")
+                   throw std::string("Option '-W' requires an output file.");
+                break;
       default : throw std::string("unknown parameter ") + ARGC();
    }
    ARGEND;
+
+   if (p.dynamicDpi && argc > 0)
+      throw std::string("Unexpected positional argument '") + argv[0] +
+            "' with '--dynamic-dpi'; this flag takes no value.";
+
+   // The legacy parser stops at a positional token or '--'. Do not let a
+   // new experimental option silently disappear in that unconsumed tail.
+   // Inspect only remaining arguments: an already-consumed filename may
+   // legitimately equal one of these option names.
+   for (int argument = 0; argument < argc; ++argument)
+   {
+      const std::string remaining = argv[argument];
+      const std::string name = remaining.substr(0, remaining.find('='));
+      if (name == "--dynamic-dpi" || name == "--dpi-href" ||
+          name == "--dpi-slope" || name == "--dpi-max")
+         throw std::string("Dynamic DPI option '") + name +
+               "' was not parsed; these options cannot follow positional arguments or '--'.";
+   }
 
    checkParameter(p);
 
@@ -144,7 +262,7 @@ Parameter parseParameter(int argc, char *argv[])
 
 //------------------------------------------------------------------------------------
 
-void findThreshold(int n, Parameter& p)
+void findLegacyThreshold(int n, Parameter& p)
 {
    std::string filename = p.home_dir + "config_threshold.txt";
 
@@ -172,6 +290,35 @@ void findThreshold(int n, Parameter& p)
 
 //------------------------------------------------------------------------------------
 
+void findEstimatorMatchedThreshold(int n, Parameter& p)
+{
+   if (std::string(adaptivePartitionKernelSchema()) != "sjaracne-apmi-v1")
+      throw std::string("Bundled PCHIP data do not match the active AP-MI kernel schema.");
+   p.threshold = Apmi::pchipCutoff(n, p.pvalue, p.nparLimit);
+   p.thresholdMethod = "experimental PCHIP empirical cutoff";
+   p.pchipPrimarySha256 = Apmi::pchipPrimarySha256();
+   p.pchipDataSha256 = Apmi::pchipDataSha256();
+   p.pchipSummarySha256 = Apmi::pchipSummarySha256();
+   p.pchipActualM = n;
+   std::cout << "[THRESHOLD] WARNING: PCHIP is experimental; uniform +/-10% "
+                "null-rate accuracy and biological FDR are not established." << std::endl;
+   if (n % 50 != 0)
+      std::cout << "[THRESHOLD] WARNING: m=" << n
+                << " is off the tested 50-step grid; this is unvalidated interpolation."
+                << std::endl;
+   if (p.pvalue < 0.0005)
+      std::cout << "[THRESHOLD] WARNING: p is outside the principal assessment range "
+                   "[0.0005,0.05]; this boundary is not a demonstrated failure threshold."
+                << std::endl;
+   if (p.pvalue <= 1e-5)
+      std::cout << "[THRESHOLD] WARNING: extreme-tail Monte Carlo precision is limited; "
+                   "10M validation draws expect only 100, 10 and 1 exceedances at "
+                   "p=1e-5,1e-6,1e-7. Interpolation does not guarantee 10% accuracy."
+                << std::endl;
+}
+
+//------------------------------------------------------------------------------------
+
 void runStandard(int argc, char *argv[])
 {
    Parameter p = parseParameter(argc, argv);
@@ -185,7 +332,7 @@ void runStandard(int argc, char *argv[])
                 << " markers disabled due to lack of dynamic range."
                 << std::endl << std::endl;
 
-   std::vector<int> lower, upper, *arrays = NULL;
+   std::vector<int> lower, upper, selected, *arrays = NULL;
 
    int controlId = -1;
    int nsample   = data.uarrays.size();
@@ -199,6 +346,32 @@ void runStandard(int argc, char *argv[])
       data.getHighLowPercent(p.percent, controlId, lower, upper);
       arrays = (p.condition == "+" ? &upper : &lower);
       nsample = arrays->size();
+   }
+
+   if (p.subsampleSpec != "")
+   {
+      p.samplingPopulation = nsample;
+      p.samplingSize = resolveSubsampleSize(p.subsampleSpec, nsample);
+      p.samplingMethod = "fixed-size without replacement";
+
+      data.sampleWithoutReplacement(selected, p.samplingSize,
+                                    static_cast<unsigned int>(p.seed), arrays);
+      arrays = &selected;
+      nsample = selected.size();
+
+      std::cout << "[SAMPLING] Fixed-size sampling without replacement: selected "
+                << nsample << " of " << p.samplingPopulation
+                << " eligible observations (request: " << p.subsampleSpec
+                << ")." << std::endl;
+
+      if (equalIgnoreCase(p.verbose, "on"))
+      {
+         std::cout << "[SAMPLING] Selected original observation indices (0-based):";
+         for (std::vector<int>::const_iterator id = selected.begin();
+              id != selected.end(); ++id)
+            std::cout << " " << *id;
+         std::cout << std::endl;
+      }
    }
 
    if (nsample < 2)
@@ -218,13 +391,38 @@ void runStandard(int argc, char *argv[])
              << " (" << data.Get_Num_Active_Markers() << " active)"
              << ", Array No: " << nsample << std::endl;
 
-   if (p.threshold == 0.0 && p.pvalue != 1.0)
+   if (p.thresholdSpecified)
    {
-      findThreshold(nsample, p);
+      p.thresholdMethod = "explicit -t";
+      if (!p.nullModelFile.empty())
+         std::cout << "[THRESHOLD] '-M' is ignored because an explicit '-t' "
+                      "threshold was supplied."
+                   << std::endl;
+   }
+   else if (p.pvalue != 1.0)
+   {
+      if (!p.nullModelFile.empty())
+         findEstimatorMatchedThreshold(nsample, p);
+      else
+      {
+         std::cout << "[THRESHOLD] WARNING: no estimator-matched model was "
+                      "supplied with '-M'; using the legacy affine threshold "
+                      "calibration for backward compatibility."
+                   << std::endl;
+         findLegacyThreshold(nsample, p);
+         p.thresholdMethod = "legacy affine calibration";
+      }
 
       std::cout << "MI threshold determined for p=" << p.pvalue << ": " << p.threshold
                 << std::endl;
+      if (!p.pchipPrimarySha256.empty())
+         std::cout << "[THRESHOLD] PCHIP cutoff binary64=" << std::setprecision(17)
+                   << p.threshold << std::setprecision(6) << std::endl;
    }
+   else if (!p.nullModelFile.empty())
+      std::cout << "[THRESHOLD] '-M' was supplied but p=1 preserves all MI values; "
+                   "the model is not loaded."
+                << std::endl;
 
    std::vector<int> ids;
 
@@ -337,8 +535,15 @@ void runStandard(int argc, char *argv[])
 
       if (p.sample > 0)
       {
+         p.samplingPopulation = nsample;
+         p.samplingSize = nsample;
+         p.samplingMethod = "legacy bootstrap with replacement";
+         std::cout << "[SAMPLING] WARNING: '-r' uses the deprecated legacy "
+                      "full-size bootstrap with replacement. Use '-u' for "
+                      "fixed-size sampling without replacement."
+                   << std::endl;
          data.bootStrap(bs, arrays);
-     arrays = &bs;
+         arrays = &bs;
       }
 
       data.addNoise();
@@ -347,12 +552,37 @@ void runStandard(int argc, char *argv[])
                             p.nparLimit, ids, arrays);
    }
 
+   bool dpiApplied = false;
+
+   if (p.dynamicDpi)
+   {
+      p.dpiActualH = matrix.sourceRowCount();
+      if (p.dpiActualH < 2)
+         throw std::string("Experimental dynamic DPI requires at least two reconstructed "
+                           "source rows; unresolved IDs do not count, but empty rows do.");
+      p.eps = resolveDynamicDpiEpsilon(p.dpiActualH, p.dpiHref, p.dpiSlope, p.dpiMax);
+      const std::streamsize savedPrecision = std::cout.precision();
+      const std::ios::fmtflags savedFlags = std::cout.flags();
+      std::cout << "[DPI] WARNING: dynamic epsilon is an experimental engineering policy; "
+                   "biological accuracy and a universal anchor or slope are not established."
+                << std::endl;
+      std::cout << "[DPI] mode=experimental-dynamic H=" << p.dpiActualH
+                << " H_ref=" << p.dpiHref
+                << " slope=" << std::setprecision(17) << p.dpiSlope
+                << " epsilon_max=" << p.dpiMax
+                << " epsilon=" << p.eps
+                << " epsilon_hex=" << std::hexfloat << p.eps << std::endl;
+      std::cout.flags(savedFlags);
+      std::cout.precision(savedPrecision);
+   }
+
    if (p.eps != 1.0)
    {
       if (matrix.hasEnoughSourceRowsForDpi())
       {
          std::cout << "[NETWORK] Applying DPI ..." << std::endl;
          matrix.reduce(p.eps, ids, transfac);
+         dpiApplied = true;
       }
       else
          std::cout << "[NETWORK] Skipping DPI: fewer than two source rows are "
@@ -363,7 +593,23 @@ void runStandard(int argc, char *argv[])
    if (p.outfile == "")
       createOutfileName(p);
 
+   if (!p.dpiWitnessFile.empty())
+   {
+      if (!dpiApplied)
+         throw std::string("DPI witness diagnostic '-W' requires DPI to be "
+                           "applied, but this network has fewer than two source "
+                           "rows.");
+
+      matrix.writeDpiWitnessDiagnostics(p, ids, transfac);
+   }
+
+   const DpiEdgeStatistics dpiStatistics = matrix.dpiEdgeStatistics(ids);
    matrix.write(data, ids, p);
+
+   std::cout << "[DPI_STATS] pre_edges=" << dpiStatistics.preEdges
+             << " pruned_edges=" << dpiStatistics.prunedEdges
+             << " post_edges=" << dpiStatistics.postEdges
+             << " dpi_applied=" << (dpiApplied ? 1 : 0) << std::endl;
 }
 
 //------------------------------------------------------------------------------------

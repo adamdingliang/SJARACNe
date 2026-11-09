@@ -1,0 +1,13 @@
+# Pinned validation target: Sprocket 0.32.0. Trusted workflows only: no isolation.
+# Two task slots; memory requests are scheduling reservations, not hard limits.
+[run.backends.default]
+type = "local"
+cpu = 2
+memory = "16 GiB"
+
+[run.workflow.scatter]
+concurrency = 2
+
+[run.task]
+retries = 0
+cache = "off"

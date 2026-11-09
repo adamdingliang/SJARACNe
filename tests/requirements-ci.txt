@@ -1,0 +1,6 @@
+# Historical Python 3.11 validation snapshot / ordinary pip fallback.
+# Active CI uses pyproject.toml/uv.lock, including transitive dependencies.
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.13.1
+cwltool==3.1.20240508115724
